@@ -44,8 +44,8 @@ Stop the loop when the backlog is clear or a blocker repeats across iterations; 
 | 6 | offboarding | `offboarding/OffboardingController` | list_offboarding, list_offboarding_tasks, toggle_offboarding_task | ✅ done + verified |
 | 7 | profile | `profile/ProfileController` | submit_legal_name_change, list_profile_change_approvals, approve_profile_change | ✅ done + verified |
 | 8 | performance | `performance/PerformanceController` | list_cycles, list_reviews | ✅ done + verified |
-| 9 | analytics | `analytics/AnalyticsController` | get_analytics (read-only) | ⬜ next |
-| 10 | admin | `admin/AdminController` | get_admin_settings, get_audit_log (read-only) | ⬜ |
+| 9 | analytics | `analytics/AnalyticsController` | get_analytics (read-only) | ✅ done + verified |
+| 10 | admin | `admin/AdminController` | get_admin_settings, get_audit_log (read-only) | ⬜ next (last) |
 
 ## Log
 
@@ -115,6 +115,10 @@ Stop the loop when the backlog is clear or a blocker repeats across iterations; 
   read 3 cycles + 15 reviews; EMPLOYEE sarah.chen sees only her own 1 review — RBAC scoping is enforced in
   the service (perEmployee filter), not just hidden in the UI. Writes (self/manager/commit review, launch/
   close cycle) are a multi-field state machine — out of scope for read-only coverage.
+- **2026-07-15** — analytics (read-only, detail read): get_analytics returns the sanitized dashboard
+  region (anchor on the `max-width:1040px` content wrapper, no handle — like get_employee). Verified on
+  staging: HR gets the KPI dashboard ("Headcount 15 · 5 teams · Active 12 · Open roles 3 …"); EMPLOYEE
+  gets only the restricted message ("Analytics are available to managers & HR") — RBAC-for-free, no data.
 
 ## Deferred (need an engine generalization, not blocked)
 

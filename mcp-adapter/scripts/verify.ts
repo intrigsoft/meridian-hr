@@ -311,6 +311,27 @@ async function main(): Promise<void> {
   assert(ownReviews.every((r) => r.emp === "sarah.chen"), "employee must see only their own review row(s)");
 
   console.log("\n✅ performance slice verified end-to-end against staging");
+
+  // --- Analytics (read-only): dashboard region, RBAC-gated ---
+  const getAnalytics = config.readTools.find((t) => t.name === "get_analytics")!;
+
+  const an = new FrontDoor(config);
+  await an.bootstrap("priya.nair");
+  const dash = await an.read(getAnalytics);
+  assert(dash.length === 1, "analytics returns exactly one dashboard region");
+  console.log(`\n[HR] analytics summary(head): ${dash[0].summary.slice(0, 160)}…`);
+  assert(dash[0].summary.includes("Headcount"), "HR analytics should include the Headcount KPI");
+
+  const anEmp = new FrontDoor(config);
+  await anEmp.bootstrap("sarah.chen");
+  const dashEmp = await anEmp.read(getAnalytics);
+  console.log(`[EMPLOYEE] analytics: ${dashEmp[0].summary.slice(0, 80)}`);
+  assert(
+    dashEmp[0].summary.includes("available to managers"),
+    "employee should get the restricted analytics message, no data",
+  );
+
+  console.log("\n✅ analytics slice verified end-to-end against staging");
 }
 
 main().catch((e) => {

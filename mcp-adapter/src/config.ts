@@ -320,6 +320,19 @@ export const config: AdapterConfig = {
       },
       emptyMarkers: ["No reviews", "No matches", "Calibrate"],
     },
+
+    // ---- analytics (read-only, single dashboard region) ----
+    {
+      name: "get_analytics",
+      description:
+        "Get the workforce analytics dashboard: headcount / active / onboarding / on-leave / open-roles KPIs, " +
+        "headcount by department / status / work-mode / level, and review-cycle completion. Manager/HR only; " +
+        "an employee gets a restricted message with no data.",
+      path: "/analytics",
+      // The content fragment renders as this wrapper — one region, scoped out of the nav shell.
+      row: { anchor: "div[style*='max-width:1040px']" },
+      fields: { summary: { text: true } },
+    },
   ],
 
   writeTools: [
