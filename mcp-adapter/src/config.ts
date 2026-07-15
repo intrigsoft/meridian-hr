@@ -21,7 +21,10 @@ export interface FieldExtract {
 export interface ReadTool {
   name: string;
   description: string;
+  /** May contain `${arg}` placeholders (path segment or query value); filled from call args, URL-encoded. */
   path: string;
+  /** Inputs the caller supplies (e.g. a search query, an employee id). Omit for fixed-path reads. */
+  args?: Record<string, { required: boolean; description: string }>;
   row: {
     /** Selector for a stable per-row anchor (prefer semantic hooks: a form action, a link). */
     anchor: string;
@@ -150,6 +153,41 @@ export const config: AdapterConfig = {
         summary: { text: true },
       },
       emptyMarkers: ["Requisitions", "managed by hiring managers"],
+    },
+
+    // ---- directory (read-heavy; introduces read args) ----
+    {
+      name: "search_directory",
+      description:
+        "Search the employee directory by name, title, email, or department. Returns matching people, " +
+        "each with an `id` (pass to get_employee) and a `summary` (name, title, dept, status, location, " +
+        "tenure, manager). Available to everyone.",
+      path: "/directory?q=${q}",
+      args: { q: { required: true, description: "Search text — a name, title, email, or department." } },
+      row: {
+        anchor: "a[href^='/directory/']",
+      },
+      fields: {
+        handle: { id: { attr: "href", extract: "/directory/(.+)" } },
+        summary: { text: true },
+      },
+      emptyMarkers: ["No one matches your filters"],
+    },
+    {
+      name: "get_employee",
+      description:
+        "Get one employee's 360° profile by id (from search_directory): role, department, org chain, " +
+        "reports, tenure, and job history. Compensation shows only when the caller is allowed to see it.",
+      path: "/directory/${id}",
+      args: { id: { required: true, description: "Employee id, e.g. sarah.chen" } },
+      row: {
+        // The content fragment renders as this wrapper — scopes the profile out of the nav shell.
+        anchor: "div[style*='max-width:1000px']",
+      },
+      fields: {
+        summary: { text: true },
+      },
+      // The profile wrapper always renders (even for a bad id → "not found" text), so no empty marker.
     },
   ],
 

@@ -147,6 +147,31 @@ async function main(): Promise<void> {
   assert(rcEmpQueue.length === 0, "employee may not view/approve requisitions");
 
   console.log("\n✅ recruitment (requisition approval) slice verified end-to-end against staging");
+
+  // --- Directory: search + get_employee (read-args; base-role, available to everyone) ---
+  const search = config.readTools.find((t) => t.name === "search_directory")!;
+  const getEmp = config.readTools.find((t) => t.name === "get_employee")!;
+
+  const dir = new FrontDoor(config);
+  await dir.bootstrap("sarah.chen"); // employee — proves the directory is base-role, not HR-gated
+  const hits = await dir.read(search, { q: "chen" });
+  console.log(`\n[EMPLOYEE] search_directory("chen"): ${hits.length} hit(s)`);
+  for (const r of hits) console.log(`   ${r.id}  ·  ${r.summary}`);
+  assert(hits.length > 0, "search should find at least one person for 'chen'");
+  assert(hits.some((r) => r.id === "sarah.chen"), "search 'chen' should include sarah.chen");
+  assert(hits.every((r) => r.id && r.summary), "each directory hit needs id + summary");
+
+  const empty = await dir.read(search, { q: "zzz-no-such-person" });
+  console.log(`[EMPLOYEE] search_directory("zzz…"): ${empty.length} (expect 0 via empty marker)`);
+  assert(empty.length === 0, "a no-match search must return an empty list, not fail loud");
+
+  const prof = await dir.read(getEmp, { id: "sarah.chen" });
+  console.log(`\n[EMPLOYEE] get_employee("sarah.chen"): ${prof.length} profile`);
+  assert(prof.length === 1, "get_employee should return exactly one profile region");
+  assert(prof[0].summary.includes("Sarah Chen"), "profile summary should contain the employee's name");
+  console.log(`   summary(head): ${prof[0].summary.slice(0, 140)}…`);
+
+  console.log("\n✅ directory slice verified end-to-end against staging");
 }
 
 main().catch((e) => {

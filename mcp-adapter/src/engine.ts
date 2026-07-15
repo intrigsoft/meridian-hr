@@ -12,9 +12,13 @@ export interface Row {
   [field: string]: string;
 }
 
-/** Replace `${name}` in a template with args (no encoding; ids are simple business keys). */
-function fill(tpl: string, args: Record<string, string>): string {
-  return tpl.replace(/\$\{(\w+)\}/g, (_, k: string) => args[k] ?? "");
+/** Replace `${name}` in a template with args. Reads encode (path segments + query values);
+ *  writes don't (ids are simple business keys already safe in a path). */
+function fill(tpl: string, args: Record<string, string>, encode = false): string {
+  return tpl.replace(/\$\{(\w+)\}/g, (_, k: string) => {
+    const v = args[k] ?? "";
+    return encode ? encodeURIComponent(v) : v;
+  });
 }
 
 /**
@@ -39,9 +43,10 @@ export class FrontDoor {
     this.persona = persona;
   }
 
-  async read(tool: ReadTool): Promise<Row[]> {
-    const { status, body } = await this.session.get(tool.path);
-    if (status !== 200) throw new ToolError(`${tool.name}: GET ${tool.path} → HTTP ${status} (auth redirect?)`);
+  async read(tool: ReadTool, args: Record<string, string> = {}): Promise<Row[]> {
+    const path = fill(tool.path, args, true);
+    const { status, body } = await this.session.get(path);
+    if (status !== 200) throw new ToolError(`${tool.name}: GET ${path} → HTTP ${status} (auth redirect?)`);
 
     const $ = cheerio.load(body);
     const anchors = $(tool.row.anchor).toArray();

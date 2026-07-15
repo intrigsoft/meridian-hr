@@ -39,8 +39,8 @@ Stop the loop when the backlog is clear or a blocker repeats across iterations; 
 | 1 | time | `time/TimeController` | list_time_approvals, approve_timesheet | ✅ done + verified |
 | 2 | jobchange | `jobchange/JobChangeController` | list_job_changes, approve_job_change, reject_job_change | ✅ done + verified |
 | 3 | recruitment | `recruitment/RecruitmentController` | list_requisition_approvals, approve_requisition (candidate-pipeline deferred) | 🟡 partial + verified |
-| 4 | directory | `people/DirectoryController` | search_directory, get_employee | ⬜ next |
-| 5 | onboarding | `onboarding/OnboardingController` | list_onboarding_cases, complete_onboarding_step | ⬜ |
+| 4 | directory | `people/DirectoryController` | search_directory, get_employee | ✅ done + verified |
+| 5 | onboarding | `onboarding/OnboardingController` | list_onboarding_cases, complete_onboarding_step | ⬜ next |
 | 6 | offboarding | `offboarding/OffboardingController` | list_offboarding, complete_offboarding_step | ⬜ |
 | 7 | profile | `profile/ProfileController` | get_my_profile, submit_profile_change, approve_profile_change | ⬜ |
 | 8 | performance | `performance/PerformanceController` | list_reviews, list_cycles | ⬜ |
@@ -74,6 +74,14 @@ Stop the loop when the backlog is clear or a blocker repeats across iterations; 
   currently fixed-path), and `advance_candidate` moves a candidate between stages rather than removing it,
   so it needs a **non-absence verify** (assert stage changed). Both are a separate engine generalization
   — logged under Deferred, not half-built.
+- **2026-07-15** — directory (read-heavy): search_directory (query arg) + get_employee (path arg).
+  Generalized reads to take **args** — `${arg}` interpolation in the read path/query, URL-encoded;
+  server now emits arg schemas + validates required args for reads too. search anchors on the person
+  links (`a[href^='/directory/']`), id from the href; get_employee scopes to the content-fragment
+  wrapper (`div[style*='max-width:1000px']`) so the 360 profile comes back without the nav shell.
+  Verified as EMPLOYEE (base-role, not HR-gated): search "chen"→sarah.chen, no-match→empty, profile
+  contains the name. This read-args support also unblocks the deferred recruitment candidate reads.
+  tools/list now serves 12 tools with correct arg schemas.
 
 ## Deferred (need an engine generalization, not blocked)
 
