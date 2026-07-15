@@ -287,6 +287,39 @@ export const config: AdapterConfig = {
       // "Job title" always renders on a directory profile → empty (no pending changes / not HR), not fail-loud.
       emptyMarkers: ["Job title"],
     },
+
+    // ---- performance (read-only) ----
+    {
+      name: "list_cycles",
+      description:
+        "List performance review cycles (HR). Each has an `id` and a `summary` (name, type, date range, " +
+        "participants, status, completion %). HR only.",
+      path: "/performance?tab=cycles",
+      row: { anchor: "div[style*='padding:18px 20px']" },
+      fields: {
+        // id comes from the card's own design/view link (…?cycle=<id>), scoped to the card.
+        handle: { id: { selector: "a[href*='cycle=']", attr: "href", extract: "cycle=([^&]+)" } },
+        summary: { text: true },
+      },
+      emptyMarkers: ["Review cycles", "Calibrate"],
+    },
+    {
+      name: "list_reviews",
+      description:
+        "List performance reviews for the active cycle. Each has `cycle`, `emp` and a `summary` (name, title, " +
+        "dept, reviewer, stage, self/manager/calibrated scores). HR sees all; a manager sees their team; an " +
+        "employee sees only their own.",
+      path: "/performance?tab=reviews",
+      row: { anchor: "a[href*='/performance/review']" },
+      fields: {
+        handle: {
+          cycle: { attr: "href", extract: "cycle=([^&]+)" },
+          emp: { attr: "href", extract: "emp=([^&]+)" },
+        },
+        summary: { text: true },
+      },
+      emptyMarkers: ["No reviews", "No matches", "Calibrate"],
+    },
   ],
 
   writeTools: [

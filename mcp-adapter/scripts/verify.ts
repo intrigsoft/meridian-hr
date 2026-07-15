@@ -284,6 +284,33 @@ async function main(): Promise<void> {
   assert(!pendAfter.some((c) => c.cid === chg.cid), "approved change should leave the pending list");
 
   console.log("\n✅ profile slice verified end-to-end against staging");
+
+  // --- Performance (read-only): cycles + reviews, with RBAC scoping ---
+  const listCycles = config.readTools.find((t) => t.name === "list_cycles")!;
+  const listReviews = config.readTools.find((t) => t.name === "list_reviews")!;
+
+  const pfm = new FrontDoor(config);
+  await pfm.bootstrap("priya.nair");
+  const cyclesR = await pfm.read(listCycles);
+  console.log(`\n[HR] review cycles: ${cyclesR.length}`);
+  for (const c of cyclesR) console.log(`   ${c.id}  ·  ${c.summary}`);
+  assert(cyclesR.length > 0, "expected seeded review cycles");
+  assert(cyclesR.every((c) => c.id && c.summary), "each cycle needs id + summary");
+
+  const reviewsR = await pfm.read(listReviews);
+  console.log(`\n[HR] reviews (active cycle): ${reviewsR.length}`);
+  for (const r of reviewsR.slice(0, 4)) console.log(`   ${r.cycle}/${r.emp}  ·  ${r.summary}`);
+  assert(reviewsR.length > 0, "expected reviews in the active cycle");
+  assert(reviewsR.every((r) => r.emp && r.summary), "each review needs emp + summary");
+
+  // employee sees only their own review (RBAC scoping in the service, not just the UI)
+  const pfEmp = new FrontDoor(config);
+  await pfEmp.bootstrap("sarah.chen");
+  const ownReviews = await pfEmp.read(listReviews);
+  console.log(`\n[EMPLOYEE sarah.chen] own reviews: ${ownReviews.length}`);
+  assert(ownReviews.every((r) => r.emp === "sarah.chen"), "employee must see only their own review row(s)");
+
+  console.log("\n✅ performance slice verified end-to-end against staging");
 }
 
 main().catch((e) => {

@@ -43,8 +43,8 @@ Stop the loop when the backlog is clear or a blocker repeats across iterations; 
 | 5 | onboarding | `onboarding/OnboardingController` | list_onboarding_cases, list_onboarding_steps, complete_onboarding_step | ✅ done + verified |
 | 6 | offboarding | `offboarding/OffboardingController` | list_offboarding, list_offboarding_tasks, toggle_offboarding_task | ✅ done + verified |
 | 7 | profile | `profile/ProfileController` | submit_legal_name_change, list_profile_change_approvals, approve_profile_change | ✅ done + verified |
-| 8 | performance | `performance/PerformanceController` | list_reviews, list_cycles | ⬜ next |
-| 9 | analytics | `analytics/AnalyticsController` | get_analytics (read-only) | ⬜ |
+| 8 | performance | `performance/PerformanceController` | list_cycles, list_reviews | ✅ done + verified |
+| 9 | analytics | `analytics/AnalyticsController` | get_analytics (read-only) | ⬜ next |
 | 10 | admin | `admin/AdminController` | get_admin_settings, get_audit_log (read-only) | ⬜ |
 
 ## Log
@@ -109,6 +109,12 @@ Stop the loop when the backlog is clear or a blocker repeats across iterations; 
   name is sensitive (routes to approval, not applied immediately) before wiring — no red run. Non-sensitive
   field edits (apply immediately) and the list editors (emergency/dependents/skills/certs, multi-value)
   not exposed — out of scope.
+- **2026-07-15** — performance (read-only): list_cycles + list_reviews. Cycle id comes from each card's
+  own design/view link (`…?cycle=<id>`, scoped to the card via a child-selector handle); review rows carry
+  cycle+emp in the link href (cheerio decodes `&amp;`, so `emp=([^&]+)` works). Verified on staging: HR
+  read 3 cycles + 15 reviews; EMPLOYEE sarah.chen sees only her own 1 review — RBAC scoping is enforced in
+  the service (perEmployee filter), not just hidden in the UI. Writes (self/manager/commit review, launch/
+  close cycle) are a multi-field state machine — out of scope for read-only coverage.
 
 ## Deferred (need an engine generalization, not blocked)
 
