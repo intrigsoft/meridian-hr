@@ -258,6 +258,32 @@ async function main(): Promise<void> {
   assert(offEmpCases.length === 0, "employee may not view offboarding");
 
   console.log("\n✅ offboarding slice verified end-to-end against staging");
+
+  // --- Profile: employee submits a sensitive change → HR approves (cross-persona, one workspace) ---
+  const submitName = config.writeTools.find((t) => t.name === "submit_legal_name_change")!;
+  const listChanges = config.readTools.find((t) => t.name === "list_profile_change_approvals")!;
+  const approveChange = config.writeTools.find((t) => t.name === "approve_profile_change")!;
+
+  const pf = new FrontDoor(config);
+  await pf.bootstrap("sarah.chen");
+  console.log(`\n[EMPLOYEE sarah.chen] submit_legal_name_change("Sarah Jane Chen")`);
+  console.log(`   → ${JSON.stringify(await pf.write(submitName, { legalName: "Sarah Jane Chen" }))}`);
+
+  await pf.bootstrap("priya.nair"); // switch persona on the same device/workspace (per-device model)
+  const pend = await pf.read(listChanges, { empId: "sarah.chen" });
+  console.log(`[HR priya.nair] sarah.chen pending changes: ${pend.length}`);
+  for (const c of pend) console.log(`   ${c.empId}/${c.cid}  ·  ${c.summary}`);
+  assert(pend.length > 0, "HR should see the submitted sensitive change awaiting approval");
+  assert(pend.every((c) => c.empId && c.cid), "each pending change needs empId + cid");
+
+  const chg = pend[0];
+  console.log(`\n[write] approve_profile_change(${chg.empId}/${chg.cid})`);
+  console.log(`   → ${JSON.stringify(await pf.write(approveChange, { empId: chg.empId, cid: chg.cid }))}`);
+  const pendAfter = await pf.read(listChanges, { empId: "sarah.chen" });
+  console.log(`[HR] pending after approve: ${pendAfter.length} (was ${pend.length})`);
+  assert(!pendAfter.some((c) => c.cid === chg.cid), "approved change should leave the pending list");
+
+  console.log("\n✅ profile slice verified end-to-end against staging");
 }
 
 main().catch((e) => {

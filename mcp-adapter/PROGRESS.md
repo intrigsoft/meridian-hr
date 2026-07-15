@@ -42,8 +42,8 @@ Stop the loop when the backlog is clear or a blocker repeats across iterations; 
 | 4 | directory | `people/DirectoryController` | search_directory, get_employee | ✅ done + verified |
 | 5 | onboarding | `onboarding/OnboardingController` | list_onboarding_cases, list_onboarding_steps, complete_onboarding_step | ✅ done + verified |
 | 6 | offboarding | `offboarding/OffboardingController` | list_offboarding, list_offboarding_tasks, toggle_offboarding_task | ✅ done + verified |
-| 7 | profile | `profile/ProfileController` | get_my_profile, submit_profile_change, approve_profile_change | ⬜ next |
-| 8 | performance | `performance/PerformanceController` | list_reviews, list_cycles | ⬜ |
+| 7 | profile | `profile/ProfileController` | submit_legal_name_change, list_profile_change_approvals, approve_profile_change | ✅ done + verified |
+| 8 | performance | `performance/PerformanceController` | list_reviews, list_cycles | ⬜ next |
 | 9 | analytics | `analytics/AnalyticsController` | get_analytics (read-only) | ⬜ |
 | 10 | admin | `admin/AdminController` | get_admin_settings, get_audit_log (read-only) | ⬜ |
 
@@ -100,6 +100,15 @@ Stop the loop when the backlog is clear or a blocker repeats across iterations; 
   failed on the EMPLOYEE restricted read — the marker was "available to managers and HR", not the
   "managed by…" I assumed; curl'd the real page, fixed the marker. Verified: HR read 1 case + 7 tasks,
   toggle moved progress, employee restricted.
+- **2026-07-15** — profile (cross-persona flow): submit_legal_name_change (employee) +
+  list_profile_change_approvals(empId) + approve_profile_change (HR). The interesting bit: an employee's
+  sensitive-field edit routes to HR approval, and HR decides it on the employee's DIRECTORY profile
+  (`/directory/{id}/change/{cid}/approve`), not a profile route. Verified in ONE workspace by switching
+  persona on the same FrontDoor (per-device model): sarah submits "Legal name Sarah Anne Chen → Sarah Jane
+  Chen", HR sees + approves it, pending 1→0 (verify-by-absence). Probed first with curl to confirm legal
+  name is sensitive (routes to approval, not applied immediately) before wiring — no red run. Non-sensitive
+  field edits (apply immediately) and the list editors (emergency/dependents/skills/certs, multi-value)
+  not exposed — out of scope.
 
 ## Deferred (need an engine generalization, not blocked)
 

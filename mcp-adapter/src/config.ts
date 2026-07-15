@@ -263,6 +263,30 @@ export const config: AdapterConfig = {
       },
       emptyMarkers: ["Active exits", "available to managers"],
     },
+
+    // ---- profile (HR-approval side lives on the employee's directory page) ----
+    {
+      name: "list_profile_change_approvals",
+      description:
+        "List an employee's sensitive profile-change requests awaiting HR approval (legal name, bank, tax). " +
+        "Each has `empId`, `cid` (pass both to approve_profile_change) and a `summary` (field, old → new). " +
+        "HR only; empty otherwise.",
+      path: "/directory/${empId}",
+      args: { empId: { required: true, description: "Employee id whose pending changes to list, e.g. sarah.chen" } },
+      row: {
+        anchor: "form[action*='/change/'][action*='/approve']",
+        container: "div[style*='padding:12px 14px']",
+      },
+      fields: {
+        handle: {
+          empId: { attr: "action", extract: "/directory/([^/]+)/change/" },
+          cid: { attr: "action", extract: "/change/([^/]+)/approve" },
+        },
+        summary: { text: true },
+      },
+      // "Job title" always renders on a directory profile → empty (no pending changes / not HR), not fail-loud.
+      emptyMarkers: ["Job title"],
+    },
   ],
 
   writeTools: [
@@ -380,6 +404,34 @@ export const config: AdapterConfig = {
       csrf: null,
       // No verify-by-absence: a toggled task stays in the list (flips in place). Proven by the case's
       // progress summary changing — asserted in verify.ts.
+    },
+
+    // ---- profile ----
+    {
+      name: "submit_legal_name_change",
+      description:
+        "Submit a change to your OWN legal name. Legal name is a sensitive field, so this is routed to HR " +
+        "for approval (via list_profile_change_approvals / approve_profile_change) rather than applied now.",
+      path: "/profile/info",
+      form: {},
+      args: { legalName: { required: true, description: "Your new legal name." } },
+      handle: [],
+      csrf: null,
+    },
+    {
+      name: "approve_profile_change",
+      description:
+        "Approve one pending profile-change request (from list_profile_change_approvals), applying it to the " +
+        "employee's record. HR only.",
+      path: "/directory/${empId}/change/${cid}/approve",
+      form: {},
+      args: {
+        empId: { required: true, inPath: true, description: "Employee id, e.g. sarah.chen" },
+        cid: { required: true, inPath: true, description: "Change request id from list_profile_change_approvals" },
+      },
+      handle: ["empId", "cid"],
+      csrf: null,
+      verify: { via: "list_profile_change_approvals" },
     },
   ],
 };
