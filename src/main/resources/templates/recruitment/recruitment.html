@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+<head>
+    <title layout:fragment="title">Recruitment · Meridian HR</title>
+</head>
+<body>
+<div layout:fragment="content" style="max-width:1040px;">
+
+    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:18px;">
+        <div>
+            <div style="font-size:12.5px; color:#8894a3; font-weight:500; margin-bottom:2px;">People Ops / Recruitment</div>
+            <h1 style="margin:0; font-size:24px; font-weight:700; letter-spacing:-0.02em; color:#1a2331;" th:text="${heading}">Requisitions</h1>
+        </div>
+        <form th:if="${isHr}" method="post" action="/recruitment/req/new" style="margin:0;">
+            <button type="submit" class="btn btn-primary">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                New requisition
+            </button>
+        </form>
+    </div>
+
+    <div th:if="${restricted}" style="background:#f7f9fb; border:1px dashed #d9e0e8; border-radius:13px; padding:56px 20px; text-align:center;">
+        <div style="font-size:15px; font-weight:600; color:#5a6472;">Recruitment is managed by hiring managers &amp; HR</div>
+        <div style="font-size:12.5px; color:#9aa3ad; margin-top:4px;">Open roles are posted once approved.</div>
+    </div>
+
+    <th:block th:if="${allowed}">
+        <!-- Tabs -->
+        <div style="display:flex; gap:4px; padding:4px; background:#e4e8ee; border-radius:9px; width:fit-content; margin-bottom:20px;">
+            <a th:each="t : ${tabs}" th:href="@{/recruitment(tab=${t.key()})}"
+               th:styleappend="${t.on()} ? 'background:#fff; box-shadow:0 1px 2px rgba(20,30,50,0.08); color:#17457f;' : 'background:transparent; color:#5a6472;'"
+               style="padding:7px 15px; border-radius:6px; font-size:13px; font-weight:600; display:flex; align-items:center; gap:7px;">
+                <span th:text="${t.label()}">Requisitions</span>
+                <span th:if="${t.showCount()}" style="font-size:11px; font-weight:700; color:#8894a3;" th:text="${t.count()}">5</span>
+            </a>
+        </div>
+
+        <!-- ===== REQUISITIONS ===== -->
+        <div th:if="${tab == 'reqs'}" style="display:flex; flex-direction:column; gap:14px;">
+            <div th:each="r : ${reqCards}" style="background:#fff; border:1px solid #e4e8ed; border-radius:12px; padding:18px 20px;">
+                <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:14px;">
+                    <div style="min-width:0;">
+                        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                            <span style="font-size:16px; font-weight:700; color:#1a2331;" th:text="${r.title()}">Senior Backend Engineer</span>
+                            <span style="font-size:11px; font-weight:600; color:#8894a3; font-family:var(--mono);" th:text="${r.id()}">REQ-2041</span>
+                            <span style="font-size:11px; font-weight:600; padding:3px 10px; border-radius:20px;" th:styleappend="'; ' + ('background:' + ${r.statusBg()} + '; color:' + ${r.statusFg()})" th:text="${r.statusLabel()}">Open</span>
+                        </div>
+                        <div style="font-size:12.5px; color:#8894a3; margin-top:5px;" th:text="${r.meta()}">Engineering · Senior · Remote · 1 opening · HM David Okonkwo</div>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
+                        <form th:if="${r.canApprove()}" th:action="@{/recruitment/req/{id}/approve(id=${r.id()})}" method="post" style="margin:0;">
+                            <button type="submit" style="height:34px; padding:0 14px; border:none; border-radius:8px; background:#2f6f4f; color:#fff; font-family:inherit; font-size:12.5px; font-weight:600; cursor:pointer;">Approve</button>
+                        </form>
+                        <a th:href="@{/recruitment/req/{id}(id=${r.id()})}" style="height:34px; padding:0 14px; border:1px solid #dde2e8; border-radius:8px; background:#fff; color:#3a4453; font-size:12.5px; font-weight:600; display:flex; align-items:center;">Details</a>
+                        <a th:if="${r.canPipeline()}" th:href="@{/recruitment/req/{id}/pipeline(id=${r.id()})}" style="height:34px; padding:0 14px; border:1px solid #cfdbe9; border-radius:8px; background:#eef4fb; color:#17457f; font-size:12.5px; font-weight:600; display:flex; align-items:center;">View pipeline</a>
+                    </div>
+                </div>
+
+                <div th:if="${r.showFunnel()}" style="display:flex; gap:8px; margin-top:15px;">
+                    <div th:each="f : ${r.funnel()}" style="flex:1; background:#f8fafc; border:1px solid #eef1f4; border-radius:8px; padding:9px 10px;">
+                        <div style="font-size:10.5px; color:#9aa3ad; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" th:text="${f.label()}">Applied</div>
+                        <div style="font-size:18px; font-weight:700; color:#28323f; margin-top:3px;" th:text="${f.count()}">3</div>
+                        <div style="height:3px; border-radius:2px; margin-top:6px;" th:styleappend="'; ' + ('background:' + ${f.color()})"></div>
+                    </div>
+                </div>
+                <div th:if="${r.showPending()}" style="display:flex; align-items:center; gap:9px; margin-top:14px; padding:11px 13px; background:#f7f1e0; border:1px solid #ece2c6; border-radius:9px; font-size:12px; color:#7c6428;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9a6a1a" stroke-width="2" style="flex-shrink:0;"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+                    <span th:text="${r.pendingMsg()}">Awaiting VP approval.</span>
+                </div>
+            </div>
+            <div th:if="${emptyReqs}" style="background:#fff; border:1px dashed #d5dbe2; border-radius:12px; padding:48px 20px; text-align:center;">
+                <div style="font-size:14px; font-weight:600; color:#5a6472;">No requisitions yet</div>
+                <div style="font-size:12.5px; color:#9aa3ad; margin-top:4px;">Open a requisition to start hiring.</div>
+            </div>
+        </div>
+
+        <!-- ===== REPORTS ===== -->
+        <div th:if="${tab == 'reports'}" style="display:flex; flex-direction:column; gap:16px;">
+            <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:12px;">
+                <div th:each="t : ${statTiles}" style="background:#fff; border:1px solid #e4e8ed; border-radius:12px; padding:15px 16px;">
+                    <div style="font-size:11.5px; font-weight:600; color:#8894a3;" th:text="${t.label()}">Open requisitions</div>
+                    <div style="font-size:26px; font-weight:700; color:#1a2331; margin-top:5px;" th:text="${t.value()}">3</div>
+                    <div style="font-size:11px; color:#9aa3ad; margin-top:2px;" th:text="${t.sub()}">5 total</div>
+                </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1.3fr 1fr; gap:16px;">
+                <div style="background:#fff; border:1px solid #e4e8ed; border-radius:12px; padding:18px 20px;">
+                    <div style="font-size:14px; font-weight:700; color:#1a2331; margin-bottom:16px;">Pipeline funnel <span style="font-size:11.5px; color:#9aa3ad; font-weight:600;">· open + filled reqs</span></div>
+                    <div style="display:flex; flex-direction:column; gap:12px;">
+                        <div th:each="b : ${funnelBars}">
+                            <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                                <span style="font-size:12px; font-weight:600; color:#4a5563;" th:text="${b.label()}">Applied</span>
+                                <span style="font-size:12px; font-weight:700; color:#28323f;" th:text="${b.count()}">12</span>
+                            </div>
+                            <div style="height:9px; border-radius:5px; background:#f1f4f7; overflow:hidden;"><div style="height:100%; border-radius:5px;" th:styleappend="'; ' + ('width:' + ${b.pct()} + '%; background:' + ${b.color()})"></div></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="background:#fff; border:1px solid #e4e8ed; border-radius:12px; padding:18px 20px;">
+                    <div style="font-size:14px; font-weight:700; color:#1a2331; margin-bottom:16px;">Source effectiveness</div>
+                    <div style="display:flex; flex-direction:column; gap:11px;">
+                        <div th:each="sr : ${sourceRows}" style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+                            <span style="font-size:12.5px; font-weight:600; color:#4a5563;" th:text="${sr.source()}">Referral</span>
+                            <span style="font-size:11.5px; color:#8894a3;"><strong style="color:#28323f;" th:text="${sr.total()}">6</strong> cands · <strong style="color:#2f6f4f;" th:text="${sr.hired()}">1</strong> hired</span>
+                        </div>
+                    </div>
+                    <div style="margin-top:16px; padding-top:14px; border-top:1px solid #f4f6f8;">
+                        <div style="font-size:12px; font-weight:700; color:#1a2331; margin-bottom:8px;">Time-to-fill</div>
+                        <div th:each="fr : ${filledRows}" style="display:flex; align-items:center; justify-content:space-between; font-size:12px; color:#5a6472; padding:3px 0;">
+                            <span th:text="${fr.title()}">Staff Engineer</span><strong style="color:#28323f;" th:text="${fr.days()} + 'd'">56d</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </th:block>
+</div>
+
+<th:block layout:fragment="content-after">
+    <div th:if="${toast != null}" style="position:fixed; right:22px; bottom:22px; z-index:400; display:flex; align-items:center; gap:11px; background:#1a2331; color:#fff; padding:12px 14px; border-radius:10px; box-shadow:0 10px 28px rgba(20,30,50,0.28); min-width:280px; max-width:390px;">
+        <span style="width:8px; height:8px; border-radius:50%; flex-shrink:0;" th:styleappend="'; ' + ('background:' + (${toastDot} ?: '#3ecf8e'))"></span>
+        <span style="flex:1; font-size:12.5px; font-weight:500; line-height:1.4;" th:text="${toast}">Done.</span>
+    </div>
+</th:block>
+</body>
+</html>

@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; }
+  body { font-family: 'Public Sans', system-ui, -apple-system, sans-serif; background: #eceff3; color: #1e2733; -webkit-font-smoothing: antialiased; }
+  a { text-decoration: none; color: inherit; }
+  a:hover { color: inherit; }
+  input, select { font-family: inherit; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: #cdd4dc; border-radius: 6px; border: 2px solid #eceff3; }
+</style>
+</helmet>
+
+<dc-import name="AppShell" active="jobchanges" note-title="{{ noteTitle }}" note-sub="{{ noteSub }}" hint-size="100%,100%">
+  <div style="max-width:900px;">
+
+    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:18px;">
+      <div>
+        <div style="font-size:12.5px; color:#8894a3; font-weight:500; margin-bottom:2px;">People Ops / Job changes</div>
+        <h1 style="margin:0; font-size:24px; font-weight:700; letter-spacing:-0.02em; color:#1a2331;">Promotions &amp; transfers</h1>
+      </div>
+      <sc-if value="{{ allowed }}" hint-placeholder-val="{{ true }}">
+        <button onClick="{{ onNew }}" style="display:flex; align-items:center; gap:8px; height:38px; padding:0 16px; background:#17457f; color:#fff; border:none; border-radius:8px; font-family:inherit; font-size:13.5px; font-weight:600; cursor:pointer;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+          New request
+        </button>
+      </sc-if>
+    </div>
+
+    <sc-if value="{{ restricted }}" hint-placeholder-val="">
+      <div style="background:#f7f9fb; border:1px dashed #d9e0e8; border-radius:13px; padding:56px 20px; text-align:center;">
+        <div style="font-size:15px; font-weight:600; color:#5a6472;">Job changes are managed by managers &amp; HR</div>
+        <div style="font-size:12.5px; color:#9aa3ad; margin-top:4px;">Talk to your manager about a promotion or transfer.</div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ allowed }}" hint-placeholder-val="{{ true }}">
+    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:18px;">
+      <sc-for list="{{ stats }}" as="s" hint-placeholder-count="3">
+        <div style="min-width:0; background:#fff; border:1px solid #e4e8ed; border-radius:12px; padding:15px 16px;">
+          <div style="font-size:11.5px; font-weight:600; color:#8894a3;">{{ s.label }}</div>
+          <div style="font-size:24px; font-weight:700; color:{{ s.color }}; margin-top:4px;">{{ s.value }}</div>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:13px;">
+      <sc-for list="{{ requests }}" as="r" hint-placeholder-count="3">
+        <div style="background:#fff; border:1px solid #e4e8ed; border-radius:13px; padding:17px 20px;">
+          <div style="display:flex; align-items:flex-start; gap:13px;">
+            <div style="width:40px; height:40px; border-radius:50%; background:{{ r.avatarBg }}; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:600; font-size:14px; flex-shrink:0;">{{ r.initials }}</div>
+            <div style="flex:1; min-width:0;">
+              <div style="display:flex; align-items:center; gap:9px; flex-wrap:wrap;">
+                <span style="font-size:14.5px; font-weight:700; color:#1a2331;">{{ r.name }}</span>
+                <span style="font-size:11px; font-weight:600; padding:3px 10px; border-radius:20px; background:{{ r.typeBg }}; color:{{ r.typeFg }};">{{ r.typeLabel }}</span>
+                <span style="font-size:11px; font-weight:600; padding:3px 10px; border-radius:20px; background:{{ r.statusBg }}; color:{{ r.statusFg }};">{{ r.statusLabel }}</span>
+              </div>
+              <div style="font-size:12px; color:#8894a3; margin-top:3px;">Effective {{ r.effLabel }} · requested by {{ r.by }}</div>
+            </div>
+          </div>
+
+          <!-- diff -->
+          <div style="display:flex; flex-direction:column; gap:6px; margin-top:13px; padding:12px 14px; background:#f8fafc; border:1px solid #eef1f4; border-radius:9px;">
+            <sc-for list="{{ r.diffs }}" as="d" hint-placeholder-count="2">
+              <div style="display:flex; align-items:center; gap:9px; font-size:12.5px;">
+                <span style="width:120px; flex-shrink:0; color:#8894a3; font-weight:500;">{{ d.label }}</span>
+                <span style="color:#b23b2e; text-decoration:line-through;">{{ d.from }}</span>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9aa3ad" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                <span style="color:#2f6f4f; font-weight:700;">{{ d.to }}</span>
+              </div>
+            </sc-for>
+          </div>
+
+          <sc-if value="{{ r.hasReason }}" hint-placeholder-val="">
+            <div style="font-size:12px; color:#6b7480; margin-top:10px; line-height:1.5;">{{ r.reason }}</div>
+          </sc-if>
+
+          <sc-if value="{{ r.showActions }}" hint-placeholder-val="">
+            <div style="display:flex; align-items:center; justify-content:flex-end; gap:9px; margin-top:14px; padding-top:13px; border-top:1px solid #f4f6f8;">
+              <button onClick="{{ r.onCancel }}" style="height:34px; padding:0 13px; border:1px solid #dde2e8; border-radius:8px; background:#fff; color:#5a6472; font-family:inherit; font-size:12px; font-weight:600; cursor:pointer;">Withdraw</button>
+              <sc-if value="{{ r.canDecide }}" hint-placeholder-val="">
+                <button onClick="{{ r.onReject }}" style="height:34px; padding:0 14px; border:1px solid #f0dcd9; border-radius:8px; background:#fff; color:#b23b2e; font-family:inherit; font-size:12px; font-weight:600; cursor:pointer;">Reject</button>
+                <button onClick="{{ r.onApprove }}" style="height:34px; padding:0 15px; border:none; border-radius:8px; background:#2f6f4f; color:#fff; font-family:inherit; font-size:12px; font-weight:600; cursor:pointer;">Approve</button>
+              </sc-if>
+            </div>
+          </sc-if>
+          <sc-if value="{{ r.isScheduled }}" hint-placeholder-val="">
+            <div style="display:flex; align-items:center; gap:8px; margin-top:12px; padding-top:12px; border-top:1px solid #f4f6f8; font-size:12px; color:#3a5aa8;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/></svg>
+              Approved — will apply automatically on {{ r.effLabel }}.
+            </div>
+          </sc-if>
+          <sc-if value="{{ r.isApplied }}" hint-placeholder-val="">
+            <div style="display:flex; align-items:center; gap:8px; margin-top:12px; padding-top:12px; border-top:1px solid #f4f6f8; font-size:12px; font-weight:600; color:#2f6f4f;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6L9 17l-5-5"/></svg>
+              Applied to {{ r.name }}'s record.
+            </div>
+          </sc-if>
+        </div>
+      </sc-for>
+
+      <sc-if value="{{ noRequests }}" hint-placeholder-val="">
+        <div style="background:#fff; border:1px dashed #d5dbe2; border-radius:13px; padding:48px 20px; text-align:center;">
+          <div style="font-size:14px; font-weight:600; color:#5a6472;">No job-change requests</div>
+          <div style="font-size:12.5px; color:#9aa3ad; margin-top:4px;">Raise a promotion, transfer, or comp change with an effective date.</div>
+        </div>
+      </sc-if>
+    </div>
+    </sc-if>
+  </div>
+
+  <!-- New request modal -->
+  <sc-if value="{{ modalOpen }}" hint-placeholder-val="">
+    <div onClick="{{ onClose }}" style="position:fixed; inset:0; background:rgba(20,30,50,0.42); z-index:300; display:flex; align-items:center; justify-content:center; padding:24px;">
+      <div onClick="{{ stop }}" style="width:560px; max-width:100%; max-height:90vh; overflow-y:auto; background:#fff; border-radius:16px; box-shadow:0 24px 64px rgba(20,30,50,0.32);">
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:18px 22px; border-bottom:1px solid #eef1f4; position:sticky; top:0; background:#fff;">
+          <div style="font-size:16px; font-weight:700; color:#1a2331;">New job-change request</div>
+          <button onClick="{{ onClose }}" style="width:30px; height:30px; border:1px solid #dde2e8; border-radius:8px; background:#fff; color:#8894a3; font-size:18px; line-height:1; cursor:pointer;">×</button>
+        </div>
+        <div style="padding:20px 22px; display:flex; flex-direction:column; gap:15px;">
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+            <div><div style="font-size:12px; font-weight:600; color:#5a6472; margin-bottom:5px;">Employee</div>
+              <select value="{{ form.empId }}" onChange="{{ onEmp }}" style="{{ inputStyle }}"><option value="">— Select —</option><sc-for list="{{ empOptions }}" as="e" hint-placeholder-count="5"><option value="{{ e.id }}">{{ e.label }}</option></sc-for></select>
+            </div>
+            <div><div style="font-size:12px; font-weight:600; color:#5a6472; margin-bottom:5px;">Change type</div>
+              <select value="{{ form.type }}" onChange="{{ onType }}" style="{{ inputStyle }}"><sc-for list="{{ typeOptions }}" as="t" hint-placeholder-count="4"><option value="{{ t.id }}">{{ t.label }}</option></sc-for></select>
+            </div>
+          </div>
+
+          <sc-if value="{{ hasEmp }}" hint-placeholder-val="">
+            <div style="display:flex; flex-direction:column; gap:12px; padding:14px; background:#f8fafc; border:1px solid #eef1f4; border-radius:10px;">
+              <div style="font-size:11.5px; font-weight:700; color:#9aa3ad; text-transform:uppercase; letter-spacing:0.05em;">Proposed changes</div>
+              <sc-for list="{{ editFields }}" as="f" hint-placeholder-count="3">
+                <div style="display:grid; grid-template-columns:120px 1fr; gap:12px; align-items:center;">
+                  <div style="font-size:12.5px; font-weight:600; color:#3a4453;">{{ f.label }}</div>
+                  <sc-if value="{{ f.isSelect }}" hint-placeholder-val="">
+                    <select value="{{ f.value }}" onChange="{{ f.onChange }}" style="{{ inputStyleSm }}"><sc-for list="{{ f.options }}" as="o" hint-placeholder-count="4"><option value="{{ o.id }}">{{ o.label }}</option></sc-for></select>
+                  </sc-if>
+                  <sc-if value="{{ f.isInput }}" hint-placeholder-val="{{ true }}">
+                    <input value="{{ f.value }}" onInput="{{ f.onInput }}" placeholder="{{ f.current }}" style="{{ inputStyleSm }}" />
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+            <div><div style="font-size:12px; font-weight:600; color:#5a6472; margin-bottom:5px;">Effective date</div>
+              <input type="date" value="{{ form.effectiveDate }}" onInput="{{ onEff }}" style="{{ inputStyle }}" />
+            </div>
+            <div style="display:flex; align-items:flex-end;"><div style="font-size:11.5px; color:#8894a3; line-height:1.4; padding-bottom:9px;">{{ effHint }}</div></div>
+          </div>
+          <div><div style="font-size:12px; font-weight:600; color:#5a6472; margin-bottom:5px;">Justification</div>
+            <input value="{{ form.reason }}" onInput="{{ onReason }}" placeholder="Why this change?" style="{{ inputStyle }}" />
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; justify-content:flex-end; gap:10px; padding:16px 22px; border-top:1px solid #eef1f4; background:#fafbfc; position:sticky; bottom:0;">
+          <button onClick="{{ onClose }}" style="height:38px; padding:0 16px; border:1px solid #dde2e8; border-radius:9px; background:#fff; color:#3a4453; font-family:inherit; font-size:13.5px; font-weight:600; cursor:pointer;">Cancel</button>
+          <button onClick="{{ onSubmit }}" style="height:38px; padding:0 18px; border:none; border-radius:9px; background:{{ submitBg }}; color:#fff; font-family:inherit; font-size:13.5px; font-weight:600; cursor:{{ submitCursor }};">Submit request</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <div style="position:fixed; right:22px; bottom:22px; display:flex; flex-direction:column; gap:10px; z-index:400;">
+    <sc-for list="{{ toasts }}" as="t" hint-placeholder-count="0">
+      <div style="display:flex; align-items:center; gap:11px; background:#1a2331; color:#fff; padding:12px 14px; border-radius:10px; box-shadow:0 10px 28px rgba(20,30,50,0.28); min-width:280px; max-width:390px;">
+        <span style="width:8px; height:8px; border-radius:50%; background:{{ t.dot }}; flex-shrink:0;"></span>
+        <span style="flex:1; font-size:12.5px; font-weight:500; line-height:1.4;">{{ t.msg }}</span>
+        <button onClick="{{ t.onClose }}" style="border:none; background:transparent; color:#8894a3; font-size:16px; line-height:1; cursor:pointer; padding:0;">×</button>
+      </div>
+    </sc-for>
+  </div>
+</dc-import>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:&quot;100%&quot;,&quot;height&quot;:&quot;100%&quot;}}">
+class Component extends DCLogic {
+  state = { user: null, modalOpen: false, form: null, toasts: [], tick: 0 };
+  _tid = 0;
+
+  componentDidMount() {
+    Promise.all([import("./session.js"), import("./people-store.js"), import("./jobchange-store.js")]).then(([s, ppl, jc]) => {
+      this._s = s; this._ppl = ppl; this._jc = jc;
+      const user = s.requireSession();
+      if (!user) return;
+      jc.applyDueChanges(); // apply any scheduled changes now due
+      const emp = new URLSearchParams(location.search).get("emp");
+      this.setState({ user });
+      if (emp) setTimeout(() => this.openNew(emp), 50);
+    });
+  }
+
+  addToast(msg, dot) {
+    const id = ++this._tid;
+    this.setState((st) => ({ toasts: [...st.toasts, { id, msg, dot: dot || "#3ecf8e" }] }));
+    setTimeout(() => this.setState((st) => ({ toasts: st.toasts.filter((t) => t.id !== id) })), 4200);
+  }
+  closeToast(id) { this.setState((st) => ({ toasts: st.toasts.filter((t) => t.id !== id) })); }
+  bump() { this.setState({ tick: this.state.tick + 1 }); }
+
+  openNew(empId) {
+    const t = new Date(Date.now() + 14 * 864e5).toISOString().slice(0, 10);
+    this.setState({ modalOpen: true, form: { empId: empId || "", type: "promotion", effectiveDate: t, reason: "", changes: {} } });
+  }
+  setForm(k, v) { this.setState((st) => ({ form: { ...st.form, [k]: v } })); }
+  setChange(field, v) { this.setState((st) => ({ form: { ...st.form, changes: { ...st.form.changes, [field]: v } } })); }
+
+  submit() {
+    const f = this.state.form; const ppl = this._ppl;
+    if (!f.empId || !f.effectiveDate) return;
+    const emp = ppl.getEmployee(f.empId);
+    // Keep only fields that actually differ from current, coercing salary to number.
+    const changes = {};
+    Object.keys(f.changes).forEach((k) => {
+      let v = f.changes[k];
+      if (v === "" || v == null) return;
+      if (k === "salary") v = Number(String(v).replace(/[^0-9]/g, "")) || 0;
+      if (String(v) !== String(emp[k])) changes[k] = v;
+    });
+    if (Object.keys(changes).length === 0) { this.addToast("No changes from current record.", "#8894a3"); return; }
+    this._jc.createRequest(f.empId, f.type, f.effectiveDate, changes, f.reason, this.state.user.id);
+    this.setState({ modalOpen: false });
+    this.addToast("Request submitted for approval.", "#e0a13a");
+    this.bump();
+  }
+  approve(id, name) { this._jc.approveRequest(id, this.state.user.id); this.addToast("Approved " + name + "'s change.", "#3ecf8e"); this.bump(); }
+  reject(id, name) { this._jc.rejectRequest(id, this.state.user.id); this.addToast("Rejected " + name + "'s change.", "#8894a3"); this.bump(); }
+  cancel(id) { this._jc.cancelRequest(id); this.addToast("Request withdrawn.", "#8894a3"); this.bump(); }
+
+  renderVals() {
+    const u = this.state.user, ppl = this._ppl, jc = this._jc;
+    const inputStyle = "width:100%; height:38px; border:1px solid #dde2e8; border-radius:9px; background:#fff; padding:0 12px; font-size:13.5px; color:#28323f; outline:none;";
+    const inputStyleSm = "width:100%; height:34px; border:1px solid #dde2e8; border-radius:8px; background:#fff; padding:0 10px; font-size:13px; color:#28323f; outline:none;";
+    const base = { toasts: this.state.toasts.map((t) => ({ ...t, onClose: () => this.closeToast(t.id) })),
+      restricted: false, allowed: false, stats: [], requests: [], noRequests: false, modalOpen: false,
+      inputStyle, inputStyleSm, empOptions: [], typeOptions: [], editFields: [], hasEmp: false,
+      form: { empId: "", type: "promotion", effectiveDate: "", reason: "", changes: {} }, effHint: "", noteTitle: "", noteSub: "" };
+    if (!u || !ppl || !jc) return base;
+
+    const allowed = u.role === "hr" || u.role === "manager";
+    if (!allowed) return { ...base, restricted: true };
+    const isHr = u.role === "hr";
+
+    const sm = jc.summary();
+    const stats = [
+      { label: "Pending approval", value: sm.pending, color: "#9a6a1a" },
+      { label: "Scheduled", value: sm.scheduled, color: "#3a5aa8" },
+      { label: "Applied", value: sm.applied, color: "#2f6f4f" },
+    ];
+
+    const reports = u.role === "manager" ? ppl.directReports(u.id).map((r) => r.id) : null;
+    const inScope = (empId) => isHr || (reports && reports.indexOf(empId) >= 0);
+
+    const requests = jc.allRequests().filter((r) => inScope(r.empId)).map((r) => {
+      const emp = ppl.getEmployee(r.empId); const t = jc.changeType(r.type);
+      const st = jc.STATUS_META[r.status] || jc.STATUS_META.pending;
+      const diffs = jc.diffRows(r);
+      // HR decides; a manager can raise + withdraw but not approve their own request.
+      const canDecide = isHr && r.status === "pending";
+      const canWithdraw = r.status === "pending" && (isHr || r.requestedBy === u.id);
+      return { name: r.empName, initials: emp ? emp.initials : "?", avatarBg: emp ? emp.avatarBg : "#c7cdd6",
+        typeLabel: t.label, typeBg: t.bg, typeFg: t.color,
+        statusLabel: st.label, statusBg: st.pillBg, statusFg: st.pillFg,
+        effLabel: ppl.formatDate(r.effectiveDate), by: r.requestedByName || "HR",
+        diffs, hasReason: !!r.reason, reason: r.reason,
+        showActions: canWithdraw, canDecide,
+        isScheduled: r.status === "scheduled", isApplied: r.status === "applied",
+        onApprove: () => this.approve(r.id, r.empName), onReject: () => this.reject(r.id, r.empName), onCancel: () => this.cancel(r.id) };
+    });
+
+    // Modal field editors driven by the selected change type.
+    const form = this.state.form || base.form;
+    const emp = form.empId ? ppl.getEmployee(form.empId) : null;
+    const t = jc.changeType(form.type);
+    let editFields = [];
+    if (emp) {
+      const selOpts = {
+        level: ppl.getLevels().map((l) => ({ id: l, label: l })),
+        dept: ppl.getDepartments().map((d) => ({ id: d.id, label: d.id })),
+        band: ppl.getBands().map((b) => ({ id: b.id, label: b.id + " · " + b.label })),
+        workMode: ppl.WORK_MODES.map((m) => ({ id: m, label: m })),
+        employmentType: ppl.EMPLOYMENT_TYPES.map((m) => ({ id: m, label: m })),
+        managerId: ppl.allEmployees().filter((e) => e.id !== emp.id && e.status !== "inactive").map((e) => ({ id: e.id, label: ppl.fullName(e) + " · " + e.title })),
+      };
+      editFields = t.fields.map((f) => {
+        const cur = f === "managerId" ? (emp.managerId ? ppl.fullName(ppl.getEmployee(emp.managerId)) : "—") : (f === "salary" ? ppl.formatSalary(emp.salary, "USD") : (emp[f] || "—"));
+        const val = form.changes[f] != null ? form.changes[f] : (selOpts[f] ? (emp[f] || "") : "");
+        const isSelect = !!selOpts[f];
+        return { label: jc.FIELD_LABELS[f] || f, current: "Current: " + cur,
+          isSelect, isInput: !isSelect,
+          value: val, options: selOpts[f] || [],
+          onChange: (e) => this.setChange(f, e.target.value),
+          onInput: (e) => this.setChange(f, e.target.value) };
+      });
+    }
+
+    const today = new Date().toISOString().slice(0, 10);
+    const effHint = form.effectiveDate && form.effectiveDate <= today ? "Applies immediately on approval." : "Scheduled — applies automatically on this date.";
+    const canSubmit = !!(form.empId && form.effectiveDate);
+
+    return {
+      ...base, allowed: true, restricted: false, stats,
+      requests, noRequests: requests.length === 0,
+      onNew: () => this.openNew(""), modalOpen: this.state.modalOpen,
+      onClose: () => this.setState({ modalOpen: false }), stop: (e) => e.stopPropagation(),
+      form, hasEmp: !!emp, editFields,
+      empOptions: ppl.allEmployees().filter((e) => e.status !== "inactive").sort((a, b) => ppl.fullName(a).localeCompare(ppl.fullName(b))).map((e) => ({ id: e.id, label: ppl.fullName(e) + " · " + e.title })),
+      typeOptions: jc.getChangeTypes(),
+      onEmp: (e) => this.setState((s) => ({ form: { ...s.form, empId: e.target.value, changes: {} } })),
+      onType: (e) => this.setState((s) => ({ form: { ...s.form, type: e.target.value, changes: {} } })),
+      onEff: (e) => this.setForm("effectiveDate", e.target.value),
+      onReason: (e) => this.setForm("reason", e.target.value),
+      effHint, onSubmit: () => this.submit(),
+      submitBg: canSubmit ? "#17457f" : "#b8c2ce", submitCursor: canSubmit ? "pointer" : "not-allowed",
+      noteTitle: sm.pending + " pending", noteSub: sm.scheduled + " scheduled · " + sm.applied + " applied",
+    };
+  }
+}
+</script>
+</body>
+</html>

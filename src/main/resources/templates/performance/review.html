@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+<head>
+    <title layout:fragment="title">Review · Meridian HR</title>
+</head>
+<body>
+
+<!-- read-only score cell -->
+<th:block th:fragment="cell(v)">
+    <span th:if="${v == null}" style="display:inline-flex; align-items:center; justify-content:center; width:30px; height:26px; border-radius:6px; background:#f1f4f7; color:#b6bdc6; font-size:12.5px; font-weight:700;">–</span>
+    <span th:unless="${v == null}" style="display:inline-flex; align-items:center; justify-content:center; width:30px; height:26px; border-radius:6px; color:#fff; font-size:12.5px; font-weight:700;"
+          th:styleappend="'; ' + ('display:inline-flex; align-items:center; justify-content:center; width:30px; height:26px; border-radius:6px; color:#fff; font-size:12.5px; font-weight:700; background:' + (${v} >= 5 ? '#3d8564' : (${v} >= 4 ? '#3f7cc4' : (${v} >= 3 ? '#c68a2a' : (${v} >= 2 ? '#c0563f' : '#a84334')))))"
+          th:text="${v}">4</span>
+</th:block>
+
+<div layout:fragment="content" style="max-width:860px;">
+
+    <a th:href="@{/performance(tab='reviews', cycle=${cycle.id})}" style="display:inline-flex; align-items:center; gap:6px; margin-bottom:14px; font-size:12.5px; color:#8894a3; font-weight:600;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        Back to reviews
+    </a>
+
+    <!-- Header -->
+    <div style="background:#fff; border:1px solid #e4e8ed; border-radius:12px; padding:18px 20px; margin-bottom:16px;">
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:14px;">
+            <div style="display:flex; align-items:center; gap:13px; min-width:0;">
+                <div style="width:46px; height:46px; border-radius:50%; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:600; font-size:16px; flex-shrink:0;" th:styleappend="'; ' + ('background:' + ${emp.avatarBg})" th:text="${emp.initials}">SC</div>
+                <div style="min-width:0;">
+                    <div style="font-size:17px; font-weight:700; color:#1a2331;" th:text="${empName}">Sarah Chen</div>
+                    <div style="font-size:12.5px; color:#8894a3;" th:text="${emp.title} + ' · ' + ${cycle.name} + ' · reviewer ' + ${reviewerName}">Product Designer · H1 2026 Review · reviewer Nadia Rahman</div>
+                </div>
+            </div>
+            <span style="flex-shrink:0; font-size:11.5px; font-weight:600; padding:5px 12px; border-radius:20px;" th:styleappend="'; ' + ('background:' + ${stageBg} + '; color:' + ${stageFg})" th:text="${stageLabel}">Awaiting self</span>
+        </div>
+        <div style="display:flex; gap:24px; margin-top:16px; padding-top:14px; border-top:1px solid #f4f6f8;">
+            <div><div style="font-size:11px; font-weight:600; color:#9aa3ad; text-transform:uppercase; letter-spacing:0.04em;">Self avg</div><div style="font-size:20px; font-weight:700; color:#6b7480; margin-top:2px;" th:text="${selfAvg}">—</div></div>
+            <div><div style="font-size:11px; font-weight:600; color:#9aa3ad; text-transform:uppercase; letter-spacing:0.04em;">Manager avg</div><div style="font-size:20px; font-weight:700; color:#2f6aa8; margin-top:2px;" th:text="${mgrAvg}">—</div></div>
+            <div><div style="font-size:11px; font-weight:600; color:#9aa3ad; text-transform:uppercase; letter-spacing:0.04em;">Calibrated</div><div style="font-size:20px; font-weight:700; color:#2f6f4f; margin-top:2px;" th:text="${calAvg}">—</div></div>
+        </div>
+    </div>
+
+    <!-- ===== SELF ASSESSMENT ===== -->
+    <div style="background:#fff; border:1px solid #e4e8ed; border-radius:12px; padding:18px 20px; margin-bottom:16px;">
+        <div style="font-size:14px; font-weight:700; color:#1a2331; margin-bottom:14px;">Self-assessment</div>
+
+        <form th:if="${canEditSelf}" th:action="@{/performance/review/self}" method="post">
+            <input type="hidden" name="cycle" th:value="${cycle.id}"/>
+            <input type="hidden" name="emp" th:value="${emp.id}"/>
+            <div th:each="cs : ${comps}" style="display:flex; align-items:center; gap:14px; padding:10px 0; border-bottom:1px solid #f4f6f8;">
+                <div style="flex:1; min-width:0;">
+                    <div style="font-size:13px; font-weight:600; color:#28323f;" th:text="${cs.name()}">Technical execution</div>
+                    <div style="font-size:11.5px; color:#8894a3;" th:text="${cs.blurb()} + ' · weight ' + ${cs.weight()} + '%'">Ships high-quality work reliably.</div>
+                </div>
+                <select th:name="'s_' + ${cs.id()}" style="height:34px; border:1px solid #dde2e8; border-radius:7px; padding:0 10px; font-size:13px; color:#28323f; background:#fff; outline:none;">
+                    <option th:each="sc : ${scores}" th:value="${sc}" th:text="${sc}" th:selected="${cs.selfScore() != null ? sc == cs.selfScore() : sc == 3}">3</option>
+                </select>
+            </div>
+            <textarea name="narrative" placeholder="Summary of your half…" style="width:100%; min-height:70px; margin-top:12px; border:1px solid #dde2e8; border-radius:8px; padding:10px; font-size:13px; color:#28323f; outline:none; font-family:inherit; resize:vertical;" th:text="${selfNarrative}"></textarea>
+            <div style="display:flex; justify-content:flex-end; margin-top:12px;">
+                <button type="submit" class="btn btn-primary">Submit self-assessment</button>
+            </div>
+        </form>
+
+        <div th:if="${!canEditSelf and selfSubmitted}">
+            <div th:each="cs : ${comps}" style="display:flex; align-items:center; gap:14px; padding:9px 0; border-bottom:1px solid #f4f6f8;">
+                <div style="flex:1; font-size:13px; font-weight:600; color:#28323f;" th:text="${cs.name()}">Technical execution</div>
+                <th:block th:replace="~{:: cell(${cs.selfScore()})}"></th:block>
+            </div>
+            <div th:if="${selfNarrative != ''}" style="font-size:12.5px; color:#5a6472; line-height:1.55; margin-top:12px; padding:11px 13px; background:#f8fafc; border:1px solid #eef1f4; border-radius:8px;" th:text="${selfNarrative}">Narrative</div>
+        </div>
+
+        <div th:if="${!canEditSelf and !selfSubmitted}" style="font-size:12.5px; color:#9aa3ad;">Awaiting the employee's self-assessment.</div>
+    </div>
+
+    <!-- ===== MANAGER ASSESSMENT ===== -->
+    <div style="background:#fff; border:1px solid #e4e8ed; border-radius:12px; padding:18px 20px; margin-bottom:16px;">
+        <div style="font-size:14px; font-weight:700; color:#1a2331; margin-bottom:14px;">Manager assessment</div>
+
+        <form th:if="${canEditMgr}" th:action="@{/performance/review/manager}" method="post">
+            <input type="hidden" name="cycle" th:value="${cycle.id}"/>
+            <input type="hidden" name="emp" th:value="${emp.id}"/>
+            <div th:each="cs : ${comps}" style="display:flex; align-items:center; gap:14px; padding:10px 0; border-bottom:1px solid #f4f6f8;">
+                <div style="flex:1; min-width:0;">
+                    <div style="font-size:13px; font-weight:600; color:#28323f;" th:text="${cs.name()}">Technical execution</div>
+                    <div style="font-size:11.5px; color:#8894a3;">Employee self-rated
+                        <strong th:text="${cs.selfScore() != null ? cs.selfScore() : '—'}">4</strong></div>
+                </div>
+                <select th:name="'s_' + ${cs.id()}" style="height:34px; border:1px solid #dde2e8; border-radius:7px; padding:0 10px; font-size:13px; color:#28323f; background:#fff; outline:none;">
+                    <option th:each="sc : ${scores}" th:value="${sc}" th:text="${sc}" th:selected="${cs.selfScore() != null ? sc == cs.selfScore() : sc == 3}">3</option>
+                </select>
+            </div>
+            <textarea name="narrative" placeholder="Manager summary…" style="width:100%; min-height:70px; margin-top:12px; border:1px solid #dde2e8; border-radius:8px; padding:10px; font-size:13px; color:#28323f; outline:none; font-family:inherit; resize:vertical;" th:text="${mgrNarrative}"></textarea>
+            <div style="display:flex; justify-content:flex-end; margin-top:12px;">
+                <button type="submit" class="btn btn-primary">Submit manager assessment</button>
+            </div>
+        </form>
+
+        <div th:if="${!canEditMgr and mgrSubmitted}">
+            <div th:each="cs : ${comps}" style="display:flex; align-items:center; gap:14px; padding:9px 0; border-bottom:1px solid #f4f6f8;">
+                <div style="flex:1; font-size:13px; font-weight:600; color:#28323f;" th:text="${cs.name()}">Technical execution</div>
+                <th:block th:replace="~{:: cell(${cs.mgrScore()})}"></th:block>
+            </div>
+            <div th:if="${mgrNarrative != ''}" style="font-size:12.5px; color:#5a6472; line-height:1.55; margin-top:12px; padding:11px 13px; background:#f8fafc; border:1px solid #eef1f4; border-radius:8px;" th:text="${mgrNarrative}">Narrative</div>
+        </div>
+
+        <div th:if="${!canEditMgr and !mgrSubmitted}" style="font-size:12.5px; color:#9aa3ad;">Manager assessment opens once the self-assessment is in.</div>
+    </div>
+
+    <!-- ===== CALIBRATION ===== -->
+    <div style="background:#fff; border:1px solid #e4e8ed; border-radius:12px; padding:18px 20px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+            <div style="font-size:14px; font-weight:700; color:#1a2331;">Calibration</div>
+            <form th:if="${canReopen}" th:action="@{/performance/review/reopen}" method="post" style="margin:0;">
+                <input type="hidden" name="cycle" th:value="${cycle.id}"/>
+                <input type="hidden" name="emp" th:value="${emp.id}"/>
+                <button type="submit" style="border:none; background:transparent; color:#a2abb5; font-family:inherit; font-size:11.5px; font-weight:600; cursor:pointer; padding:0; text-decoration:underline;">Reopen</button>
+            </form>
+        </div>
+
+        <form th:if="${canCalibrate}" th:action="@{/performance/review/commit}" method="post">
+            <input type="hidden" name="cycle" th:value="${cycle.id}"/>
+            <input type="hidden" name="emp" th:value="${emp.id}"/>
+            <div th:each="cs : ${comps}" style="display:flex; align-items:center; gap:14px; padding:10px 0; border-bottom:1px solid #f4f6f8;">
+                <div style="flex:1; min-width:0;">
+                    <div style="font-size:13px; font-weight:600; color:#28323f;" th:text="${cs.name()}">Technical execution</div>
+                    <div style="font-size:11.5px; color:#8894a3;">Self <strong th:text="${cs.selfScore() != null ? cs.selfScore() : '—'}">4</strong>
+                        · Manager <strong style="color:#2f6aa8;" th:text="${cs.mgrScore() != null ? cs.mgrScore() : '—'}">3</strong></div>
+                </div>
+                <select th:name="'s_' + ${cs.id()}" style="height:34px; border:1px solid #dde2e8; border-radius:7px; padding:0 10px; font-size:13px; color:#28323f; background:#fff; outline:none;">
+                    <option th:each="sc : ${scores}" th:value="${sc}" th:text="${sc}" th:selected="${cs.calScore() != null ? sc == cs.calScore() : sc == 3}">3</option>
+                </select>
+            </div>
+            <div style="display:flex; justify-content:flex-end; margin-top:12px;">
+                <button type="submit" style="height:38px; padding:0 18px; border:none; border-radius:9px; background:#2f6f4f; color:#fff; font-family:inherit; font-size:13.5px; font-weight:600; cursor:pointer;">Commit calibration</button>
+            </div>
+        </form>
+
+        <div th:if="${!canCalibrate and committed}">
+            <div th:each="cs : ${comps}" style="display:flex; align-items:center; gap:14px; padding:9px 0; border-bottom:1px solid #f4f6f8;">
+                <div style="flex:1; font-size:13px; font-weight:600; color:#28323f;" th:text="${cs.name()}">Technical execution</div>
+                <th:block th:replace="~{:: cell(${cs.calScore()})}"></th:block>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px; margin-top:12px; font-size:12px; font-weight:600; color:#2f6f4f;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6L9 17l-5-5"/></svg>
+                Calibration committed.
+            </div>
+        </div>
+
+        <div th:if="${!canCalibrate and !committed}" style="font-size:12.5px; color:#9aa3ad;">Calibration opens once the manager assessment is submitted.</div>
+    </div>
+</div>
+
+<th:block layout:fragment="content-after">
+    <div th:if="${toast != null}" style="position:fixed; right:22px; bottom:22px; z-index:400; display:flex; align-items:center; gap:11px; background:#1a2331; color:#fff; padding:12px 14px; border-radius:10px; box-shadow:0 10px 28px rgba(20,30,50,0.28); min-width:280px; max-width:390px;">
+        <span style="width:8px; height:8px; border-radius:50%; flex-shrink:0;" th:styleappend="'; ' + ('background:' + (${toastDot} ?: '#3ecf8e'))"></span>
+        <span style="flex:1; font-size:12.5px; font-weight:500; line-height:1.4;" th:text="${toast}">Done.</span>
+    </div>
+</th:block>
+</body>
+</html>

@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; }
+  body { font-family: 'Public Sans', system-ui, -apple-system, sans-serif; background: #eceff3; color: #1e2733; -webkit-font-smoothing: antialiased; }
+  a { text-decoration: none; color: inherit; }
+  a:hover { color: inherit; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: #cdd4dc; border-radius: 6px; border: 2px solid #eceff3; }
+</style>
+</helmet>
+
+<dc-import name="AppShell" active="analytics" note-title="{{ noteTitle }}" note-sub="{{ noteSub }}" hint-size="100%,100%">
+  <div style="max-width:1080px;">
+
+    <!-- Header -->
+    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:20px;">
+      <div>
+        <div style="font-size:12.5px; color:#8894a3; font-weight:500; margin-bottom:2px;">People Ops / Analytics</div>
+        <h1 style="margin:0; font-size:24px; font-weight:700; letter-spacing:-0.02em; color:#1a2331;">People analytics</h1>
+      </div>
+      <div style="display:flex; align-items:center; gap:6px; font-size:12px; color:#8894a3; padding-top:6px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg>
+        As of {{ asOf }}
+      </div>
+    </div>
+
+    <sc-if value="{{ restricted }}" hint-placeholder-val="">
+      <div style="background:#f7f9fb; border:1px dashed #d9e0e8; border-radius:13px; padding:56px 20px; text-align:center;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#9aa3ad" stroke-width="1.8" style="margin-bottom:10px;"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+        <div style="font-size:15px; font-weight:600; color:#5a6472;">Analytics is available to managers and HR</div>
+        <div style="font-size:12.5px; color:#9aa3ad; margin-top:4px;">Ask your HR business partner for a workforce report.</div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ allowed }}" hint-placeholder-val="{{ true }}">
+    <!-- KPI row -->
+    <div style="display:grid; grid-template-columns:repeat(6,1fr); gap:12px; margin-bottom:16px;">
+      <sc-for list="{{ kpis }}" as="k" hint-placeholder-count="5">
+        <div style="min-width:0; background:#fff; border:1px solid #e4e8ed; border-radius:12px; padding:16px;">
+          <div style="font-size:11.5px; font-weight:600; color:#8894a3; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ k.label }}</div>
+          <div style="font-size:27px; font-weight:700; color:#1a2331; margin-top:6px; line-height:1;">{{ k.value }}</div>
+          <div style="display:flex; align-items:center; gap:5px; margin-top:7px;">
+            <span style="font-size:11px; font-weight:700; color:{{ k.deltaColor }};">{{ k.delta }}</span>
+            <span style="font-size:11px; color:#9aa3ad;">{{ k.sub }}</span>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+
+    <!-- Row: growth trend + dept mix -->
+    <div style="display:grid; grid-template-columns:1.5fr 1fr; gap:16px; margin-bottom:16px; align-items:start;">
+      <div style="min-width:0; background:#fff; border:1px solid #e4e8ed; border-radius:13px; padding:20px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+          <div style="font-size:14px; font-weight:700; color:#1a2331;">Headcount growth</div>
+          <span style="font-size:11.5px; color:#9aa3ad;">Trailing 12 months</span>
+        </div>
+        <div style="font-size:11.5px; color:#9aa3ad; margin-bottom:18px;">Cumulative active headcount at each month end</div>
+        <div style="display:flex; align-items:flex-end; gap:8px; height:150px;">
+          <sc-for list="{{ trend }}" as="t" hint-placeholder-count="12">
+            <div style="flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; gap:6px; height:100%; justify-content:flex-end;">
+              <div style="font-size:10.5px; font-weight:700; color:#5a6472;">{{ t.count }}</div>
+              <div style="width:100%; max-width:26px; border-radius:5px 5px 0 0; background:{{ t.color }}; height:{{ t.h }}px;"></div>
+              <div style="font-size:9.5px; color:#9aa3ad; white-space:nowrap;">{{ t.month }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="min-width:0; background:#fff; border:1px solid #e4e8ed; border-radius:13px; padding:20px;">
+        <div style="font-size:14px; font-weight:700; color:#1a2331; margin-bottom:4px;">Department mix</div>
+        <div style="font-size:11.5px; color:#9aa3ad; margin-bottom:18px;">Active headcount by team</div>
+        <div style="display:flex; flex-direction:column; gap:13px;">
+          <sc-for list="{{ deptBars }}" as="d" hint-placeholder-count="5">
+            <div>
+              <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                <span style="font-size:12px; font-weight:600; color:#4a5563;">{{ d.label }}</span>
+                <span style="font-size:11.5px; color:#8894a3;"><strong style="color:#28323f;">{{ d.count }}</strong> · {{ d.pctLabel }}</span>
+              </div>
+              <div style="height:9px; border-radius:5px; background:#f1f4f7; overflow:hidden;"><div style="height:100%; width:{{ d.pct }}%; background:{{ d.color }}; border-radius:5px;"></div></div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row: tenure + composition -->
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px; align-items:start;">
+      <div style="min-width:0; background:#fff; border:1px solid #e4e8ed; border-radius:13px; padding:20px;">
+        <div style="font-size:14px; font-weight:700; color:#1a2331; margin-bottom:4px;">Tenure distribution</div>
+        <div style="font-size:11.5px; color:#9aa3ad; margin-bottom:18px;">How long people have been here</div>
+        <div style="display:flex; align-items:flex-end; gap:14px; height:130px;">
+          <sc-for list="{{ tenureBuckets }}" as="b" hint-placeholder-count="4">
+            <div style="flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; gap:7px; height:100%; justify-content:flex-end;">
+              <div style="font-size:14px; font-weight:700; color:#28323f;">{{ b.count }}</div>
+              <div style="width:100%; border-radius:6px 6px 0 0; background:#4a86d8; height:{{ b.h }}px;"></div>
+              <div style="font-size:10.5px; color:#8894a3; text-align:center; white-space:nowrap;">{{ b.label }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="min-width:0; background:#fff; border:1px solid #e4e8ed; border-radius:13px; padding:20px;">
+        <div style="font-size:14px; font-weight:700; color:#1a2331; margin-bottom:18px;">Workforce composition</div>
+        <div style="display:flex; flex-direction:column; gap:18px;">
+          <sc-for list="{{ compositions }}" as="c" hint-placeholder-count="2">
+            <div>
+              <div style="font-size:11.5px; font-weight:600; color:#8894a3; margin-bottom:8px;">{{ c.title }}</div>
+              <div style="display:flex; height:12px; border-radius:6px; overflow:hidden; background:#f1f4f7;">
+                <sc-for list="{{ c.segments }}" as="s" hint-placeholder-count="3">
+                  <div style="width:{{ s.pct }}%; background:{{ s.color }};" title="{{ s.label }}"></div>
+                </sc-for>
+              </div>
+              <div style="display:flex; gap:14px; margin-top:9px; flex-wrap:wrap;">
+                <sc-for list="{{ c.segments }}" as="s" hint-placeholder-count="3">
+                  <div style="display:flex; align-items:center; gap:6px;">
+                    <span style="width:9px; height:9px; border-radius:3px; background:{{ s.color }};"></span>
+                    <span style="font-size:11.5px; color:#5a6472;">{{ s.label }} <strong style="color:#28323f;">{{ s.count }}</strong></span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row: attrition + internal mobility -->
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px; align-items:start;">
+      <div style="min-width:0; background:#fff; border:1px solid #e4e8ed; border-radius:13px; padding:20px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+          <div style="font-size:14px; font-weight:700; color:#1a2331;">Attrition &amp; exits</div>
+          <span style="font-size:11.5px; color:#9aa3ad;">Trailing 12 months</span>
+        </div>
+        <div style="font-size:11.5px; color:#9aa3ad; margin-bottom:18px;">Annualized turnover against average headcount</div>
+        <div style="display:flex; align-items:baseline; gap:16px; margin-bottom:18px;">
+          <div><div style="font-size:32px; font-weight:700; color:#1a2331; line-height:1;">{{ turnoverRate }}%</div><div style="font-size:11px; color:#9aa3ad; margin-top:4px;">turnover rate</div></div>
+          <div style="flex:1; display:flex; gap:20px;">
+            <div><div style="font-size:20px; font-weight:700; color:#b23b2e;">{{ exitsVoluntary }}</div><div style="font-size:10.5px; color:#9aa3ad;">voluntary</div></div>
+            <div><div style="font-size:20px; font-weight:700; color:#9a6a1a;">{{ exitsInvoluntary }}</div><div style="font-size:10.5px; color:#9aa3ad;">involuntary</div></div>
+            <div><div style="font-size:20px; font-weight:700; color:#28323f;">{{ exitsTotal }}</div><div style="font-size:10.5px; color:#9aa3ad;">total exits</div></div>
+          </div>
+        </div>
+        <sc-if value="{{ hasExits }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex; flex-direction:column; gap:10px;">
+            <sc-for list="{{ exitReasons }}" as="r" hint-placeholder-count="3">
+              <div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                  <span style="font-size:12px; font-weight:600; color:#4a5563;">{{ r.label }}</span>
+                  <span style="font-size:11.5px; color:#8894a3;"><strong style="color:#28323f;">{{ r.count }}</strong> · {{ r.pctLabel }}</span>
+                </div>
+                <div style="height:8px; border-radius:5px; background:#f1f4f7; overflow:hidden;"><div style="height:100%; width:{{ r.pct }}%; background:{{ r.color }}; border-radius:5px;"></div></div>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+        <sc-if value="{{ noExits }}" hint-placeholder-val="">
+          <div style="padding:14px; text-align:center; font-size:12.5px; color:#9aa3ad; background:#f8fafc; border:1px solid #eef1f4; border-radius:9px;">No exits in the last 12 months.</div>
+        </sc-if>
+      </div>
+
+      <div style="min-width:0; background:#fff; border:1px solid #e4e8ed; border-radius:13px; padding:20px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+          <div style="font-size:14px; font-weight:700; color:#1a2331;">Internal mobility</div>
+          <a href="Job Changes.dc.html" style="font-size:11.5px; font-weight:600; color:#2d6cb5;" style-hover="text-decoration:underline;">Job changes →</a>
+        </div>
+        <div style="font-size:11.5px; color:#9aa3ad; margin-bottom:18px;">Promotions &amp; transfers applied, trailing 12 months</div>
+        <div style="display:flex; gap:20px; margin-bottom:18px;">
+          <div><div style="font-size:32px; font-weight:700; color:#7a5aa8; line-height:1;">{{ promotions }}</div><div style="font-size:11px; color:#9aa3ad; margin-top:4px;">promotions</div></div>
+          <div><div style="font-size:32px; font-weight:700; color:#3a5aa8; line-height:1;">{{ transfers }}</div><div style="font-size:11px; color:#9aa3ad; margin-top:4px;">transfers</div></div>
+          <div style="flex:1; text-align:right;"><div style="font-size:32px; font-weight:700; color:#1a2331; line-height:1;">{{ mobilityRate }}%</div><div style="font-size:11px; color:#9aa3ad; margin-top:4px;">of headcount moved</div></div>
+        </div>
+        <sc-if value="{{ hasMoves }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex; flex-direction:column; gap:2px;">
+            <sc-for list="{{ recentMoves }}" as="m" hint-placeholder-count="3">
+              <div style="display:flex; align-items:center; gap:11px; padding:8px 9px; border-radius:9px;" style-hover="background:#f6f9fc;">
+                <div style="width:30px; height:30px; border-radius:50%; background:{{ m.avatarBg }}; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:600; font-size:12px; flex-shrink:0;">{{ m.initials }}</div>
+                <div style="flex:1; min-width:0;"><div style="font-size:12.5px; font-weight:600; color:#28323f;">{{ m.name }}</div><div style="font-size:11px; color:#9aa3ad;">{{ m.detail }}</div></div>
+                <span style="font-size:10.5px; font-weight:600; padding:3px 9px; border-radius:20px; background:{{ m.tagBg }}; color:{{ m.tagFg }};">{{ m.tag }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+        <sc-if value="{{ noMoves }}" hint-placeholder-val="">
+          <div style="padding:14px; text-align:center; font-size:12.5px; color:#9aa3ad; background:#f8fafc; border:1px solid #eef1f4; border-radius:9px;">No promotions or transfers applied yet.</div>
+        </sc-if>
+      </div>
+    </div>
+
+    <!-- Row: open roles + who's out -->
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:start;">
+      <div style="min-width:0; background:#fff; border:1px solid #e4e8ed; border-radius:13px; padding:20px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+          <div style="font-size:14px; font-weight:700; color:#1a2331;">Open roles by team</div>
+          <a href="Recruitment.dc.html" style="font-size:11.5px; font-weight:600; color:#2d6cb5;" style-hover="text-decoration:underline;">Recruitment →</a>
+        </div>
+        <div style="font-size:11.5px; color:#9aa3ad; margin-bottom:18px;">Active requisitions against current headcount</div>
+        <sc-if value="{{ hasOpenRoles }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex; flex-direction:column; gap:13px;">
+            <sc-for list="{{ openRoles }}" as="o" hint-placeholder-count="3">
+              <div style="display:flex; align-items:center; gap:12px;">
+                <span style="width:120px; flex-shrink:0; font-size:12px; font-weight:600; color:#4a5563; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ o.dept }}</span>
+                <div style="flex:1; height:8px; border-radius:5px; background:#f1f4f7; overflow:hidden;"><div style="height:100%; width:{{ o.pct }}%; background:{{ o.color }}; border-radius:5px;"></div></div>
+                <span style="font-size:12px; font-weight:700; color:#28323f; white-space:nowrap;">{{ o.open }} open</span>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+        <sc-if value="{{ noOpenRoles }}" hint-placeholder-val="">
+          <div style="padding:16px; text-align:center; font-size:12.5px; color:#9aa3ad;">No open requisitions right now.</div>
+        </sc-if>
+      </div>
+
+      <div style="min-width:0; background:#fff; border:1px solid #e4e8ed; border-radius:13px; padding:20px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+          <div style="font-size:14px; font-weight:700; color:#1a2331;">Out & upcoming</div>
+          <span style="font-size:11.5px; color:#9aa3ad;">{{ outCount }} away</span>
+        </div>
+        <sc-if value="{{ hasOut }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex; flex-direction:column; gap:3px;">
+            <sc-for list="{{ outList }}" as="o" hint-placeholder-count="4">
+              <a href="{{ o.href }}" style="display:flex; align-items:center; gap:11px; padding:8px 9px; border-radius:9px;" style-hover="background:#f6f9fc;">
+                <div style="width:32px; height:32px; border-radius:50%; background:{{ o.avatarBg }}; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:600; font-size:12.5px; flex-shrink:0;">{{ o.initials }}</div>
+                <div style="flex:1; min-width:0;">
+                  <div style="font-size:12.5px; font-weight:600; color:#28323f;">{{ o.name }}</div>
+                  <div style="font-size:11px; color:#9aa3ad;">{{ o.detail }}</div>
+                </div>
+                <span style="font-size:10.5px; font-weight:600; padding:3px 9px; border-radius:20px; background:{{ o.tagBg }}; color:{{ o.tagFg }};">{{ o.tag }}</span>
+              </a>
+            </sc-for>
+          </div>
+        </sc-if>
+        <sc-if value="{{ noOut }}" hint-placeholder-val="">
+          <div style="padding:16px; text-align:center; font-size:12.5px; color:#9aa3ad;">Everyone's in — no one is away.</div>
+        </sc-if>
+      </div>
+    </div>
+    </sc-if>
+  </div>
+</dc-import>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:&quot;100%&quot;,&quot;height&quot;:&quot;100%&quot;}}">
+class Component extends DCLogic {
+  state = { user: null };
+
+  componentDidMount() {
+    Promise.all([import("./session.js"), import("./people-store.js"), import("./leave-store.js"), import("./recruitment-store.js"), import("./offboarding-store.js"), import("./jobchange-store.js")])
+      .then(([s, ppl, leave, rec, off, jc]) => {
+        this._s = s; this._ppl = ppl; this._leave = leave; this._rec = rec; this._off = off; this._jc = jc;
+        const user = s.requireSession();
+        if (!user) return;
+        this.setState({ user });
+      });
+  }
+
+  monthKey(d) { return d.toLocaleDateString("en-US", { month: "short" }); }
+
+  renderVals() {
+    const u = this.state.user, ppl = this._ppl;
+    const asOf = new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+    const base = { asOf, restricted: false, allowed: false, noteTitle: "", noteSub: "",
+      kpis: [], trend: [], deptBars: [], tenureBuckets: [], compositions: [], openRoles: [], outList: [],
+      hasOpenRoles: false, noOpenRoles: false, hasOut: false, noOut: false, outCount: 0,
+      turnoverRate: 0, exitsVoluntary: 0, exitsInvoluntary: 0, exitsTotal: 0, exitReasons: [], hasExits: false, noExits: false,
+      promotions: 0, transfers: 0, mobilityRate: 0, recentMoves: [], hasMoves: false, noMoves: false };
+    if (!u || !ppl) return base;
+
+    const allowed = u.role === "hr" || u.role === "manager";
+    if (!allowed) return { ...base, restricted: true };
+
+    const all = ppl.allEmployees();
+    const st = ppl.stats();
+    const now = new Date();
+
+    // ---- headcount trend (cumulative active by month-end, trailing 12) ----
+    const trendRaw = [];
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i + 1, 0); // last day of that month
+      const count = all.filter((e) => new Date(e.startDate + "T00:00:00") <= d).length;
+      trendRaw.push({ month: this.monthKey(d), count });
+    }
+    const maxTrend = Math.max(1, ...trendRaw.map((t) => t.count));
+    const trend = trendRaw.map((t, i) => ({ month: t.month, count: t.count,
+      h: Math.round((t.count / maxTrend) * 118) + 4,
+      color: i === trendRaw.length - 1 ? "#17457f" : "#9fc0e6" }));
+
+    // ---- new hires trailing 12mo ----
+    const yearAgo = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+    const newHires = all.filter((e) => new Date(e.startDate + "T00:00:00") >= yearAgo).length;
+    const growth = trendRaw[0].count > 0 ? Math.round(((trendRaw[11].count - trendRaw[0].count) / trendRaw[0].count) * 100) : 0;
+
+    // ---- open reqs ----
+    const reqs = this._rec ? this._rec.allReqs() : [];
+    const openReqs = reqs.filter((r) => r.status === "open");
+
+    // ---- attrition / exits (trailing 12mo) from offboarding exit records ----
+    const inactive = all.filter((e) => e.status === "inactive" && e.exit && e.exit.lastDay);
+    const exits12 = inactive.filter((e) => new Date(e.exit.lastDay + "T00:00:00") >= yearAgo);
+    const voluntaryTypes = { resignation: 1, retirement: 1, end_contract: 1 };
+    const exitsVoluntary = exits12.filter((e) => voluntaryTypes[e.exit.type]).length;
+    const exitsInvoluntary = exits12.length - exitsVoluntary;
+    const avgHeadcount = Math.max(1, (trendRaw[0].count + trendRaw[11].count) / 2);
+    const turnoverRate = Math.round((exits12.length / avgHeadcount) * 1000) / 10;
+
+    // ---- KPIs ----
+    const kpis = [
+      { label: "Headcount", value: st.headcount, delta: (growth >= 0 ? "+" : "") + growth + "%", deltaColor: growth >= 0 ? "#2f6f4f" : "#b23b2e", sub: "vs 12mo ago" },
+      { label: "New hires", value: newHires, delta: "12mo", deltaColor: "#8894a3", sub: "trailing" },
+      { label: "Open roles", value: openReqs.length, delta: "", deltaColor: "#8894a3", sub: "in recruitment" },
+      { label: "Avg tenure", value: (Math.round(st.avgTenure * 10) / 10) + "y", delta: "", deltaColor: "#8894a3", sub: "company-wide" },
+      { label: "Attrition", value: turnoverRate + "%", delta: "", deltaColor: turnoverRate > 15 ? "#b23b2e" : "#2f6f4f", sub: "annualized" },
+      { label: "Away now", value: st.onLeave, delta: "", deltaColor: "#8894a3", sub: "on leave" },
+    ];
+
+    // ---- dept bars ----
+    const maxDept = Math.max(1, ...st.byDept.map((d) => d.count));
+    const deptBars = st.byDept.filter((d) => d.count > 0).sort((a, b) => b.count - a.count).map((d) => ({
+      label: d.id, count: d.count, color: d.color,
+      pct: Math.round((d.count / maxDept) * 100),
+      pctLabel: Math.round((d.count / st.headcount) * 100) + "%" }));
+
+    // ---- tenure buckets ----
+    const bucketDefs = [{ label: "< 1 yr", min: 0, max: 1 }, { label: "1–2 yr", min: 1, max: 2 }, { label: "2–4 yr", min: 2, max: 4 }, { label: "4+ yr", min: 4, max: 999 }];
+    const yrsOf = (e) => (now.getTime() - new Date(e.startDate + "T00:00:00").getTime()) / (365.25 * 864e5);
+    const buckets = bucketDefs.map((b) => ({ label: b.label, count: all.filter((e) => { const y = yrsOf(e); return y >= b.min && y < b.max; }).length }));
+    const maxBucket = Math.max(1, ...buckets.map((b) => b.count));
+    const tenureBuckets = buckets.map((b) => ({ label: b.label, count: b.count, h: Math.round((b.count / maxBucket) * 100) + 6 }));
+
+    // ---- composition (employment type + work mode) ----
+    const typeColors = { "Full-time": "#17457f", "Part-time": "#4a86d8", "Contract": "#9fc0e6" };
+    const modeColors = { "Remote": "#4a9d7a", "Hybrid": "#c68a2a", "On-site": "#9a6ab5" };
+    const seg = (arr, key, colors) => arr.filter((x) => x.count > 0).map((x) => ({ label: x[key], count: x.count, color: colors[x[key]] || "#8894a3", pct: Math.round((x.count / st.headcount) * 100) }));
+    const compositions = [
+      { title: "Employment type", segments: seg(st.byType, "type", typeColors) },
+      { title: "Work mode", segments: seg(st.byMode, "mode", modeColors) },
+    ];
+
+    // ---- open roles by dept ----
+    const openByDept = {};
+    openReqs.forEach((r) => { openByDept[r.dept] = (openByDept[r.dept] || 0) + (r.headcount || 1); });
+    const maxOpen = Math.max(1, ...Object.values(openByDept));
+    const openRoles = Object.keys(openByDept).map((dept) => ({ dept, open: openByDept[dept],
+      pct: Math.round((openByDept[dept] / maxOpen) * 100), color: ppl.deptMeta(dept).color }))
+      .sort((a, b) => b.open - a.open);
+
+    // ---- who's out: people on leave + upcoming approved leave ----
+    const outList = [];
+    all.filter((e) => e.status === "leave").forEach((e) => {
+      outList.push({ name: ppl.fullName(e), initials: e.initials, avatarBg: e.avatarBg, detail: e.title + " · " + e.dept,
+        tag: "On leave", tagBg: "#faf3e6", tagFg: "#9a6a1a", href: "Employee.dc.html?id=" + encodeURIComponent(e.id) });
+    });
+    all.filter((e) => e.status === "onboarding").forEach((e) => {
+      outList.push({ name: ppl.fullName(e), initials: e.initials, avatarBg: e.avatarBg, detail: e.title + " · started " + ppl.formatDate(e.startDate),
+        tag: "Onboarding", tagBg: "#e8eefb", tagFg: "#3a5aa8", href: "Employee.dc.html?id=" + encodeURIComponent(e.id) });
+    });
+
+    // ---- attrition reason breakdown ----
+    const reasonColors = { resignation: "#3a5aa8", termination: "#b23b2e", end_contract: "#9a6a1a", retirement: "#2f6f4f" };
+    const reasonLabels = { resignation: "Resignation", termination: "Termination", end_contract: "End of contract", retirement: "Retirement" };
+    const reasonCounts = {};
+    exits12.forEach((e) => { reasonCounts[e.exit.type] = (reasonCounts[e.exit.type] || 0) + 1; });
+    const maxReason = Math.max(1, ...Object.values(reasonCounts));
+    const exitReasons = Object.keys(reasonCounts).sort((a, b) => reasonCounts[b] - reasonCounts[a]).map((t) => ({
+      label: reasonLabels[t] || t, count: reasonCounts[t], color: reasonColors[t] || "#8894a3",
+      pct: Math.round((reasonCounts[t] / maxReason) * 100),
+      pctLabel: Math.round((reasonCounts[t] / exits12.length) * 100) + "%" }));
+
+    // ---- internal mobility from applied job changes (trailing 12mo) ----
+    const jcAll = this._jc ? this._jc.allRequests() : [];
+    const appliedMoves = jcAll.filter((r) => r.status === "applied" && r.appliedAt && r.appliedAt >= yearAgo.getTime());
+    const promotions = appliedMoves.filter((r) => r.type === "promotion").length;
+    const transfers = appliedMoves.filter((r) => r.type === "transfer").length;
+    const movedEmps = new Set(appliedMoves.map((r) => r.empId));
+    const mobilityRate = Math.round((movedEmps.size / Math.max(1, st.headcount)) * 1000) / 10;
+    const moveTag = { promotion: { t: "Promotion", bg: "#f0ecf8", fg: "#7a5aa8" }, transfer: { t: "Transfer", bg: "#e8eefb", fg: "#3a5aa8" }, comp: { t: "Comp", bg: "#f7f1e0", fg: "#9a6a1a" }, reclass: { t: "Reclass", bg: "#e6f3ec", fg: "#2f6f4f" } };
+    const recentMoves = appliedMoves.sort((a, b) => b.appliedAt - a.appliedAt).slice(0, 4).map((r) => {
+      const e = ppl.getEmployee(r.empId); const tg = moveTag[r.type] || moveTag.comp;
+      return { name: r.empName, initials: e ? e.initials : "?", avatarBg: e ? e.avatarBg : "#c7cdd6",
+        detail: (e ? e.title + " · " + e.dept : "") , tag: tg.t, tagBg: tg.bg, tagFg: tg.fg };
+    });
+
+    return {
+      ...base, allowed: true, restricted: false,
+      kpis, trend, deptBars, tenureBuckets, compositions,
+      openRoles, hasOpenRoles: openRoles.length > 0, noOpenRoles: openRoles.length === 0,
+      outList, hasOut: outList.length > 0, noOut: outList.length === 0, outCount: outList.length,
+      turnoverRate, exitsVoluntary, exitsInvoluntary, exitsTotal: exits12.length,
+      exitReasons, hasExits: exits12.length > 0, noExits: exits12.length === 0,
+      promotions, transfers, mobilityRate, recentMoves, hasMoves: recentMoves.length > 0, noMoves: recentMoves.length === 0,
+      noteTitle: st.headcount + " employees", noteSub: newHires + " hired in 12mo",
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+<head>
+    <title layout:fragment="title">Candidate · Meridian HR</title>
+</head>
+<body>
+<div layout:fragment="content" style="max-width:900px;">
+
+    <a th:href="@{/recruitment/req/{id}/pipeline(id=${cand.reqId})}" style="display:inline-flex; align-items:center; gap:6px; margin-bottom:14px; font-size:12.5px; color:#8894a3; font-weight:600;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        Back to pipeline
+    </a>
+
+    <!-- Header -->
+    <div style="background:#fff; border:1px solid #e4e8ed; border-radius:12px; padding:18px 20px; margin-bottom:16px;">
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:14px;">
+            <div style="display:flex; align-items:center; gap:13px; min-width:0;">
+                <div style="width:48px; height:48px; border-radius:50%; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:600; font-size:17px; flex-shrink:0;" th:styleappend="'; ' + ('background:' + ${cand.bg})" th:text="${cand.initials}">WZ</div>
+                <div style="min-width:0;">
+                    <div style="font-size:18px; font-weight:700; color:#1a2331;" th:text="${cand.name}">Wei Zhang</div>
+                    <div style="font-size:12.5px; color:#8894a3;" th:text="${cand.currentRole} + ' · ' + ${cand.source} + (${req != null} ? ' · ' + ${req.title} : '')">Staff Engineer, Stripe · Referral</div>
+                </div>
+            </div>
+            <div style="text-align:right; flex-shrink:0;">
+                <span style="font-size:11.5px; font-weight:600; padding:5px 12px; border-radius:20px;" th:styleappend="'; ' + ('background:' + ${stageBg} + '; color:' + ${stageFg})" th:text="${stageLabel}">Onsite</span>
+                <div style="font-size:20px; font-weight:700; color:#2f6f4f; margin-top:8px;" th:text="${cand.fit} + '%'">92%</div>
+                <div style="font-size:10.5px; color:#9aa3ad;">fit score</div>
+            </div>
+        </div>
+        <div style="font-size:12.5px; color:#5a6472; line-height:1.55; margin-top:14px; padding-top:14px; border-top:1px solid #f4f6f8;" th:text="${cand.summary}">Summary</div>
+
+        <!-- Stage actions -->
+        <div style="display:flex; align-items:center; gap:9px; margin-top:14px; flex-wrap:wrap;">
+            <form th:if="${canAdvance}" th:action="@{/recruitment/candidate/{id}/advance(id=${cand.id})}" method="post" style="margin:0;">
+                <button type="submit" style="height:36px; padding:0 15px; border:none; border-radius:8px; background:#17457f; color:#fff; font-family:inherit; font-size:12.5px; font-weight:600; cursor:pointer;">Advance stage</button>
+            </form>
+            <form th:if="${!rejected and !hired}" th:action="@{/recruitment/candidate/{id}/reject(id=${cand.id})}" method="post" style="margin:0; display:flex; gap:8px; align-items:center;">
+                <select name="reason" style="height:36px; border:1px solid #dde2e8; border-radius:8px; padding:0 10px; font-size:12.5px; color:#5a6472; background:#fff; outline:none;">
+                    <option th:each="rr : ${rejectReasons}" th:value="${rr}" th:text="${rr}">Skills mismatch</option>
+                </select>
+                <button type="submit" style="height:36px; padding:0 14px; border:1px solid #f0dcd9; border-radius:8px; background:#fff; color:#b23b2e; font-family:inherit; font-size:12.5px; font-weight:600; cursor:pointer;">Reject</button>
+            </form>
+            <form th:if="${rejected}" th:action="@{/recruitment/candidate/{id}/reopen(id=${cand.id})}" method="post" style="margin:0;">
+                <button type="submit" class="btn btn-ghost" style="height:36px;">Reopen candidate</button>
+            </form>
+        </div>
+        <div th:if="${rejected and cand.rejectionReason != null}" style="font-size:12px; color:#b23b2e; margin-top:10px;" th:text="'Rejected — ' + ${cand.rejectionReason}">Rejected</div>
+        <div th:if="${hired and onboardingCaseId != null}" style="display:flex; align-items:center; gap:8px; margin-top:12px; font-size:12px; font-weight:600; color:#2f6f4f;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6L9 17l-5-5"/></svg>
+            Hired · <a th:href="@{/onboarding/case/{cid}(cid=${onboardingCaseId})}" style="color:#2d6cb5;">View onboarding</a>
+        </div>
+    </div>
+
+    <!-- Offer -->
+    <div style="background:#fff; border:1px solid #e4e8ed; border-radius:12px; padding:18px 20px; margin-bottom:16px;">
+        <div style="font-size:14px; font-weight:700; color:#1a2331; margin-bottom:14px;">Offer</div>
+
+        <div th:if="${hasOffer}">
+            <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:14px;">
+                <div><div style="font-size:11px; font-weight:600; color:#9aa3ad; text-transform:uppercase;">Base</div><div style="font-size:15px; font-weight:700; color:#28323f; margin-top:3px;" th:text="'$' + ${offer.base} + 'k'">$150k</div></div>
+                <div><div style="font-size:11px; font-weight:600; color:#9aa3ad; text-transform:uppercase;">Bonus</div><div style="font-size:15px; font-weight:700; color:#28323f; margin-top:3px;" th:text="${offer.bonus} + '%'">12%</div></div>
+                <div><div style="font-size:11px; font-weight:600; color:#9aa3ad; text-transform:uppercase;">Equity</div><div style="font-size:15px; font-weight:700; color:#28323f; margin-top:3px;" th:text="${#numbers.formatDecimal(offer.equity * 100, 1, 1)} + '%'">5.0%</div></div>
+                <div><div style="font-size:11px; font-weight:600; color:#9aa3ad; text-transform:uppercase;">Start</div><div style="font-size:15px; font-weight:700; color:#28323f; margin-top:3px;" th:text="${offer.startDate}">2026-08-17</div></div>
+            </div>
+            <div style="display:flex; align-items:center; gap:9px; flex-wrap:wrap;">
+                <span style="font-size:11.5px; font-weight:600; padding:4px 11px; border-radius:20px; background:#eef1f4; color:#5a6472;" th:text="'Status: ' + ${offer.status}">Status: extended</span>
+                <form th:if="${isHr and offer.status == 'pending_approval'}" th:action="@{/recruitment/candidate/{id}/offer/approve(id=${cand.id})}" method="post" style="margin:0;">
+                    <button type="submit" style="height:34px; padding:0 14px; border:none; border-radius:8px; background:#2f6f4f; color:#fff; font-family:inherit; font-size:12.5px; font-weight:600; cursor:pointer;">Approve offer</button>
+                </form>
+                <form th:if="${offer.status == 'approved'}" th:action="@{/recruitment/candidate/{id}/offer/extend(id=${cand.id})}" method="post" style="margin:0;">
+                    <button type="submit" style="height:34px; padding:0 14px; border:none; border-radius:8px; background:#17457f; color:#fff; font-family:inherit; font-size:12.5px; font-weight:600; cursor:pointer;">Extend to candidate</button>
+                </form>
+                <form th:if="${offer.status == 'extended'}" th:action="@{/recruitment/candidate/{id}/offer/accept(id=${cand.id})}" method="post" style="margin:0;">
+                    <button type="submit" style="height:34px; padding:0 15px; border:none; border-radius:8px; background:#2f6f4f; color:#fff; font-family:inherit; font-size:12.5px; font-weight:600; cursor:pointer;">Mark accepted → hire</button>
+                </form>
+                <form th:if="${offer.status != 'accepted' and offer.status != 'declined'}" th:action="@{/recruitment/candidate/{id}/offer/decline(id=${cand.id})}" method="post" style="margin:0;">
+                    <button type="submit" style="height:34px; padding:0 13px; border:1px solid #dde2e8; border-radius:8px; background:#fff; color:#b23b2e; font-family:inherit; font-size:12.5px; font-weight:600; cursor:pointer;">Declined</button>
+                </form>
+            </div>
+        </div>
+
+        <form th:if="${canMakeOffer}" th:action="@{/recruitment/candidate/{id}/offer/make(id=${cand.id})}" method="post">
+            <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:12px;">
+                <div><div style="font-size:11px; font-weight:600; color:#5a6472; margin-bottom:4px;">Base (k)</div><input name="base" type="number" value="150" style="width:100%; height:34px; border:1px solid #dde2e8; border-radius:7px; padding:0 9px; font-size:13px; outline:none; font-family:inherit;"/></div>
+                <div><div style="font-size:11px; font-weight:600; color:#5a6472; margin-bottom:4px;">Bonus (%)</div><input name="bonus" type="number" value="12" style="width:100%; height:34px; border:1px solid #dde2e8; border-radius:7px; padding:0 9px; font-size:13px; outline:none; font-family:inherit;"/></div>
+                <div><div style="font-size:11px; font-weight:600; color:#5a6472; margin-bottom:4px;">Equity (frac)</div><input name="equity" value="0.05" style="width:100%; height:34px; border:1px solid #dde2e8; border-radius:7px; padding:0 9px; font-size:13px; outline:none; font-family:inherit;"/></div>
+                <div><div style="font-size:11px; font-weight:600; color:#5a6472; margin-bottom:4px;">Start date</div><input name="startDate" type="date" value="2026-08-17" style="width:100%; height:34px; border:1px solid #dde2e8; border-radius:7px; padding:0 9px; font-size:13px; outline:none; font-family:inherit;"/></div>
+            </div>
+            <input type="hidden" name="level" th:value="${offerLevel}"/>
+            <div style="display:flex; justify-content:flex-end;">
+                <button type="submit" class="btn btn-primary">Draft offer</button>
+            </div>
+        </form>
+
+        <div th:if="${!hasOffer and !canMakeOffer}" style="font-size:12.5px; color:#9aa3ad;">An offer can be drafted once the candidate reaches the interview stage.</div>
+    </div>
+
+    <!-- Debrief -->
+    <div th:if="${debrief != null and debrief.count() > 0}" style="background:#fff; border:1px solid #e4e8ed; border-radius:12px; padding:18px 20px;">
+        <div style="font-size:14px; font-weight:700; color:#1a2331; margin-bottom:4px;">Interview debrief</div>
+        <div style="font-size:11.5px; color:#9aa3ad; margin-bottom:16px;" th:text="${debrief.count()} + ' scorecard(s)'">4 scorecards</div>
+
+        <div style="display:flex; flex-direction:column; gap:11px; margin-bottom:18px;">
+            <div th:each="as : ${attrScores}">
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                    <span style="font-size:12px; font-weight:600; color:#4a5563;" th:text="${as.name()}">Coding</span>
+                    <span style="font-size:12px; font-weight:700; color:#28323f;" th:text="${as.avg()}">4.2</span>
+                </div>
+                <div style="height:8px; border-radius:5px; background:#f1f4f7; overflow:hidden;"><div style="height:100%; border-radius:5px; background:#3f7cc4;" th:styleappend="'; ' + ('height:100%; border-radius:5px; background:#3f7cc4; width:' + ${as.pct()} + '%')"></div></div>
+            </div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:10px;">
+            <div th:each="cv : ${cardViews}" style="display:flex; align-items:flex-start; gap:11px; padding:11px 13px; background:#f8fafc; border:1px solid #eef1f4; border-radius:9px;">
+                <span style="font-size:10.5px; font-weight:700; padding:3px 9px; border-radius:20px; flex-shrink:0;" th:styleappend="'; ' + ('background:' + ${cv.recBg()} + '; color:' + ${cv.recColor()})" th:text="${cv.recLabel()}">Hire</span>
+                <div style="flex:1; min-width:0;">
+                    <div style="font-size:12px; font-weight:600; color:#28323f;" th:text="${cv.interviewer()} + ' · ' + ${cv.stage()}">Marcus Reid · Onsite</div>
+                    <div style="font-size:12px; color:#6b7480; margin-top:2px; line-height:1.5;" th:text="${cv.comment()}">Solid across the board.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<th:block layout:fragment="content-after">
+    <div th:if="${toast != null}" style="position:fixed; right:22px; bottom:22px; z-index:400; display:flex; align-items:center; gap:11px; background:#1a2331; color:#fff; padding:12px 14px; border-radius:10px; box-shadow:0 10px 28px rgba(20,30,50,0.28); min-width:280px; max-width:390px;">
+        <span style="width:8px; height:8px; border-radius:50%; flex-shrink:0;" th:styleappend="'; ' + ('background:' + (${toastDot} ?: '#3ecf8e'))"></span>
+        <span style="flex:1; font-size:12.5px; font-weight:500; line-height:1.4;" th:text="${toast}">Done.</span>
+    </div>
+</th:block>
+</body>
+</html>

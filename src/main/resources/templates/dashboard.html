@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+<head>
+    <title layout:fragment="title">Dashboard · Meridian HR</title>
+</head>
+<body>
+<div layout:fragment="content" style="max-width:940px;">
+
+    <div class="page-head">
+        <div>
+            <div class="crumb" th:text="${today}">Tuesday, July 14</div>
+            <h1 class="page-title" th:text="${greeting} + ', ' + ${currentUser.first}">Good afternoon, Sarah</h1>
+        </div>
+        <a class="btn btn-primary" th:href="@{/leave/new}">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 5v14M5 12h14"/></svg>
+            New leave request
+        </a>
+    </div>
+
+    <!-- Leave balance tiles -->
+    <div class="stat-grid" style="grid-template-columns:repeat(4, 1fr);">
+        <div class="stat-tile" th:each="b : ${balances}">
+            <div style="display:flex; align-items:center; gap:7px; margin-bottom:10px;">
+                <span th:styleappend="'; ' + ('width:9px; height:9px; border-radius:3px; background:' + ${b.color()})"></span>
+                <span class="label" th:text="${b.label()}">Annual</span>
+            </div>
+            <div class="value">
+                <span th:text="${b.value()}">12.5</span>
+                <span style="font-size:13px; font-weight:500; color:#9aa3ad;" th:text="' ' + ${b.unit()}">days</span>
+            </div>
+            <div class="sub" th:text="${b.sub()}">of 25 · resets Jan</div>
+        </div>
+    </div>
+
+    <!-- Who's out -->
+    <div class="card">
+        <div class="card-pad" style="border-bottom:1px solid var(--line-2); padding-bottom:15px;">
+            <h2 style="margin:0; font-size:14.5px; font-weight:700;">Who's out</h2>
+        </div>
+        <div style="padding:6px 20px 14px;">
+            <div th:each="t : ${teamOut}" style="display:flex; align-items:center; gap:11px; padding:9px 0; border-bottom:1px solid #f4f6f8;">
+                <div class="avatar sm" th:text="${t.initials()}" th:styleappend="'; ' + ('background:' + ${t.avatarBg()})">MR</div>
+                <div style="flex:1;">
+                    <div style="font-size:13px; font-weight:600; color:var(--ink-2);" th:text="${t.name()}">Marcus Reid</div>
+                    <div style="font-size:11.5px; color:var(--faint);" th:text="${t.detail()}">Engineer · Engineering</div>
+                </div>
+                <span class="pill" style="background:#faf3e6; color:#9a6a1a;">On leave</span>
+            </div>
+            <div th:if="${teamOut.isEmpty()}" style="padding:14px 0; font-size:12.5px; color:var(--faint);">
+                Everyone's in this week.
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

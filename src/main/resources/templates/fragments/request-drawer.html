@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!--
+  Slide-over request drawer. `dr` is the LeaveController.DrawerView; `dr.back()` is
+  the page key ("leave" | "approvals") used to build mode links and action posts.
+  Rendered inside the layout's content-after overlay slot when drawerOpen is true.
+-->
+<div th:fragment="drawer(dr)" style="position:fixed; inset:0; z-index:80; display:flex; justify-content:flex-end;">
+    <a th:href="@{/{back}(back=${dr.back()})}" style="position:absolute; inset:0; background:rgba(20,28,42,0.34);"></a>
+
+    <div style="position:relative; width:472px; max-width:94vw; height:100%; background:#f7f9fb; box-shadow:-16px 0 44px rgba(20,30,50,0.18); display:flex; flex-direction:column;">
+
+        <!-- Header -->
+        <div style="flex:0 0 auto; background:#fff; border-bottom:1px solid #e6eaef; padding:18px 20px;">
+            <div style="display:flex; align-items:flex-start; gap:13px;">
+                <div style="width:44px; height:44px; border-radius:50%; color:#fff; font-size:14px; font-weight:600; display:flex; align-items:center; justify-content:center; flex-shrink:0;" th:styleappend="'; ' + ('background:' + ${dr.empBg()})" th:text="${dr.empInitials()}">SC</div>
+                <div style="flex:1; min-width:0;">
+                    <div style="display:flex; align-items:center; gap:9px; flex-wrap:wrap;">
+                        <span style="font-size:16px; font-weight:700; color:#1a2331;" th:text="${dr.empName()}">Sarah Chen</span>
+                        <span style="font-size:11.5px; font-weight:600; padding:3px 10px; border-radius:20px;" th:styleappend="'; ' + ('background:' + ${dr.statusBg()} + '; color:' + ${dr.statusFg()})" th:text="${dr.statusLabel()}">Pending</span>
+                    </div>
+                    <div style="font-size:12.5px; color:#8894a3; margin-top:2px;" th:text="${dr.empRole()} + ' · ' + ${dr.reqId()}">Product Designer · R-1042</div>
+                </div>
+                <a th:href="@{/{back}(back=${dr.back()})}" title="Close" style="width:32px; height:32px; border:1px solid #e4e8ed; border-radius:8px; background:#fff; display:flex; align-items:center; justify-content:center; flex-shrink:0; color:#5a6472;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                </a>
+            </div>
+        </div>
+
+        <!-- Body -->
+        <div style="flex:1; overflow-y:auto; padding:18px 20px 24px;">
+            <!-- Facts -->
+            <div style="background:#fff; border:1px solid #e4e8ed; border-radius:11px; padding:4px 16px; margin-bottom:14px;">
+                <div th:each="f : ${dr.facts()}" style="display:flex; align-items:center; justify-content:space-between; gap:14px; padding:11px 0; border-bottom:1px solid #f2f4f7;">
+                    <span style="font-size:12.5px; color:#8894a3;" th:text="${f.k()}">Type</span>
+                    <span style="font-size:13px; font-weight:600; text-align:right;" th:styleappend="'; ' + ('color:' + ${f.color()})" th:text="${f.v()}">Annual leave</span>
+                </div>
+            </div>
+
+            <!-- Reason -->
+            <div th:if="${dr.hasReason()}" style="background:#fff; border:1px solid #e4e8ed; border-radius:11px; padding:14px 16px; margin-bottom:14px;">
+                <div style="font-size:11px; font-weight:700; color:#9aa3ad; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:6px;">Reason from requester</div>
+                <div style="font-size:13px; line-height:1.55; color:#3a4453;" th:text="${dr.reason()}">Family trip.</div>
+            </div>
+
+            <!-- Callout -->
+            <div th:if="${dr.hasCallout()}" style="display:flex; gap:10px; padding:12px 14px; border-radius:10px; margin-bottom:14px;"
+                 th:styleappend="'; ' + ('background:' + ${dr.calloutBg()} + '; border:1px solid ' + ${dr.calloutBorder()})">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" th:attr="stroke=${dr.calloutIcon()}" stroke-width="1.9" style="flex-shrink:0; margin-top:1px;"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+                <div style="font-size:12px; line-height:1.5;" th:styleappend="'; ' + ('color:' + ${dr.calloutIcon()})" th:text="${dr.calloutText()}">Over ceiling.</div>
+            </div>
+
+            <!-- Timeline -->
+            <div style="font-size:11px; font-weight:700; color:#9aa3ad; text-transform:uppercase; letter-spacing:0.05em; margin:4px 2px 12px;">Activity</div>
+            <div style="position:relative; padding-left:6px;">
+                <div th:each="t : ${dr.timeline()}" style="display:flex; gap:13px; padding-bottom:16px; position:relative;">
+                    <div style="display:flex; flex-direction:column; align-items:center; flex-shrink:0;">
+                        <div style="width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center;" th:styleappend="'; ' + ('background:' + ${t.bg()})">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" th:attr="stroke=${t.color()}" stroke-width="2"><path th:attr="d=${t.iconPath()}"/></svg>
+                        </div>
+                        <div th:if="${t.line()}" style="width:2px; flex:1; background:#e6eaef; margin-top:3px; min-height:14px;"></div>
+                    </div>
+                    <div style="flex:1; padding-top:3px;">
+                        <div style="display:flex; align-items:baseline; gap:8px; flex-wrap:wrap;">
+                            <span style="font-size:13px; font-weight:600; color:#28323f;" th:text="${t.label()}">Submitted</span>
+                            <span style="font-size:11.5px; color:#a2abb5;" th:text="${t.atLabel()}">Jun 28 · 9:00 AM</span>
+                        </div>
+                        <div style="font-size:12px; color:#8894a3; margin-top:1px;" th:text="${t.actorName()}">Sarah Chen</div>
+                        <div th:if="${t.hasNote()}" style="font-size:12.5px; line-height:1.5; color:#4a5563; background:#fff; border:1px solid #e9edf1; border-radius:8px; padding:8px 11px; margin-top:7px;" th:text="${t.note()}">Note.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div th:if="${dr.showFooter()}" style="flex:0 0 auto; background:#fff; border-top:1px solid #e6eaef; padding:14px 20px;">
+
+            <!-- view mode -->
+            <th:block th:if="${dr.mode() == 'view'}">
+                <div th:if="${dr.canDecide()}" style="display:flex; gap:9px;">
+                    <a th:href="@{/{back}(back=${dr.back()}, req=${dr.reqId()}, mode='info')}" style="flex:0 0 auto; height:40px; padding:0 14px; border:1px solid #dde2e8; border-radius:9px; background:#fff; font-size:13px; font-weight:600; color:#5a6472; display:flex; align-items:center;">More info</a>
+                    <a th:href="@{/{back}(back=${dr.back()}, req=${dr.reqId()}, mode='reject')}" style="flex:1; height:40px; border:1px solid #f0cfc9; border-radius:9px; background:#fff; font-size:13px; font-weight:600; color:#b23b2e; display:flex; align-items:center; justify-content:center;">Reject</a>
+                    <form th:action="@{/leave/{id}/approve(id=${dr.reqId()})}" method="post" style="flex:1;">
+                        <input type="hidden" name="back" th:value="${dr.back()}"/>
+                        <button type="submit" style="width:100%; height:40px; border:none; border-radius:9px; background:#17457f; font-family:inherit; font-size:13px; font-weight:600; color:#fff; cursor:pointer;">Approve</button>
+                    </form>
+                </div>
+                <form th:if="${dr.canWithdraw()}" th:action="@{/leave/{id}/withdraw(id=${dr.reqId()})}" method="post">
+                    <input type="hidden" name="back" th:value="${dr.back()}"/>
+                    <button type="submit" style="width:100%; height:40px; border:1px solid #f0cfc9; border-radius:9px; background:#fff; font-family:inherit; font-size:13px; font-weight:600; color:#b23b2e; cursor:pointer;">Withdraw request</button>
+                </form>
+            </th:block>
+
+            <!-- reject / info: reason capture -->
+            <form th:if="${dr.mode() == 'reject' or dr.mode() == 'info'}"
+                  th:action="@{/leave/{id}/{verb}(id=${dr.reqId()}, verb=${dr.mode() == 'reject' ? 'reject' : 'info'})}" method="post">
+                <input type="hidden" name="back" th:value="${dr.back()}"/>
+                <div style="font-size:12.5px; font-weight:600; color:#3a4453; margin-bottom:7px;" th:text="${dr.mode() == 'reject'} ? 'Reason for rejection' : 'What do you need from the requester?'">Reason</div>
+                <textarea name="note" required th:placeholder="${dr.mode() == 'reject'} ? 'Let them know why so they can adjust and resubmit…' : 'Ask for coverage details, dates, a certificate…'"
+                          style="width:100%; height:74px; border:1px solid #dde2e8; border-radius:9px; padding:10px 11px; font-family:inherit; font-size:13px; color:#1e2733; outline:none; resize:none; background:#fff;"></textarea>
+                <div style="display:flex; gap:9px; margin-top:10px;">
+                    <a th:href="@{/{back}(back=${dr.back()}, req=${dr.reqId()})}" style="flex:0 0 auto; height:38px; padding:0 15px; border:1px solid #dde2e8; border-radius:9px; background:#fff; font-size:13px; font-weight:600; color:#5a6472; display:flex; align-items:center;">Back</a>
+                    <button type="submit" th:styleappend="'; ' + ('flex:1; height:38px; border:none; border-radius:9px; font-family:inherit; font-size:13px; font-weight:600; color:#fff; cursor:pointer; background:' + (${dr.mode() == 'reject'} ? '#b23b2e' : '#17457f'))"
+                            th:text="${dr.mode() == 'reject'} ? 'Confirm rejection' : 'Send request'">Confirm</button>
+                </div>
+            </form>
+
+            <!-- withdraw confirm -->
+            <th:block th:if="${dr.mode() == 'withdraw'}">
+                <div style="font-size:13px; color:#3a4453; line-height:1.5; margin-bottom:11px;">Withdraw this request? It will be removed from your approver's queue.</div>
+                <div style="display:flex; gap:9px;">
+                    <a th:href="@{/{back}(back=${dr.back()}, req=${dr.reqId()})}" style="flex:1; height:38px; border:1px solid #dde2e8; border-radius:9px; background:#fff; font-size:13px; font-weight:600; color:#5a6472; display:flex; align-items:center; justify-content:center;">Keep it</a>
+                    <form th:action="@{/leave/{id}/withdraw(id=${dr.reqId()})}" method="post" style="flex:1;">
+                        <input type="hidden" name="back" th:value="${dr.back()}"/>
+                        <button type="submit" style="width:100%; height:38px; border:none; border-radius:9px; background:#b23b2e; font-family:inherit; font-size:13px; font-weight:600; color:#fff; cursor:pointer;">Withdraw</button>
+                    </form>
+                </div>
+            </th:block>
+        </div>
+    </div>
+</div>
+
+<!-- Toast + optional Undo, reused by leave pages -->
+<div th:fragment="toast" th:if="${toast != null}" style="position:fixed; right:22px; bottom:22px; z-index:200; display:flex; align-items:center; gap:11px; background:#1a2331; color:#fff; padding:12px 14px; border-radius:10px; box-shadow:0 10px 28px rgba(20,30,50,0.28); min-width:270px; max-width:400px;">
+    <span style="width:8px; height:8px; border-radius:50%; flex-shrink:0;" th:styleappend="'; ' + ('background:' + (${toastDot} ?: '#3ecf8e'))"></span>
+    <span style="flex:1; font-size:13px; font-weight:500;" th:text="${toast}">Done.</span>
+    <form th:if="${undoId != null}" th:action="@{/leave/{id}/undo(id=${undoId})}" method="post" style="margin:0;">
+        <input type="hidden" name="back" th:value="${undoBack} ?: 'approvals'"/>
+        <button type="submit" style="border:none; background:transparent; color:#8fb8ff; font-family:inherit; font-size:12.5px; font-weight:700; cursor:pointer; padding:0;">Undo</button>
+    </form>
+</div>
+</body>
+</html>

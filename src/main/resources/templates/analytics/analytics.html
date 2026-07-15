@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+<head>
+    <title layout:fragment="title">Analytics · Meridian HR</title>
+</head>
+<body>
+<div layout:fragment="content" style="max-width:1040px;">
+
+    <div style="margin-bottom:18px;">
+        <div style="font-size:12.5px; color:#8894a3; font-weight:500; margin-bottom:2px;">People Ops / Analytics</div>
+        <h1 style="margin:0; font-size:24px; font-weight:700; letter-spacing:-0.02em; color:#1a2331;">Workforce analytics</h1>
+    </div>
+
+    <div th:if="${restricted}" style="background:#f7f9fb; border:1px dashed #d9e0e8; border-radius:13px; padding:56px 20px; text-align:center;">
+        <div style="font-size:15px; font-weight:600; color:#5a6472;">Analytics are available to managers &amp; HR</div>
+        <div style="font-size:12.5px; color:#9aa3ad; margin-top:4px;">Reach out to People Ops for workforce reporting.</div>
+    </div>
+
+    <th:block th:if="${allowed}">
+        <!-- KPI strip -->
+        <div style="display:grid; grid-template-columns:repeat(6,1fr); gap:12px; margin-bottom:16px;">
+            <div th:each="k : ${kpis}" style="min-width:0; background:#fff; border:1px solid #e4e8ed; border-radius:12px; padding:14px 15px;">
+                <div style="font-size:11px; font-weight:600; color:#8894a3; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" th:text="${k.label()}">Headcount</div>
+                <div style="font-size:23px; font-weight:700; color:#1a2331; margin-top:4px;" th:text="${k.value()}">15</div>
+                <div style="font-size:10.5px; color:#9aa3ad; margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" th:text="${k.sub()}">5 teams</div>
+            </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+            <div style="background:#fff; border:1px solid #e4e8ed; border-radius:12px; padding:18px 20px;">
+                <div style="font-size:14px; font-weight:700; color:#1a2331; margin-bottom:16px;">Headcount by department</div>
+                <div style="display:flex; flex-direction:column; gap:12px;">
+                    <div th:each="d : ${byDept}">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                            <span style="font-size:12px; font-weight:600; color:#4a5563;" th:text="${d.label()}">Engineering</span>
+                            <span style="font-size:12px; font-weight:700; color:#28323f;" th:text="${d.count()}">5</span>
+                        </div>
+                        <div style="height:9px; border-radius:5px; background:#f1f4f7; overflow:hidden;"><div style="height:100%; border-radius:5px;" th:styleappend="'; ' + ('width:' + ${d.pct()} + '%; background:' + ${d.color()})"></div></div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="background:#fff; border:1px solid #e4e8ed; border-radius:12px; padding:18px 20px;">
+                <div style="font-size:14px; font-weight:700; color:#1a2331; margin-bottom:16px;">By status</div>
+                <div style="display:flex; flex-direction:column; gap:12px;">
+                    <div th:each="d : ${byStatus}">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                            <span style="font-size:12px; font-weight:600; color:#4a5563;" th:text="${d.label()}">Active</span>
+                            <span style="font-size:12px; font-weight:700; color:#28323f;" th:text="${d.count()}">12</span>
+                        </div>
+                        <div style="height:9px; border-radius:5px; background:#f1f4f7; overflow:hidden;"><div style="height:100%; border-radius:5px;" th:styleappend="'; ' + ('width:' + ${d.pct()} + '%; background:' + ${d.color()})"></div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+            <div style="background:#fff; border:1px solid #e4e8ed; border-radius:12px; padding:18px 20px;">
+                <div style="font-size:14px; font-weight:700; color:#1a2331; margin-bottom:16px;">By work mode</div>
+                <div style="display:flex; flex-direction:column; gap:12px;">
+                    <div th:each="d : ${byMode}">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                            <span style="font-size:12px; font-weight:600; color:#4a5563;" th:text="${d.label()}">Remote</span>
+                            <span style="font-size:12px; font-weight:700; color:#28323f;" th:text="${d.count()}">6</span>
+                        </div>
+                        <div style="height:9px; border-radius:5px; background:#f1f4f7; overflow:hidden;"><div style="height:100%; border-radius:5px;" th:styleappend="'; ' + ('width:' + ${d.pct()} + '%; background:' + ${d.color()})"></div></div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="background:#fff; border:1px solid #e4e8ed; border-radius:12px; padding:18px 20px;">
+                <div style="font-size:14px; font-weight:700; color:#1a2331; margin-bottom:16px;">By level</div>
+                <div style="display:flex; flex-direction:column; gap:12px;">
+                    <div th:each="d : ${byLevel}">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                            <span style="font-size:12px; font-weight:600; color:#4a5563;" th:text="${d.label()}">Senior</span>
+                            <span style="font-size:12px; font-weight:700; color:#28323f;" th:text="${d.count()}">4</span>
+                        </div>
+                        <div style="height:9px; border-radius:5px; background:#f1f4f7; overflow:hidden;"><div style="height:100%; border-radius:5px;" th:styleappend="'; ' + ('width:' + ${d.pct()} + '%; background:' + ${d.color()})"></div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div th:if="${reviewCycle != null}" style="background:#fff; border:1px solid #e4e8ed; border-radius:12px; padding:18px 20px; margin-top:16px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+                <div style="font-size:14px; font-weight:700; color:#1a2331;" th:text="'Review completion · ' + ${reviewCycle}">Review completion</div>
+                <span style="font-size:12px; color:#8894a3;" th:text="${reviewDone} + ' of ' + ${reviewTotal} + ' committed'">3 of 15</span>
+            </div>
+            <div style="height:9px; border-radius:5px; background:#f1f4f7; overflow:hidden;"><div style="height:100%; border-radius:5px; background:#4a9d7a;" th:styleappend="'; ' + ('height:100%; border-radius:5px; background:#4a9d7a; width:' + ${reviewPct} + '%')"></div></div>
+        </div>
+    </th:block>
+</div>
+</body>
+</html>

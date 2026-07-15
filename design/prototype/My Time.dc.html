@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; }
+  body { font-family: 'Public Sans', system-ui, -apple-system, sans-serif; background: #eceff3; color: #1e2733; -webkit-font-smoothing: antialiased; }
+  a { text-decoration: none; color: inherit; }
+  a:hover { color: inherit; }
+  input { font-family: inherit; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: #cdd4dc; border-radius: 6px; border: 2px solid #eceff3; }
+</style>
+</helmet>
+
+<dc-import name="AppShell" active="time" note-title="{{ noteTitle }}" note-sub="{{ noteSub }}" hint-size="100%,100%">
+  <div style="max-width:1000px;">
+
+    <div style="margin-bottom:20px;">
+      <div style="font-size:12.5px; color:#8894a3; font-weight:500; margin-bottom:2px;">Workspace / Time</div>
+      <h1 style="margin:0; font-size:24px; font-weight:700; letter-spacing:-0.02em; color:#1a2331;">My time</h1>
+    </div>
+
+    <!-- Manager/HR approvals strip -->
+    <sc-if value="{{ hasPending }}" hint-placeholder-val="">
+      <div style="background:#fff; border:1px solid #e4e8ed; border-left:3px solid #e0a13a; border-radius:12px; padding:16px 18px; margin-bottom:16px;">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+          <div style="font-size:13.5px; font-weight:700; color:#1a2331;">{{ pendingCount }} timesheets awaiting your approval</div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <sc-for list="{{ pending }}" as="p" hint-placeholder-count="2">
+            <div style="display:flex; align-items:center; gap:12px; padding:10px 12px; background:#f8fafc; border:1px solid #eef1f4; border-radius:9px;">
+              <div style="width:32px; height:32px; border-radius:50%; background:{{ p.avatarBg }}; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:600; font-size:12.5px; flex-shrink:0;">{{ p.initials }}</div>
+              <div style="flex:1; min-width:0;">
+                <div style="font-size:12.5px; font-weight:600; color:#28323f;">{{ p.name }}</div>
+                <div style="font-size:11px; color:#9aa3ad;">{{ p.week }} · {{ p.total }}h logged</div>
+              </div>
+              <button onClick="{{ p.onApprove }}" style="height:32px; padding:0 14px; border:none; border-radius:8px; background:#2f6f4f; color:#fff; font-family:inherit; font-size:12px; font-weight:600; cursor:pointer;">Approve</button>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <div style="display:grid; grid-template-columns:1fr 300px; gap:16px; align-items:start;">
+      <!-- Left: clock + timesheet -->
+      <div style="min-width:0; display:flex; flex-direction:column; gap:16px;">
+
+        <!-- Clock card -->
+        <div style="background:{{ clockBg }}; border:1px solid {{ clockBorder }}; border-radius:14px; padding:20px 22px; color:{{ clockText }};">
+          <div style="display:flex; align-items:center; justify-content:space-between;">
+            <div>
+              <div style="font-size:12px; font-weight:600; opacity:0.7;">{{ clockLabel }}</div>
+              <div style="font-size:34px; font-weight:700; letter-spacing:-0.01em; margin-top:4px; font-family:'IBM Plex Mono', monospace;">{{ clockValue }}</div>
+              <div style="font-size:12px; opacity:0.7; margin-top:3px;">{{ clockSub }}</div>
+            </div>
+            <button onClick="{{ onClockToggle }}" style="display:flex; align-items:center; gap:8px; height:44px; padding:0 22px; border:none; border-radius:10px; background:{{ clockBtnBg }}; color:{{ clockBtnFg }}; font-family:inherit; font-size:14px; font-weight:700; cursor:pointer;">
+              <span style="width:9px; height:9px; border-radius:50%; background:{{ clockBtnDot }};"></span>
+              {{ clockBtnLabel }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Timesheet -->
+        <div style="background:#fff; border:1px solid #e4e8ed; border-radius:14px; padding:20px;">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <button onClick="{{ onPrevWeek }}" style="width:30px; height:30px; border:1px solid #dde2e8; border-radius:8px; background:#fff; color:#5a6472; cursor:pointer; font-size:15px; line-height:1;">‹</button>
+              <div style="font-size:14px; font-weight:700; color:#1a2331; min-width:170px; text-align:center;">{{ weekLabel }}</div>
+              <button onClick="{{ onNextWeek }}" style="width:30px; height:30px; border:1px solid #dde2e8; border-radius:8px; background:#fff; color:#5a6472; cursor:pointer; font-size:15px; line-height:1;">›</button>
+            </div>
+            <span style="font-size:11.5px; font-weight:600; padding:3px 10px; border-radius:20px; background:{{ statusBg }}; color:{{ statusFg }};">{{ statusLabel }}</span>
+          </div>
+          <div style="font-size:11.5px; color:#9aa3ad; margin-bottom:16px;">Log hours per day · holidays and approved leave fill automatically</div>
+
+          <div style="display:grid; grid-template-columns:repeat(7,1fr); gap:8px;">
+            <sc-for list="{{ cells }}" as="c" hint-placeholder-count="7">
+              <div style="min-width:0; border:1px solid {{ c.border }}; border-radius:10px; padding:10px 8px; background:{{ c.bg }}; text-align:center;">
+                <div style="font-size:11px; font-weight:700; color:{{ c.dayColor }};">{{ c.day }}</div>
+                <div style="font-size:10px; color:#9aa3ad; margin-bottom:8px;">{{ c.dateLabel }}</div>
+                <sc-if value="{{ c.editable }}" hint-placeholder-val="{{ true }}">
+                  <input value="{{ c.hours }}" onInput="{{ c.onInput }}" inputmode="decimal" style="width:100%; height:34px; border:1px solid #dde2e8; border-radius:7px; background:#f8fafc; text-align:center; font-family:'IBM Plex Mono', monospace; font-size:14px; font-weight:600; color:#28323f; outline:none;" />
+                </sc-if>
+                <sc-if value="{{ c.locked }}" hint-placeholder-val="">
+                  <div style="height:34px; display:flex; align-items:center; justify-content:center; font-size:10.5px; font-weight:600; color:{{ c.tagColor }}; line-height:1.15;">{{ c.tagLabel }}</div>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-top:18px; padding-top:16px; border-top:1px solid #eef1f4;">
+            <div style="display:flex; align-items:baseline; gap:10px;">
+              <span style="font-size:12.5px; color:#8894a3;">Week total</span>
+              <span style="font-size:22px; font-weight:700; color:{{ totalColor }};">{{ weekTotal }}h</span>
+              <span style="font-size:12px; color:#9aa3ad;">/ {{ target }}h target</span>
+            </div>
+            <sc-if value="{{ canSubmit }}" hint-placeholder-val="{{ true }}">
+              <button onClick="{{ onSubmit }}" style="height:38px; padding:0 18px; border:none; border-radius:9px; background:#17457f; color:#fff; font-family:inherit; font-size:13.5px; font-weight:600; cursor:pointer;">{{ submitLabel }}</button>
+            </sc-if>
+            <sc-if value="{{ isApproved }}" hint-placeholder-val="">
+              <span style="display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:600; color:#2f6f4f;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6L9 17l-5-5"/></svg>
+                Approved by {{ approverName }}
+              </span>
+            </sc-if>
+          </div>
+        </div>
+
+        <!-- Recent weeks -->
+        <div style="background:#fff; border:1px solid #e4e8ed; border-radius:14px; padding:20px;">
+          <div style="font-size:14px; font-weight:700; color:#1a2331; margin-bottom:14px;">Recent weeks</div>
+          <sc-if value="{{ hasHistory }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex; flex-direction:column;">
+              <sc-for list="{{ history }}" as="h" hint-placeholder-count="3">
+                <button onClick="{{ h.onOpen }}" style="display:flex; align-items:center; gap:12px; padding:11px 4px; border:none; border-bottom:1px solid #f4f6f8; background:transparent; text-align:left; cursor:pointer; width:100%;">
+                  <span style="flex:1; font-size:12.5px; font-weight:600; color:#28323f;">{{ h.week }}</span>
+                  <span style="font-size:12.5px; color:#5a6472; font-family:'IBM Plex Mono', monospace;">{{ h.total }}h</span>
+                  <span style="font-size:11px; font-weight:600; padding:3px 9px; border-radius:20px; background:{{ h.statusBg }}; color:{{ h.statusFg }}; width:82px; text-align:center;">{{ h.statusLabel }}</span>
+                </button>
+              </sc-for>
+            </div>
+          </sc-if>
+          <sc-if value="{{ noHistory }}" hint-placeholder-val="">
+            <div style="padding:14px; text-align:center; font-size:12.5px; color:#9aa3ad;">No submitted weeks yet.</div>
+          </sc-if>
+        </div>
+      </div>
+
+      <!-- Right: holidays -->
+      <div style="min-width:0; background:#fff; border:1px solid #e4e8ed; border-radius:14px; padding:20px;">
+        <div style="font-size:14px; font-weight:700; color:#1a2331; margin-bottom:14px;">Upcoming holidays</div>
+        <div style="display:flex; flex-direction:column; gap:11px;">
+          <sc-for list="{{ holidays }}" as="h" hint-placeholder-count="4">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <div style="width:44px; flex-shrink:0; text-align:center; background:#eef4fb; border:1px solid #dbe6f3; border-radius:9px; padding:5px 0;">
+                <div style="font-size:9.5px; font-weight:700; color:#3a5aa8; text-transform:uppercase;">{{ h.mon }}</div>
+                <div style="font-size:16px; font-weight:700; color:#17457f; line-height:1;">{{ h.day }}</div>
+              </div>
+              <div style="min-width:0;">
+                <div style="font-size:12.5px; font-weight:600; color:#28323f;">{{ h.name }}</div>
+                <div style="font-size:11px; color:#9aa3ad;">{{ h.weekday }}</div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toasts -->
+  <div style="position:fixed; right:22px; bottom:22px; display:flex; flex-direction:column; gap:10px; z-index:400;">
+    <sc-for list="{{ toasts }}" as="t" hint-placeholder-count="0">
+      <div style="display:flex; align-items:center; gap:11px; background:#1a2331; color:#fff; padding:12px 14px; border-radius:10px; box-shadow:0 10px 28px rgba(20,30,50,0.28); min-width:280px; max-width:380px;">
+        <span style="width:8px; height:8px; border-radius:50%; background:{{ t.dot }}; flex-shrink:0;"></span>
+        <span style="flex:1; font-size:12.5px; font-weight:500; line-height:1.4;">{{ t.msg }}</span>
+        <button onClick="{{ t.onClose }}" style="border:none; background:transparent; color:#8894a3; font-size:16px; line-height:1; cursor:pointer; padding:0;">×</button>
+      </div>
+    </sc-for>
+  </div>
+</dc-import>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:&quot;100%&quot;,&quot;height&quot;:&quot;100%&quot;}}">
+class Component extends DCLogic {
+  state = { user: null, weekStart: null, clock: null, now: Date.now(), toasts: [], tick: 0 };
+  _tid = 0;
+
+  componentDidMount() {
+    Promise.all([import("./session.js"), import("./time-store.js"), import("./people-store.js"), import("./leave-store.js")])
+      .then(([s, time, ppl, leave]) => {
+        this._s = s; this._time = time; this._ppl = ppl; this._leave = leave;
+        const user = s.requireSession();
+        if (!user) return;
+        this.setState({ user, weekStart: time.weekStartOf(new Date()), clock: time.getClock(user.id) });
+        this._timer = setInterval(() => { if (this.state.clock) this.setState({ now: Date.now() }); }, 1000);
+      });
+  }
+  componentWillUnmount() { if (this._timer) clearInterval(this._timer); }
+
+  addToast(msg, dot) {
+    const id = ++this._tid;
+    this.setState((st) => ({ toasts: [...st.toasts, { id, msg, dot: dot || "#3ecf8e" }] }));
+    setTimeout(() => this.setState((st) => ({ toasts: st.toasts.filter((t) => t.id !== id) })), 4000);
+  }
+  closeToast(id) { this.setState((st) => ({ toasts: st.toasts.filter((t) => t.id !== id) })); }
+
+  bump() { this.setState({ tick: this.state.tick + 1 }); }
+  shiftWeek(n) { const d = this._time.parseISO(this.state.weekStart); d.setDate(d.getDate() + 7 * n); this.setState({ weekStart: this._time.isoDate(d) }); }
+  setDay(day, v) { this._time.setDayHours(this.state.user.id, this.state.weekStart, day, v.replace(/[^0-9.]/g, "")); this.bump(); }
+  submit() { this._time.submitWeek(this.state.user.id, this.state.weekStart); this.addToast("Timesheet submitted for approval.", "#e0a13a"); this.bump(); }
+  approve(empId, weekStart, name) { this._time.approveWeek(empId, weekStart, this.state.user.id); this.addToast(name + "'s timesheet approved.", "#3ecf8e"); this.bump(); }
+
+  clockToggle() {
+    const uid = this.state.user.id;
+    if (this.state.clock) {
+      const hrs = this._time.clockOut(uid);
+      // add to today's cell if today is in the viewed week
+      const todayIso = this._time.isoDate(new Date());
+      const dates = this._time.weekDates(this._time.weekStartOf(todayIso));
+      const idx = dates.indexOf(todayIso);
+      if (idx >= 0) {
+        const day = this._time.DAYS[idx].id;
+        const cur = this._time.getWeek(uid, this._time.weekStartOf(todayIso)).days[day] || 0;
+        this._time.setDayHours(uid, this._time.weekStartOf(todayIso), day, cur + hrs);
+      }
+      this.setState({ clock: null });
+      this.addToast("Clocked out — " + hrs + "h added to today.", "#3ecf8e");
+    } else {
+      const c = this._time.clockIn(uid);
+      this.setState({ clock: c });
+      this.addToast("Clocked in. Timer running.", "#3ecf8e");
+    }
+    this.bump();
+  }
+
+  leaveDaysFor(empId, dates) {
+    // returns map iso -> short leave label for approved/posted leave
+    const map = {};
+    if (!this._leave) return map;
+    try {
+      this._leave.forEmployee(empId).forEach((r) => {
+        if (r.status !== "approved" && r.status !== "posted") return;
+        dates.forEach((iso) => { if (iso >= r.startDate && iso <= r.endDate) map[iso] = (this._leave.TYPE_META[r.type] || {}).short || "Leave"; });
+      });
+    } catch (e) {}
+    return map;
+  }
+
+  renderVals() {
+    const u = this.state.user, time = this._time, ppl = this._ppl;
+    const base = { toasts: this.state.toasts.map((t) => ({ ...t, onClose: () => this.closeToast(t.id) })),
+      hasPending: false, pending: [], pendingCount: 0, cells: [], holidays: [], history: [],
+      hasHistory: false, noHistory: false, noteTitle: "", noteSub: "", target: 40,
+      clockLabel: "", clockValue: "0:00:00", clockSub: "", clockBtnLabel: "Clock in", weekLabel: "" };
+    if (!u || !time) return base;
+
+    const ws = this.state.weekStart;
+    const sheet = time.getWeek(u.id, ws);
+    const dates = time.weekDates(ws);
+    const leaveMap = this.leaveDaysFor(u.id, dates);
+    const smeta = time.STATUS_META[sheet.status] || time.STATUS_META.open;
+    const editableSheet = sheet.status !== "approved";
+
+    // ---- timesheet cells ----
+    const cells = time.DAYS.map((d, i) => {
+      const iso = dates[i];
+      const hol = time.holidayOn(iso);
+      const isWeekend = i >= 5;
+      const leaveLbl = leaveMap[iso];
+      const dt = time.parseISO(iso);
+      const dateLabel = dt.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      const cell = { day: d.label, dateLabel, dayColor: isWeekend ? "#b6bdc6" : "#5a6472",
+        bg: "#fff", border: "#eef1f4", editable: false, locked: true, hours: "", tagLabel: "", tagColor: "#9aa3ad" };
+      if (hol) { cell.bg = "#f7f1e0"; cell.border = "#ece2c6"; cell.tagLabel = hol.name; cell.tagColor = "#9a6a1a"; }
+      else if (leaveLbl) { cell.bg = "#eef4fb"; cell.border = "#dbe6f3"; cell.tagLabel = leaveLbl + " leave"; cell.tagColor = "#3a5aa8"; }
+      else if (isWeekend && !(sheet.days[d.id] > 0)) { cell.bg = "#fafbfc"; cell.tagLabel = "—"; cell.tagColor = "#c7cdd6"; }
+      else if (editableSheet) { cell.editable = true; cell.locked = false; cell.hours = sheet.days[d.id] ? String(sheet.days[d.id]) : ""; cell.onInput = (e) => this.setDay(d.id, e.target.value); }
+      else { cell.tagLabel = (sheet.days[d.id] || 0) + "h"; cell.tagColor = "#28323f"; }
+      return cell;
+    });
+
+    const weekTotal = time.totalHours(sheet.days);
+    const target = time.targetHours();
+
+    // ---- clock ----
+    const clocked = !!this.state.clock;
+    let clockValue = "0:00:00", clockSub = "Not clocked in";
+    if (clocked) {
+      const secs = Math.floor((this.state.now - this.state.clock.since) / 1000);
+      const h = Math.floor(secs / 3600), m = Math.floor((secs % 3600) / 60), s = secs % 60;
+      clockValue = h + ":" + String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
+      clockSub = "Since " + new Date(this.state.clock.since).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+    }
+
+    // ---- history (exclude viewed week) ----
+    const hist = time.weeksFor(u.id).filter((w) => w.weekStart !== ws).slice(0, 6).map((w) => {
+      const sm = time.STATUS_META[w.status] || time.STATUS_META.open;
+      return { week: time.weekLabel(w.weekStart), total: time.totalHours(w.days),
+        statusLabel: sm.label, statusBg: sm.pillBg, statusFg: sm.pillFg,
+        onOpen: () => this.setState({ weekStart: w.weekStart }) };
+    });
+
+    // ---- holidays ----
+    const holidays = time.upcomingHolidays(time.isoDate(new Date()), 5).map((h) => {
+      const d = time.parseISO(h.date);
+      return { name: h.name, mon: d.toLocaleDateString("en-US", { month: "short" }), day: d.getDate(),
+        weekday: d.toLocaleDateString("en-US", { weekday: "long" }) };
+    });
+
+    // ---- manager/HR approvals ----
+    let pending = [];
+    if (u.role === "manager" || u.role === "hr") {
+      const reports = ppl ? ppl.directReports(u.id).map((r) => r.id) : [];
+      const scope = (empId) => u.role === "hr" || reports.indexOf(empId) >= 0;
+      pending = time.pendingApprovals().filter((s) => scope(s.empId) && s.empId !== u.id).map((s) => {
+        const e = ppl ? ppl.getEmployee(s.empId) : null;
+        return { name: e ? ppl.fullName(e) : s.empId, initials: e ? e.initials : "?", avatarBg: e ? e.avatarBg : "#c7cdd6",
+          week: time.weekLabel(s.weekStart), total: time.totalHours(s.days),
+          onApprove: () => this.approve(s.empId, s.weekStart, e ? e.first : s.empId) };
+      });
+    }
+
+    return {
+      ...base,
+      weekLabel: time.weekLabel(ws),
+      statusLabel: smeta.label, statusBg: smeta.pillBg, statusFg: smeta.pillFg,
+      cells, weekTotal, target, totalColor: weekTotal >= target ? "#2f6f4f" : "#1a2331",
+      onPrevWeek: () => this.shiftWeek(-1), onNextWeek: () => this.shiftWeek(1),
+      canSubmit: sheet.status !== "approved", submitLabel: sheet.status === "submitted" ? "Re-submit" : "Submit week",
+      isApproved: sheet.status === "approved", approverName: sheet.approvedBy && ppl ? ppl.fullName(ppl.getEmployee(sheet.approvedBy)) : "—",
+      onSubmit: () => this.submit(),
+      clockLabel: clocked ? "Clocked in" : "Time clock",
+      clockValue, clockSub,
+      clockBg: clocked ? "#12152a" : "#fff", clockBorder: clocked ? "#12152a" : "#e4e8ed",
+      clockText: clocked ? "#fff" : "#1a2331",
+      clockBtnLabel: clocked ? "Clock out" : "Clock in",
+      clockBtnBg: clocked ? "#e0483a" : "#17457f", clockBtnFg: "#fff", clockBtnDot: clocked ? "#ffd7d1" : "#8fb4e6",
+      onClockToggle: () => this.clockToggle(),
+      history: hist, hasHistory: hist.length > 0, noHistory: hist.length === 0,
+      holidays,
+      pending, hasPending: pending.length > 0, pendingCount: pending.length,
+      noteTitle: weekTotal + "h this week", noteSub: smeta.label + " · target " + target + "h",
+    };
+  }
+}
+</script>
+</body>
+</html>

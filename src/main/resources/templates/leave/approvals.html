@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+<head>
+    <title layout:fragment="title">Approvals · Meridian HR</title>
+</head>
+<body>
+<div layout:fragment="content" style="max-width:940px;">
+
+    <div style="margin-bottom:20px;">
+        <div style="font-size:12.5px; color:#8894a3; font-weight:500; margin-bottom:2px;">Workspace / Approvals</div>
+        <h1 style="margin:0; font-size:24px; font-weight:700; letter-spacing:-0.02em; color:#1a2331;">Leave approvals</h1>
+    </div>
+
+    <!-- Not an approver -->
+    <div th:unless="${isApprover}" style="background:#fff; border:1px solid #e4e8ed; border-radius:10px; padding:40px; text-align:center;">
+        <div style="font-size:15px; font-weight:600; color:#3a4453; margin-bottom:6px;">No approvals for your role</div>
+        <div style="font-size:13px; color:#8894a3;">Approvals are available to managers and HR. You're signed in as an employee.</div>
+    </div>
+
+    <th:block th:if="${isApprover}">
+        <div style="display:flex; gap:12px; margin-bottom:20px;">
+            <div style="flex:1; background:#fff; border:1px solid #e4e8ed; border-radius:10px; padding:15px 17px;">
+                <div style="font-size:12px; color:#8894a3; font-weight:600; margin-bottom:6px;">Awaiting you</div>
+                <div style="font-size:23px; font-weight:700; color:#1a2331;" th:text="${pendingCount}">3</div>
+            </div>
+            <div style="flex:1; background:#fff; border:1px solid #e4e8ed; border-radius:10px; padding:15px 17px;">
+                <div style="font-size:12px; color:#8894a3; font-weight:600; margin-bottom:6px;">Over your ceiling</div>
+                <div style="font-size:23px; font-weight:700; color:#9a6a1a;" th:text="${ceilingCount}">2</div>
+            </div>
+            <div style="flex:1; background:#fff; border:1px solid #e4e8ed; border-radius:10px; padding:15px 17px;">
+                <div style="font-size:12px; color:#8894a3; font-weight:600; margin-bottom:6px;">Approved this month</div>
+                <div style="font-size:23px; font-weight:700; color:#2f6f4f;">14</div>
+            </div>
+            <div style="flex:1; background:#fff; border:1px solid #e4e8ed; border-radius:10px; padding:15px 17px;">
+                <div style="font-size:12px; color:#8894a3; font-weight:600; margin-bottom:6px;">Team on leave now</div>
+                <div style="font-size:23px; font-weight:700; color:#1a2331;">3</div>
+            </div>
+        </div>
+
+        <div style="background:#fff; border:1px solid #e4e8ed; border-radius:10px; overflow:hidden;">
+            <div style="padding:13px 18px; border-bottom:1px solid #eef1f4; font-size:14px; font-weight:700; color:#1a2331;">Pending requests</div>
+            <div th:each="q : ${queue}" style="padding:16px 18px; border-bottom:1px solid #f1f4f7;">
+                <div style="display:flex; align-items:center; gap:13px;">
+                    <div style="width:40px; height:40px; border-radius:50%; color:#fff; font-size:13px; font-weight:600; display:flex; align-items:center; justify-content:center; flex-shrink:0;" th:styleappend="'; ' + ('background:' + ${q.bg()})" th:text="${q.initials()}">MR</div>
+                    <div style="flex:1; min-width:0;">
+                        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                            <span style="font-size:14px; font-weight:600; color:#1a2331;" th:text="${q.name()}">Marcus Reid</span>
+                            <span style="font-size:11.5px; color:#8894a3;" th:text="'· ' + ${q.role()}">· Senior Engineer</span>
+                            <span th:if="${q.overCeiling()}" style="font-size:10.5px; font-weight:700; color:#9a6a1a; background:#fbf1de; padding:2px 8px; border-radius:20px; display:flex; align-items:center; gap:4px;">
+                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"/></svg>
+                                Over ceiling → HR
+                            </span>
+                            <span th:if="${q.flag() != null}" style="font-size:10.5px; font-weight:700; color:#b23b2e; background:#fbe9e7; padding:2px 8px; border-radius:20px;" th:text="'Flagged: ' + ${q.flag()}">Flagged</span>
+                        </div>
+                        <div style="font-size:12.5px; color:#6b7480; margin-top:3px;"><span th:text="${q.type()}">Annual leave</span> · <span th:text="${q.dates()}">Aug 24 – Aug 28</span> · <strong style="color:#3a4453;" th:text="${q.days()} + ' days'">5 days</strong> · covered by <span th:text="${q.cover()}">T. Bradley</span></div>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
+                        <span th:if="${q.resolved() and q.resLabel() != null}" style="font-size:12.5px; font-weight:600; padding:6px 13px; border-radius:8px;" th:styleappend="'; ' + ('background:' + ${q.resBg()} + '; color:' + ${q.resFg()})" th:text="${q.resLabel()}">Escalated → HR</span>
+                        <a th:href="@{/approvals(req=${q.id()})}" style="height:34px; padding:0 13px; border:1px solid #dde2e8; border-radius:8px; background:#fff; font-size:12.5px; font-weight:600; color:#5a6472; display:flex; align-items:center;">Review</a>
+                        <form th:if="${q.actionable()}" th:action="@{/leave/{id}/approve(id=${q.id()})}" method="post" style="margin:0;">
+                            <input type="hidden" name="back" value="approvals"/>
+                            <button type="submit" style="height:34px; padding:0 15px; border:none; border-radius:8px; background:#17457f; font-family:inherit; font-size:12.5px; font-weight:600; color:#fff; cursor:pointer;">Approve</button>
+                        </form>
+                    </div>
+                </div>
+                <div th:if="${q.overCeiling()}" style="display:flex; gap:8px; margin:12px 0 0 53px; padding:10px 12px; background:#f7f4ec; border:1px solid #ece2c6; border-radius:8px;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9a6a1a" stroke-width="1.9" style="flex-shrink:0; margin-top:1px;"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+                    <div style="font-size:11.5px; line-height:1.5; color:#7c6428;"><span th:text="${q.ceilingNote()}"></span> You can endorse it, but final approval sits with HR (P. Nair).</div>
+                </div>
+            </div>
+            <div th:if="${emptyQueue}" style="padding:40px; text-align:center;">
+                <div style="font-size:14px; font-weight:600; color:#3a4453; margin-bottom:5px;">Queue clear</div>
+                <div style="font-size:12.5px; color:#8894a3;">No requests awaiting your decision right now.</div>
+            </div>
+        </div>
+    </th:block>
+</div>
+
+<th:block layout:fragment="content-after">
+    <!-- th:replace has HIGHER precedence than th:if, so the guard MUST be on an outer element -->
+    <th:block th:if="${drawerOpen and dr != null}">
+        <th:block th:replace="~{fragments/request-drawer :: drawer(${dr})}"></th:block>
+    </th:block>
+    <th:block th:replace="~{fragments/request-drawer :: toast}"></th:block>
+</th:block>
+</body>
+</html>

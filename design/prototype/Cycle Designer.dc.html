@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; }
+  body { font-family: 'Public Sans', system-ui, -apple-system, sans-serif; background: #eceff3; color: #1e2733; -webkit-font-smoothing: antialiased; }
+  a { text-decoration: none; color: inherit; }
+  select, input { font-family: inherit; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: #cdd4dc; border-radius: 6px; border: 2px solid #eceff3; }
+</style>
+</helmet>
+
+<dc-import name="AppShell" active="performance" note-title="{{ noteTitle }}" note-sub="{{ noteSub }}" hint-size="100%,100%">
+  <div style="max-width:920px;">
+
+    <a href="Performance.dc.html?tab=cycles" style="display:inline-flex; align-items:center; gap:6px; margin-bottom:14px; font-size:12.5px; color:#8894a3; font-weight:600;" style-hover="color:#5a6472;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      All cycles
+    </a>
+
+    <sc-if value="{{ hasCycle }}" hint-placeholder-val="{{ true }}">
+    <div>
+      <!-- Header -->
+      <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:14px; margin-bottom:8px;">
+        <div style="flex:1; min-width:0;">
+          <div style="font-size:12.5px; color:#8894a3; font-weight:500; margin-bottom:2px;">Performance / Cycle designer</div>
+          <input value="{{ name }}" onChange="{{ onName }}" disabled="{{ locked }}" style="width:100%; font-size:24px; font-weight:700; letter-spacing:-0.02em; color:#1a2331; border:none; border-bottom:1.5px solid transparent; outline:none; padding:2px 0; background:transparent;" style-focus="border-bottom-color:#cfdbe9;" />
+        </div>
+        <div style="display:flex; align-items:center; gap:10px; flex-shrink:0; padding-top:18px;">
+          <span style="font-size:11px; font-weight:600; padding:4px 11px; border-radius:20px; background:{{ statusBg }}; color:{{ statusFg }};">{{ statusLabel }}</span>
+          <sc-if value="{{ isDraft }}" hint-placeholder-val="{{ true }}">
+            <button onClick="{{ onLaunch }}" disabled="{{ launchDisabled }}" style="height:38px; padding:0 16px; border:none; border-radius:8px; background:{{ launchBg }}; color:{{ launchFg }}; font-family:inherit; font-size:13.5px; font-weight:600; cursor:{{ launchCursor }};">Launch cycle</button>
+          </sc-if>
+        </div>
+      </div>
+
+      <sc-if value="{{ locked }}" hint-placeholder-val="">
+        <div style="display:flex; align-items:center; gap:9px; padding:11px 14px; background:#eef4fb; border:1px solid #d6e3f2; border-radius:9px; margin:8px 0 18px; font-size:12.5px; color:#2f5a94;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          This cycle is {{ statusLabel }} — its design is locked. Reviews are read from this template as-is.
+        </div>
+      </sc-if>
+      <sc-if value="{{ isDraft }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex; align-items:center; gap:6px; margin:6px 2px 18px; font-size:11.5px; color:#9aa3ad;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#4a9d7a" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+          Draft · saved automatically
+        </div>
+      </sc-if>
+
+      <!-- Timeline card -->
+      <div style="background:#fff; border:1px solid #e4e8ed; border-radius:12px; padding:18px 20px; margin-bottom:16px;">
+        <div style="font-size:13px; font-weight:700; color:#1a2331; margin-bottom:14px;">Cycle & timeline</div>
+        <div style="display:grid; grid-template-columns:1.4fr 1fr 1fr 1fr; gap:14px;">
+          <div>
+            <label style="display:block; font-size:11px; font-weight:600; color:#9aa3ad; margin-bottom:5px;">Type</label>
+            <select value="{{ type }}" onChange="{{ onType }}" disabled="{{ locked }}" style="width:100%; height:38px; border:1px solid #dde2e8; border-radius:8px; padding:0 10px; font-size:13px; color:#28323f; background:#fff; outline:none;">
+              <sc-for list="{{ typeOpts }}" as="t" hint-placeholder-count="4"><option value="{{ t.id }}">{{ t.label }}</option></sc-for>
+            </select>
+          </div>
+          <div>
+            <label style="display:block; font-size:11px; font-weight:600; color:#9aa3ad; margin-bottom:5px;">Opens</label>
+            <input type="date" value="{{ startDate }}" onChange="{{ onStart }}" disabled="{{ locked }}" style="width:100%; height:38px; border:1px solid #dde2e8; border-radius:8px; padding:0 10px; font-size:12.5px; color:#28323f; outline:none;" />
+          </div>
+          <div>
+            <label style="display:block; font-size:11px; font-weight:600; color:#9aa3ad; margin-bottom:5px;">Self due</label>
+            <input type="date" value="{{ selfDue }}" onChange="{{ onSelfDue }}" disabled="{{ locked }}" style="width:100%; height:38px; border:1px solid #dde2e8; border-radius:8px; padding:0 10px; font-size:12.5px; color:#28323f; outline:none;" />
+          </div>
+          <div>
+            <label style="display:block; font-size:11px; font-weight:600; color:#9aa3ad; margin-bottom:5px;">Manager due</label>
+            <input type="date" value="{{ mgrDue }}" onChange="{{ onMgrDue }}" disabled="{{ locked }}" style="width:100%; height:38px; border:1px solid #dde2e8; border-radius:8px; padding:0 10px; font-size:12.5px; color:#28323f; outline:none;" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Competencies card -->
+      <div style="background:#fff; border:1px solid #e4e8ed; border-radius:12px; padding:18px 20px; margin-bottom:16px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+          <div style="font-size:13px; font-weight:700; color:#1a2331;">Competencies & weights</div>
+          <span style="font-size:12px; font-weight:700; color:{{ weightFg }}; background:{{ weightBg }}; padding:3px 11px; border-radius:20px;">Total {{ weightTotal }}%</span>
+        </div>
+        <div style="font-size:11.5px; color:#9aa3ad; margin-bottom:14px;">Pick from the library. Weights should total 100%.</div>
+
+        <div style="display:flex; flex-direction:column; gap:9px;">
+          <sc-for list="{{ comps }}" as="c" hint-placeholder-count="4">
+            <div style="display:flex; align-items:center; gap:12px; padding:11px 13px; border:1px solid #eef1f4; border-radius:9px;">
+              <div style="width:8px; height:32px; border-radius:4px; background:{{ c.accent }}; flex-shrink:0;"></div>
+              <div style="flex:1; min-width:0;">
+                <div style="font-size:13px; font-weight:600; color:#28323f;">{{ c.name }}</div>
+                <div style="font-size:11.5px; color:#9aa3ad;">{{ c.blurb }}</div>
+              </div>
+              <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
+                <input type="number" value="{{ c.weight }}" onChange="{{ c.onWeight }}" disabled="{{ locked }}" min="0" max="100" style="width:64px; height:34px; border:1px solid #dde2e8; border-radius:7px; padding:0 8px; font-size:13px; font-weight:600; color:#28323f; text-align:center; outline:none;" />
+                <span style="font-size:12px; color:#9aa3ad;">%</span>
+              </div>
+              <sc-if value="{{ c.removable }}" hint-placeholder-val="{{ true }}">
+                <button onClick="{{ c.onRemove }}" title="Remove" style="width:32px; height:32px; border:1px solid #f0cfc9; border-radius:7px; background:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; color:#b23b2e; flex-shrink:0;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+                </button>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+
+        <sc-if value="{{ isDraft }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex; align-items:center; gap:10px; margin-top:13px;">
+            <select value="" onChange="{{ onAddComp }}" style="height:36px; border:1px solid #dde2e8; border-radius:8px; padding:0 10px; font-size:12.5px; color:#3a4453; background:#fff; outline:none; min-width:220px;">
+              <option value="">+ Add competency from library…</option>
+              <sc-for list="{{ addable }}" as="a" hint-placeholder-count="0"><option value="{{ a.id }}">{{ a.name }}</option></sc-for>
+            </select>
+            <button onClick="{{ onBalance }}" style="height:36px; padding:0 13px; border:1px solid #dde2e8; border-radius:8px; background:#fff; color:#5a6472; font-family:inherit; font-size:12.5px; font-weight:600; cursor:pointer;">Balance evenly</button>
+          </div>
+        </sc-if>
+      </div>
+
+      <!-- Participants card -->
+      <div style="background:#fff; border:1px solid #e4e8ed; border-radius:12px; padding:18px 20px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+          <div style="font-size:13px; font-weight:700; color:#1a2331;">Participants</div>
+          <span style="font-size:12px; font-weight:700; color:#17457f; background:#eef4fb; padding:3px 11px; border-radius:20px;">{{ partTotal }} people</span>
+        </div>
+        <div style="font-size:11.5px; color:#9aa3ad; margin-bottom:14px;">Include whole departments. Each person's manager becomes their reviewer.</div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+          <sc-for list="{{ deptRows }}" as="d" hint-placeholder-count="5">
+            <button onClick="{{ d.onToggle }}" disabled="{{ locked }}" style="display:flex; align-items:center; gap:11px; padding:12px 14px; border:1px solid {{ d.border }}; border-radius:9px; background:{{ d.bg }}; cursor:{{ d.cursor }}; font-family:inherit; text-align:left;">
+              <span style="width:20px; height:20px; border-radius:6px; border:2px solid {{ d.boxBorder }}; background:{{ d.boxBg }}; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                <sc-if value="{{ d.checked }}" hint-placeholder-val=""><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></sc-if>
+              </span>
+              <div style="flex:1; min-width:0;">
+                <div style="font-size:13px; font-weight:600; color:#28323f;">{{ d.dept }}</div>
+                <div style="font-size:11.5px; color:#9aa3ad;">{{ d.selected }} of {{ d.total }} included</div>
+              </div>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+    </sc-if>
+
+    <sc-if value="{{ noCycle }}" hint-placeholder-val="">
+      <div style="background:#fff; border:1px dashed #d5dbe2; border-radius:12px; padding:48px 20px; text-align:center;">
+        <div style="font-size:14px; font-weight:600; color:#5a6472;">Cycle not found</div>
+        <div style="font-size:12.5px; color:#9aa3ad; margin-top:4px;">Head back and pick a cycle to design.</div>
+      </div>
+    </sc-if>
+  </div>
+
+  <div style="position:fixed; right:22px; bottom:22px; display:flex; flex-direction:column; gap:10px; z-index:200;">
+    <sc-for list="{{ toasts }}" as="t" hint-placeholder-count="0">
+      <div style="display:flex; align-items:center; gap:11px; background:#1a2331; color:#fff; padding:12px 14px; border-radius:10px; box-shadow:0 10px 28px rgba(20,30,50,0.28); min-width:280px; max-width:380px;">
+        <span style="width:8px; height:8px; border-radius:50%; background:{{ t.dot }}; flex-shrink:0;"></span>
+        <span style="flex:1; font-size:12.5px; font-weight:500; line-height:1.4;">{{ t.msg }}</span>
+        <button onClick="{{ t.onClose }}" style="border:none; background:transparent; color:#8894a3; font-size:16px; line-height:1; cursor:pointer; padding:0;">×</button>
+      </div>
+    </sc-for>
+  </div>
+</dc-import>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:&quot;100%&quot;,&quot;height&quot;:&quot;100%&quot;}}">
+class Component extends DCLogic {
+  state = { user: null, cycle: null, toasts: [] };
+  _tid = 0;
+  _accents = ["#3f7cc4", "#4a9d7a", "#c68a2a", "#9a6ab5", "#c0563f", "#5a8fb5", "#b58f4a", "#6ba58f", "#b56b8f", "#7a6bb5"];
+
+  componentDidMount() {
+    Promise.all([import("./session.js"), import("./performance-store.js")]).then(([s, perf]) => {
+      this._s = s; this._perf = perf;
+      const user = s.requireSession();
+      if (!user) return;
+      if (user.role !== "hr") { location.replace("Performance.dc.html"); return; }
+      const id = new URLSearchParams(location.search).get("cycle");
+      const cycle = id ? perf.getCycle(id) : null;
+      this.setState({ user, cycle });
+    });
+  }
+
+  addToast(msg, dot, dur) {
+    const id = ++this._tid;
+    this.setState((st) => ({ toasts: [...st.toasts, { id, msg, dot: dot || "#3ecf8e" }] }));
+    setTimeout(() => this.setState((st) => ({ toasts: st.toasts.filter((t) => t.id !== id) })), dur || 3600);
+  }
+  closeToast(id) { this.setState((st) => ({ toasts: st.toasts.filter((t) => t.id !== id) })); }
+
+  persist(patch) {
+    const cycle = { ...this.state.cycle, ...patch };
+    this._perf.saveCycle(cycle);
+    this.setState({ cycle });
+  }
+  setWeight(compId, val) {
+    const comps = this.state.cycle.competencies.map((c) => c.id === compId ? { ...c, weight: Math.max(0, Math.min(100, val)) } : c);
+    this.persist({ competencies: comps });
+  }
+  addComp(id) {
+    if (!id || this.state.cycle.competencies.find((c) => c.id === id)) return;
+    this.persist({ competencies: [...this.state.cycle.competencies, { id, weight: 0 }] });
+  }
+  removeComp(id) {
+    this.persist({ competencies: this.state.cycle.competencies.filter((c) => c.id !== id) });
+  }
+  balance() {
+    const comps = this.state.cycle.competencies;
+    const n = comps.length; if (!n) return;
+    const base = Math.floor(100 / n); let rem = 100 - base * n;
+    const next = comps.map((c, i) => ({ ...c, weight: base + (i < rem ? 1 : 0) }));
+    this.persist({ competencies: next });
+  }
+  toggleDept(dept) {
+    const perf = this._perf;
+    const ids = perf.employees().filter((e) => e.dept === dept).map((e) => e.id);
+    const cur = new Set(this.state.cycle.participants);
+    const allIn = ids.every((id) => cur.has(id));
+    ids.forEach((id) => { if (allIn) cur.delete(id); else cur.add(id); });
+    this.persist({ participants: Array.from(cur) });
+  }
+  launch() {
+    const c = this.state.cycle;
+    const total = c.competencies.reduce((s, x) => s + (x.weight || 0), 0);
+    if (!c.name.trim() || total !== 100 || c.participants.length === 0) return;
+    this._perf.launchCycle(c.id);
+    this.addToast('"' + c.name + '" launched.', "#3ecf8e");
+    setTimeout(() => { location.href = "Performance.dc.html?tab=reviews&cycle=" + encodeURIComponent(c.id); }, 700);
+  }
+
+  renderVals() {
+    const perf = this._perf, c = this.state.cycle;
+    if (!perf) return { hasCycle: false, noCycle: false, toasts: [], noteTitle: "", noteSub: "", typeOpts: [], comps: [], addable: [], deptRows: [] };
+    if (!c) return { hasCycle: false, noCycle: true, toasts: [], noteTitle: "Cycle designer", noteSub: "", typeOpts: [], comps: [], addable: [], deptRows: [] };
+
+    const isDraft = c.status === "draft";
+    const locked = !isDraft;
+    const statusMeta = c.status === "active" ? { bg: "#e8eefb", fg: "#3a5aa8", label: "Active" }
+      : c.status === "closed" ? { bg: "#eef1f4", fg: "#6b7480", label: "Closed" }
+      : { bg: "#f7f1e0", fg: "#9a6a1a", label: "Draft" };
+
+    const chosen = c.competencies;
+    const weightTotal = chosen.reduce((s, x) => s + (x.weight || 0), 0);
+    const balanced = weightTotal === 100;
+    const comps = chosen.map((x, i) => {
+      const lib = perf.competency(x.id);
+      return { id: x.id, name: lib.name, blurb: lib.blurb, weight: x.weight, accent: this._accents[i % this._accents.length],
+        removable: isDraft && chosen.length > 1,
+        onWeight: (e) => this.setWeight(x.id, parseInt(e.target.value || "0", 10)),
+        onRemove: () => this.removeComp(x.id) };
+    });
+    const chosenIds = new Set(chosen.map((x) => x.id));
+    const addable = perf.getLibrary().filter((l) => !chosenIds.has(l.id)).map((l) => ({ id: l.id, name: l.name }));
+
+    const partSet = new Set(c.participants);
+    const deptRows = perf.departments().map((dept) => {
+      const ids = perf.employees().filter((e) => e.dept === dept).map((e) => e.id);
+      const sel = ids.filter((id) => partSet.has(id)).length;
+      const all = sel === ids.length && ids.length > 0;
+      return { dept, total: ids.length, selected: sel, checked: all,
+        border: all ? "#bcd0ea" : "#e4e8ed", bg: all ? "#f2f7fc" : "#fff",
+        boxBorder: all ? "#17457f" : "#cdd4dc", boxBg: all ? "#17457f" : "#fff",
+        cursor: locked ? "not-allowed" : "pointer",
+        onToggle: () => this.toggleDept(dept) };
+    });
+
+    const launchOk = c.name.trim() && balanced && c.participants.length > 0;
+
+    return {
+      hasCycle: true, noCycle: false,
+      name: c.name, onName: (e) => this.persist({ name: e.target.value }),
+      isDraft, locked,
+      statusBg: statusMeta.bg, statusFg: statusMeta.fg, statusLabel: statusMeta.label,
+      type: c.type, onType: (e) => this.persist({ type: e.target.value }),
+      typeOpts: perf.CYCLE_TYPES,
+      startDate: c.startDate, selfDue: c.selfDue, mgrDue: c.mgrDue,
+      onStart: (e) => this.persist({ startDate: e.target.value }),
+      onSelfDue: (e) => this.persist({ selfDue: e.target.value }),
+      onMgrDue: (e) => this.persist({ mgrDue: e.target.value }),
+      comps, addable,
+      onAddComp: (e) => this.addComp(e.target.value),
+      onBalance: () => this.balance(),
+      weightTotal, weightFg: balanced ? "#2f6f4f" : "#9a6a1a", weightBg: balanced ? "#e6f3ec" : "#f7f1e0",
+      deptRows, partTotal: c.participants.length,
+      launchDisabled: !launchOk,
+      launchBg: launchOk ? "#17457f" : "#e4e8ed", launchFg: launchOk ? "#fff" : "#9aa3ad", launchCursor: launchOk ? "pointer" : "not-allowed",
+      onLaunch: () => this.launch(),
+      noteTitle: "Cycle designer", noteSub: c.name,
+      toasts: this.state.toasts.map((t) => ({ ...t, onClose: () => this.closeToast(t.id) })),
+    };
+  }
+}
+</script>
+</body>
+</html>

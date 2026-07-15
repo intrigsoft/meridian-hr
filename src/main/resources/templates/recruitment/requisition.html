@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+<head>
+    <title layout:fragment="title">Requisition · Meridian HR</title>
+</head>
+<body>
+<div layout:fragment="content" style="max-width:840px;">
+
+    <a th:href="@{/recruitment}" style="display:inline-flex; align-items:center; gap:6px; margin-bottom:14px; font-size:12.5px; color:#8894a3; font-weight:600;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        Back to requisitions
+    </a>
+
+    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:14px; margin-bottom:18px;">
+        <div>
+            <div style="font-size:12.5px; color:#8894a3; font-weight:500; margin-bottom:2px;">Recruitment / Requisition</div>
+            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                <h1 style="margin:0; font-size:23px; font-weight:700; letter-spacing:-0.02em; color:#1a2331;" th:text="${req.title}">Senior Backend Engineer</h1>
+                <span style="font-size:12px; font-weight:600; color:#8894a3; font-family:var(--mono);" th:text="${req.id}">REQ-2041</span>
+                <span style="font-size:11px; font-weight:600; padding:3px 10px; border-radius:20px;" th:styleappend="'; ' + ('background:' + ${statusMeta.bg()} + '; color:' + ${statusMeta.fg()})" th:text="${statusMeta.label()}">Open</span>
+            </div>
+        </div>
+        <div style="display:flex; gap:8px; flex-shrink:0;">
+            <form th:if="${isDraft}" th:action="@{/recruitment/req/{id}/submit(id=${req.id})}" method="post" style="margin:0;">
+                <button type="submit" class="btn btn-primary">Submit for approval</button>
+            </form>
+            <form th:if="${isHr and isPending}" th:action="@{/recruitment/req/{id}/approve(id=${req.id})}" method="post" style="margin:0;">
+                <button type="submit" style="height:38px; padding:0 16px; border:none; border-radius:9px; background:#2f6f4f; color:#fff; font-family:inherit; font-size:13.5px; font-weight:600; cursor:pointer;">Approve</button>
+            </form>
+            <form th:if="${isOpen}" th:action="@{/recruitment/req/{id}/close(id=${req.id})}" method="post" style="margin:0;">
+                <input type="hidden" name="filled" value="true"/>
+                <button type="submit" class="btn btn-ghost">Mark filled</button>
+            </form>
+            <a th:unless="${isDraft}" th:href="@{/recruitment/req/{id}/pipeline(id=${req.id})}" style="height:38px; padding:0 16px; border:1px solid #cfdbe9; border-radius:9px; background:#eef4fb; color:#17457f; font-size:13.5px; font-weight:600; display:inline-flex; align-items:center;">View pipeline</a>
+        </div>
+    </div>
+
+    <div style="background:#fbfcfd; border:1px dashed #d9e0e8; border-radius:10px; padding:12px 15px; margin-bottom:18px; font-size:12px; color:#6b7480; line-height:1.5;">
+        This requisition view is <strong>read-only</strong> in the sample — the scorecard and interview plan are shown
+        as configured. The interactive editor is deferred; new drafts get a sensible default plan and can be submitted
+        for approval as-is.
+    </div>
+
+    <!-- Meta -->
+    <div style="background:#fff; border:1px solid #e4e8ed; border-radius:12px; padding:18px 20px; margin-bottom:16px;">
+        <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:16px;">
+            <div><div style="font-size:11px; font-weight:600; color:#9aa3ad; text-transform:uppercase; letter-spacing:0.04em;">Department</div><div style="font-size:13.5px; font-weight:600; color:#28323f; margin-top:4px;" th:text="${req.dept}">Engineering</div></div>
+            <div><div style="font-size:11px; font-weight:600; color:#9aa3ad; text-transform:uppercase; letter-spacing:0.04em;">Level</div><div style="font-size:13.5px; font-weight:600; color:#28323f; margin-top:4px;" th:text="${req.level}">Senior</div></div>
+            <div><div style="font-size:11px; font-weight:600; color:#9aa3ad; text-transform:uppercase; letter-spacing:0.04em;">Location</div><div style="font-size:13.5px; font-weight:600; color:#28323f; margin-top:4px;" th:text="${req.location}">Remote · EU</div></div>
+            <div><div style="font-size:11px; font-weight:600; color:#9aa3ad; text-transform:uppercase; letter-spacing:0.04em;">Openings</div><div style="font-size:13.5px; font-weight:600; color:#28323f; margin-top:4px;" th:text="${req.headcount}">1</div></div>
+            <div><div style="font-size:11px; font-weight:600; color:#9aa3ad; text-transform:uppercase; letter-spacing:0.04em;">Hiring manager</div><div style="font-size:13.5px; font-weight:600; color:#28323f; margin-top:4px;" th:text="${ownerName}">David Okonkwo</div></div>
+            <div><div style="font-size:11px; font-weight:600; color:#9aa3ad; text-transform:uppercase; letter-spacing:0.04em;">Recruiter</div><div style="font-size:13.5px; font-weight:600; color:#28323f; margin-top:4px;" th:text="${recruiterName}">Priya Nair</div></div>
+        </div>
+    </div>
+
+    <!-- Scorecard -->
+    <div style="background:#fff; border:1px solid #e4e8ed; border-radius:12px; padding:18px 20px; margin-bottom:16px;">
+        <div style="font-size:14px; font-weight:700; color:#1a2331; margin-bottom:12px;">Scorecard</div>
+        <div style="display:flex; flex-wrap:wrap; gap:8px;">
+            <span th:each="a : ${attrs}" style="font-size:12px; font-weight:600; color:#4a5563; background:#f2f5f8; border:1px solid #e4e8ed; padding:4px 11px; border-radius:20px;" th:text="${a.name()}">Coding</span>
+        </div>
+    </div>
+
+    <!-- Interview plan -->
+    <div style="background:#fff; border:1px solid #e4e8ed; border-radius:12px; padding:18px 20px;">
+        <div style="font-size:14px; font-weight:700; color:#1a2331; margin-bottom:12px;">Interview plan</div>
+        <div th:each="rd : ${rounds}" style="display:flex; align-items:baseline; gap:12px; padding:9px 0; border-bottom:1px solid #f4f6f8;">
+            <span style="font-size:13px; font-weight:600; color:#28323f; width:120px; flex-shrink:0;" th:text="${rd.stage()}">HM interview</span>
+            <span style="font-size:12.5px; color:#6b7480;" th:text="${rd.interviewers()}">David Okonkwo, Marcus Reid</span>
+        </div>
+    </div>
+</div>
+</body>
+</html>

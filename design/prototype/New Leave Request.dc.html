@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; }
+  body { font-family: 'Public Sans', system-ui, -apple-system, sans-serif; background: #eceff3; color: #1e2733; -webkit-font-smoothing: antialiased; }
+  a { text-decoration: none; color: inherit; }
+  input, select, textarea { font-family: inherit; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: #cdd4dc; border-radius: 6px; border: 2px solid #eceff3; }
+</style>
+</helmet>
+
+<div style="display:flex; flex-direction:column; height:100vh; overflow:hidden;">
+
+  <!-- ===== Top bar ===== -->
+  <header style="height:56px; flex:0 0 56px; background:#ffffff; border-bottom:1px solid #dde2e8; display:flex; align-items:center; padding:0 20px; gap:20px; z-index:10;">
+    <a href="Dashboard.dc.html" style="display:flex; align-items:center; gap:10px;">
+      <div style="width:28px; height:28px; border-radius:6px; background:#17457f; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; font-size:15px;">M</div>
+      <div style="font-weight:700; font-size:16px; letter-spacing:-0.01em; color:#17457f;">Meridian<span style="color:#8894a3; font-weight:600;"> HR</span></div>
+    </a>
+    <div style="flex:1;"></div>
+    <div style="position:relative; width:280px; max-width:32vw;">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9aa3ad" stroke-width="2" style="position:absolute; left:11px; top:50%; transform:translateY(-50%);"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+      <input placeholder="Search people, requests…" style="width:100%; height:34px; border:1px solid #dde2e8; border-radius:7px; background:#f6f8fa; padding:0 12px 0 32px; font-size:13px; color:#3a4453; outline:none;" />
+    </div>
+    <button style="width:34px; height:34px; border:1px solid #dde2e8; border-radius:8px; background:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; position:relative;">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#5a6472" stroke-width="1.8"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+      <span style="position:absolute; top:6px; right:7px; width:7px; height:7px; background:#e0483a; border-radius:50%; border:1.5px solid #fff;"></span>
+    </button>
+    <div style="width:1px; height:26px; background:#e4e8ed;"></div>
+    <div style="display:flex; align-items:center; gap:9px;">
+      <div style="width:32px; height:32px; border-radius:50%; background:{{ user.avatarBg }}; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:600; font-size:13px;">{{ user.initials }}</div>
+      <div style="line-height:1.2;">
+        <div style="font-size:13px; font-weight:600; color:#1e2733;">{{ user.name }}</div>
+        <div style="font-size:11px; color:#8894a3;">{{ user.roleLabel }} · {{ user.dept }}</div>
+      </div>
+      <button onClick="{{ onSignOut }}" title="Sign out" style="margin-left:6px; width:30px; height:30px; border:1px solid #dde2e8; border-radius:8px; background:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#5a6472" stroke-width="1.8"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <div style="flex:1; display:flex; min-height:0;">
+
+    <!-- ===== Left nav ===== -->
+    <nav style="width:232px; flex:0 0 232px; background:#ffffff; border-right:1px solid #e4e8ed; padding:16px 12px; display:flex; flex-direction:column; gap:2px; overflow-y:auto;">
+      <div style="font-size:10.5px; font-weight:700; color:#9aa3ad; text-transform:uppercase; letter-spacing:0.07em; padding:6px 12px 8px;">Workspace</div>
+      <a href="Dashboard.dc.html" style="display:flex; align-items:center; gap:11px; padding:9px 12px; border-radius:7px; color:#4a5563; font-weight:500; font-size:13.5px;">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+        Dashboard
+      </a>
+      <a href="My Leave.dc.html" style="display:flex; align-items:center; gap:11px; padding:9px 12px 9px 14px; border-radius:7px; background:#eaf1fa; color:#17457f; font-weight:600; font-size:13.5px; border-left:3px solid #17457f; margin-left:-3px;">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/></svg>
+        My Leave
+      </a>
+      <sc-if value="{{ isApprover }}" hint-placeholder-val="{{ true }}">
+        <a href="Approvals.dc.html" style="display:flex; align-items:center; gap:11px; padding:9px 12px; border-radius:7px; color:#4a5563; font-weight:500; font-size:13.5px;">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          Approvals
+          <span style="margin-left:auto; background:#e0483a; color:#fff; font-size:11px; font-weight:700; min-width:18px; height:18px; border-radius:9px; display:flex; align-items:center; justify-content:center; padding:0 5px;">{{ approvalCount }}</span>
+        </a>
+      </sc-if>
+
+      <div style="font-size:10.5px; font-weight:700; color:#9aa3ad; text-transform:uppercase; letter-spacing:0.07em; padding:16px 12px 8px;">People Ops</div>
+      <a href="Onboarding.dc.html" style="display:flex; align-items:center; gap:11px; padding:9px 12px; border-radius:7px; color:#4a5563; font-weight:500; font-size:13.5px;">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 11h-6M19 8v6"/></svg>
+        Onboarding
+      </a>
+      <a href="Performance.dc.html" style="display:flex; align-items:center; gap:11px; padding:9px 12px; border-radius:7px; color:#4a5563; font-weight:500; font-size:13.5px;">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="0.5" fill="currentColor"/></svg>
+        Performance
+      </a>
+      <a href="Recruitment.dc.html" style="display:flex; align-items:center; gap:11px; padding:9px 12px; border-radius:7px; color:#4a5563; font-weight:500; font-size:13.5px;">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Recruitment
+      </a>
+    </nav>
+
+    <!-- ===== Main content ===== -->
+    <main style="flex:1; overflow-y:auto; padding:24px 30px;">
+      <div style="max-width:960px;">
+        <div style="margin-bottom:18px;">
+          <a href="My Leave.dc.html" style="display:inline-flex; align-items:center; gap:6px; font-size:12.5px; color:#8894a3; font-weight:600; margin-bottom:8px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+            Back to My Leave
+          </a>
+          <h1 style="margin:0; font-size:24px; font-weight:700; letter-spacing:-0.02em; color:#1a2331;">New leave request</h1>
+        </div>
+
+        <!-- Scenario chips (fixture aid) -->
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:11px 14px; background:#fbf9ee; border:1px solid #efe7c9; border-radius:9px; margin-bottom:18px;">
+          <span style="font-size:11.5px; font-weight:700; color:#9a8636; text-transform:uppercase; letter-spacing:0.04em; margin-right:2px;">Test validation ›</span>
+          <sc-for list="{{ scenarios }}" as="s" hint-placeholder-count="5">
+            <button onClick="{{ s.onClick }}" style="height:28px; padding:0 11px; border:1px solid #e2d9b6; border-radius:20px; background:#fff; font-size:12px; font-weight:600; color:#7c6a28; cursor:pointer;" style-hover="background:#faf6e6;">{{ s.label }}</button>
+          </sc-for>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1.35fr 1fr; gap:18px; align-items:start;">
+
+          <!-- Form card -->
+          <div style="background:#fff; border:1px solid #e4e8ed; border-radius:10px; padding:22px;">
+            <label style="display:block; font-size:12.5px; font-weight:600; color:#3a4453; margin-bottom:7px;">Leave type</label>
+            <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:20px;">
+              <sc-for list="{{ types }}" as="t" hint-placeholder-count="5">
+                <button onClick="{{ t.onClick }}" style="display:flex; flex-direction:column; align-items:flex-start; gap:3px; padding:10px 11px; border:1.5px solid {{ t.border }}; background:{{ t.bg }}; border-radius:9px; cursor:pointer; text-align:left;">
+                  <span style="width:9px; height:9px; border-radius:3px; background:{{ t.dot }};"></span>
+                  <span style="font-size:12.5px; font-weight:600; color:{{ t.fg }};">{{ t.label }}</span>
+                </button>
+              </sc-for>
+            </div>
+
+            <div style="display:flex; align-items:baseline; justify-content:space-between; margin-bottom:8px;">
+              <label style="font-size:12.5px; font-weight:600; color:#3a4453;">Dates</label>
+              <span style="font-size:11.5px; color:#9aa3ad;">{{ pickHint }}</span>
+            </div>
+
+            <!-- Selected range readout -->
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
+              <div style="flex:1; border:1px solid #dde2e8; border-radius:8px; padding:8px 11px; background:#fff;">
+                <div style="font-size:10px; font-weight:700; color:#9aa3ad; text-transform:uppercase; letter-spacing:0.05em;">Start</div>
+                <div style="font-size:13px; font-weight:600; color:#28323f; margin-top:1px;">{{ startChip }}</div>
+              </div>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#c3cad3" stroke-width="2" style="flex-shrink:0;"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+              <div style="flex:1; border:1px solid #dde2e8; border-radius:8px; padding:8px 11px; background:#fff;">
+                <div style="font-size:10px; font-weight:700; color:#9aa3ad; text-transform:uppercase; letter-spacing:0.05em;">End</div>
+                <div style="font-size:13px; font-weight:600; color:#28323f; margin-top:1px;">{{ endChip }}</div>
+              </div>
+            </div>
+
+            <!-- Calendar -->
+            <div style="border:1px solid #e4e8ed; border-radius:10px; padding:12px 12px 10px; margin-bottom:16px;">
+              <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+                <button onClick="{{ onPrevMonth }}" title="Previous month" style="width:30px; height:30px; border:1px solid #e4e8ed; border-radius:7px; background:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; color:#5a6472;" style-hover="background:#f4f6f9;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+                </button>
+                <div style="font-size:13.5px; font-weight:700; color:#1a2331;">{{ monthLabel }}</div>
+                <button onClick="{{ onNextMonth }}" title="Next month" style="width:30px; height:30px; border:1px solid #e4e8ed; border-radius:7px; background:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; color:#5a6472;" style-hover="background:#f4f6f9;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+                </button>
+              </div>
+
+              <div style="display:grid; grid-template-columns:repeat(7,1fr); margin-bottom:2px;">
+                <sc-for list="{{ weekdayLabels }}" as="w" hint-placeholder-count="7">
+                  <div style="text-align:center; font-size:10.5px; font-weight:700; color:#a2abb5; padding:4px 0;">{{ w }}</div>
+                </sc-for>
+              </div>
+
+              <sc-for list="{{ weeks }}" as="wk" hint-placeholder-count="6">
+                <div style="display:grid; grid-template-columns:repeat(7,1fr);">
+                  <sc-for list="{{ wk.days }}" as="c" hint-placeholder-count="7">
+                    <div style="height:38px; display:flex; align-items:center; justify-content:center; background:{{ c.bandBg }}; border-radius:{{ c.bandRadius }};">
+                      <sc-if value="{{ c.day }}" hint-placeholder-val="{{ true }}">
+                        <div onClick="{{ c.onClick }}" style="position:relative; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:{{ c.dotBg }}; color:{{ c.fg }}; font-size:12.5px; font-weight:{{ c.weight }}; box-shadow:{{ c.ring }}; cursor:pointer;">
+                          {{ c.day }}
+                          <sc-if value="{{ c.marker }}" hint-placeholder-val="">
+                            <span style="position:absolute; bottom:3px; width:4px; height:4px; border-radius:50%; background:{{ c.markerColor }};"></span>
+                          </sc-if>
+                        </div>
+                      </sc-if>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-for>
+
+              <div style="display:flex; align-items:center; gap:14px; margin-top:9px; padding-top:9px; border-top:1px solid #f1f4f7;">
+                <div style="display:flex; align-items:center; gap:5px; font-size:11px; color:#8894a3;"><span style="width:9px; height:9px; border-radius:3px; background:#17457f;"></span>Selected</div>
+                <div style="display:flex; align-items:center; gap:5px; font-size:11px; color:#8894a3;"><span style="width:5px; height:5px; border-radius:50%; background:#c68a2a;"></span>Holiday</div>
+                <div style="display:flex; align-items:center; gap:5px; font-size:11px; color:#8894a3;"><span style="width:5px; height:5px; border-radius:50%; background:#d0563f;"></span>Blackout</div>
+              </div>
+            </div>
+
+            <label style="display:flex; align-items:center; gap:9px; margin-bottom:18px; cursor:pointer;">
+              <input type="checkbox" checked="{{ halfDay }}" onChange="{{ onHalf }}" style="width:16px; height:16px;" />
+              <span style="font-size:13px; color:#3a4453;">Half day (counts as 0.5)</span>
+            </label>
+
+            <label style="display:block; font-size:12.5px; font-weight:600; color:#3a4453; margin-bottom:6px;">Coverage / delegate</label>
+            <select value="{{ delegate }}" onChange="{{ onDelegate }}" style="width:100%; height:40px; border:1px solid #dde2e8; border-radius:8px; padding:0 11px; font-size:13.5px; color:#1e2733; outline:none; background:#fff; margin-bottom:16px;">
+              <option value="">— Select who covers your work —</option>
+              <option value="marcus">Marcus Reid</option>
+              <option value="elena">Elena Vasquez</option>
+              <option value="tom">Tom Bradley</option>
+            </select>
+
+            <label style="display:block; font-size:12.5px; font-weight:600; color:#3a4453; margin-bottom:6px;">Reason <span style="color:#9aa3ad; font-weight:400;">(optional)</span></label>
+            <textarea value="{{ reason }}" onChange="{{ onReason }}" placeholder="Add context for your approver…" style="width:100%; height:70px; border:1px solid #dde2e8; border-radius:8px; padding:10px 11px; font-size:13.5px; color:#1e2733; outline:none; resize:none; background:#fff; margin-bottom:16px;"></textarea>
+
+            <sc-if value="{{ needsAttachment }}" hint-placeholder-val="">
+              <div style="border:1.5px dashed {{ attachBorder }}; background:{{ attachBg }}; border-radius:9px; padding:14px; display:flex; align-items:center; gap:11px;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="{{ attachIcon }}" stroke-width="1.9"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                <div style="flex:1;">
+                  <div style="font-size:12.5px; font-weight:600; color:{{ attachTitleColor }};">Medical certificate required</div>
+                  <div style="font-size:11.5px; color:#8894a3;">Sick leave over 2 days needs a certificate attached.</div>
+                </div>
+                <button onClick="{{ onAttach }}" style="height:30px; padding:0 12px; border:1px solid #dde2e8; border-radius:7px; background:#fff; font-size:12px; font-weight:600; color:#3a4453; cursor:pointer;">{{ attachBtn }}</button>
+              </div>
+            </sc-if>
+          </div>
+
+          <!-- Summary + policy checks -->
+          <div style="display:flex; flex-direction:column; gap:14px;">
+            <div style="background:#fff; border:1px solid #e4e8ed; border-radius:10px; padding:18px;">
+              <div style="font-size:13px; font-weight:700; color:#1a2331; margin-bottom:14px;">Request summary</div>
+              <div style="display:flex; justify-content:space-between; padding:7px 0; border-bottom:1px solid #f1f4f7;"><span style="font-size:12.5px; color:#8894a3;">Type</span><span style="font-size:12.5px; font-weight:600; color:#28323f;">{{ typeLabel }}</span></div>
+              <div style="display:flex; justify-content:space-between; padding:7px 0; border-bottom:1px solid #f1f4f7;"><span style="font-size:12.5px; color:#8894a3;">Working days</span><span style="font-size:12.5px; font-weight:600; color:#28323f;">{{ workingDays }}</span></div>
+              <div style="display:flex; justify-content:space-between; padding:7px 0; border-bottom:1px solid #f1f4f7;"><span style="font-size:12.5px; color:#8894a3;">Balance after</span><span style="font-size:12.5px; font-weight:600; color:{{ balanceColor }};">{{ balanceAfter }}</span></div>
+              <div style="display:flex; justify-content:space-between; padding:7px 0;"><span style="font-size:12.5px; color:#8894a3;">Approver</span><span style="font-size:12.5px; font-weight:600; color:#28323f;">{{ approverName }}</span></div>
+
+              <sc-if value="{{ overCeiling }}" hint-placeholder-val="">
+                <div style="display:flex; gap:9px; margin-top:12px; padding:11px; background:#eef3fb; border:1px solid #d6e2f4; border-radius:8px;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3a5aa8" stroke-width="1.9" style="flex-shrink:0; margin-top:1px;"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"/></svg>
+                  <div style="font-size:11.5px; line-height:1.5; color:#3a5aa8;"><strong>Above manager authority.</strong> {{ ceilingReason }} This routes past {{ approverShort }} to HR (P. Nair) for approval.</div>
+                </div>
+              </sc-if>
+            </div>
+
+            <!-- Policy checks -->
+            <div style="background:#fff; border:1px solid #e4e8ed; border-radius:10px; overflow:hidden;">
+              <div style="display:flex; align-items:center; justify-content:space-between; padding:13px 16px; border-bottom:1px solid #eef1f4;">
+                <span style="font-size:13px; font-weight:700; color:#1a2331;">Policy checks</span>
+                <span style="font-size:11.5px; font-weight:600; padding:3px 9px; border-radius:20px; background:{{ checkBadgeBg }}; color:{{ checkBadgeFg }};">{{ checkBadge }}</span>
+              </div>
+              <div style="padding:6px 0;">
+                <sc-for list="{{ checks }}" as="c" hint-placeholder-count="5">
+                  <div style="display:flex; gap:10px; padding:10px 16px; align-items:flex-start;">
+                    <div style="width:18px; height:18px; border-radius:50%; background:{{ c.iconBg }}; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:1px;">
+                      <sc-if value="{{ c.ok }}" hint-placeholder-val="{{ true }}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></sc-if>
+                      <sc-if value="{{ c.bad }}" hint-placeholder-val=""><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path d="M18 6L6 18M6 6l12 12"/></svg></sc-if>
+                    </div>
+                    <div style="flex:1;">
+                      <div style="font-size:12.5px; font-weight:600; color:{{ c.titleColor }};">{{ c.title }}</div>
+                      <sc-if value="{{ c.detail }}" hint-placeholder-val="">
+                        <div style="font-size:11.5px; color:#8894a3; line-height:1.4; margin-top:2px;">{{ c.detail }}</div>
+                      </sc-if>
+                    </div>
+                    <sc-if value="{{ c.code }}" hint-placeholder-val="">
+                      <span style="font-size:10px; font-weight:600; color:#b23b2e; background:#fbe9e7; padding:2px 7px; border-radius:5px; font-family:'IBM Plex Mono', monospace; flex-shrink:0;">{{ c.code }}</span>
+                    </sc-if>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+
+            <button onClick="{{ onSubmit }}" disabled="{{ submitDisabled }}" style="height:44px; border:none; border-radius:9px; font-family:inherit; font-size:14px; font-weight:600; cursor:{{ submitCursor }}; background:{{ submitBg }}; color:{{ submitFg }};">{{ submitLabel }}</button>
+            <sc-if value="{{ submitted }}" hint-placeholder-val="">
+              <div style="display:flex; gap:9px; padding:12px; background:#e9f5ee; border:1px solid #c8e6d4; border-radius:9px;">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#2f6f4f" stroke-width="2" style="flex-shrink:0;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
+                <div style="font-size:12px; line-height:1.5; color:#2f6f4f;">{{ submittedMsg }} <a href="My Leave.dc.html" style="font-weight:700; color:#2f6f4f; text-decoration:underline;">View in My Leave →</a></div>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- ===== Right dock: Dioschub Assistant mount ===== -->
+    <aside style="width:372px; flex:0 0 372px; background:#f4f6f9; border-left:1px solid #e0e5ea; display:flex; flex-direction:column;">
+      <div style="height:44px; flex:0 0 44px; display:flex; align-items:center; gap:8px; padding:0 16px; border-bottom:1px solid #e6eaef; background:#fff;">
+        <span style="font-size:11px; font-weight:700; color:#9aa3ad; text-transform:uppercase; letter-spacing:0.06em;">Assistant</span>
+        <span style="margin-left:auto; font-size:10.5px; font-weight:600; color:#b6bdc6; font-family:'IBM Plex Mono', monospace;">#dioschub-assistant-root</span>
+      </div>
+
+      <div id="dioschub-assistant-root" data-dioschub-widget="assistant" data-operating-user="{{ user.email }}" style="flex:1; display:flex; flex-direction:column; min-height:0;">
+        <div style="flex:1; display:flex; flex-direction:column; min-height:0; position:relative;">
+          <div style="position:absolute; top:56px; right:12px; z-index:2; font-size:9.5px; font-weight:700; letter-spacing:0.08em; color:#8a93c4; background:#eceafc; border:1px solid #dcd8f7; padding:3px 7px; border-radius:5px;">PLACEHOLDER</div>
+
+          <div style="padding:14px 16px 12px; background:#12152a; color:#fff;">
+            <div style="display:flex; align-items:center; gap:9px;">
+              <div style="width:26px; height:26px; border-radius:7px; background:linear-gradient(135deg,#7c5cff,#5b8cff); display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:800;">◆</div>
+              <div style="font-weight:700; font-size:14px;">Dioschub Assistant</div>
+              <div style="margin-left:auto; display:flex; align-items:center; gap:5px; font-size:11px; color:#9fb2d6;"><span style="width:7px; height:7px; border-radius:50%; background:#3ecf8e;"></span>Connected</div>
+            </div>
+            <div style="display:flex; align-items:center; gap:6px; margin-top:9px; font-size:11.5px; color:#aeb8d6;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+              Operating as <span style="color:#cdd6ee; font-family:'IBM Plex Mono', monospace;">{{ user.email }}</span>
+            </div>
+          </div>
+
+          <div style="flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:12px; background:#f4f6f9;">
+            <div style="align-self:flex-end; max-width:82%; background:#17457f; color:#fff; padding:9px 12px; border-radius:12px 12px 3px 12px; font-size:12.5px; line-height:1.45;">File 5 days annual for the last week of September.</div>
+            <div style="align-self:flex-start; max-width:88%; background:#fff; border:1px solid #e4e8ed; color:#3a4453; padding:10px 12px; border-radius:12px 12px 12px 3px; font-size:12.5px; line-height:1.5;">
+              I've drafted <strong style="color:#1a2331;">Sep 29 – Oct 3 (5 days)</strong> — passes balance, notice and coverage checks. It's within your manager's authority, so it'll route to <strong style="color:#1a2331;">D. Okonkwo</strong>. Submit it?
+            </div>
+            <div style="align-self:flex-start; display:flex; align-items:center; gap:6px; font-size:10.5px; color:#9aa3ad; padding-left:2px;">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+              Draft prepared as {{ user.email }} · awaiting your confirm
+            </div>
+          </div>
+
+          <div style="padding:12px 14px; border-top:1px solid #e6eaef; background:#fff;">
+            <div style="display:flex; align-items:center; gap:8px; border:1px solid #dde2e8; border-radius:9px; padding:9px 11px; background:#f6f8fa;">
+              <input placeholder="Ask the assistant…" disabled style="flex:1; border:none; background:transparent; font-size:12.5px; color:#8894a3; outline:none;" />
+              <div style="width:28px; height:28px; border-radius:7px; background:#c7cdd6; display:flex; align-items:center; justify-content:center;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+              </div>
+            </div>
+            <div style="text-align:center; font-size:10px; color:#b6bdc6; margin-top:8px;">Preview only · live kit mounts into <span style="font-family:'IBM Plex Mono', monospace;">#dioschub-assistant-root</span></div>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {
+    user: null,
+    leaveType: "annual",
+    startDate: "2026-12-22",
+    endDate: "2026-12-24",
+    viewYear: 2026,
+    viewMonth: 11,
+    pickPhase: "start",
+    halfDay: false,
+    delegate: "",
+    reason: "",
+    hasAttachment: false,
+    submitted: false,
+  };
+
+  componentDidMount() {
+    Promise.all([import("./session.js"), import("./leave-store.js"), import("./config-store.js")]).then(([m, store, config]) => {
+      this._m = m; this._store = store; this._config = config;
+      const user = m.requireSession();
+      if (user) this.setState({ user });
+    });
+  }
+
+  // business days between two ISO dates, inclusive, excluding weekends + configured holidays
+  workingDays(startISO, endISO, halfDay) {
+    if (!startISO || !endISO) return 0;
+    const holidays = new Set((this._config ? this._config.getHolidays() : []).map((h) => h.date));
+    const s = new Date(startISO + "T00:00:00");
+    const e = new Date(endISO + "T00:00:00");
+    if (e < s) return 0;
+    let count = 0;
+    const d = new Date(s);
+    while (d <= e) {
+      const day = d.getDay();
+      const iso = d.toISOString().slice(0, 10);
+      if (day !== 0 && day !== 6 && !holidays.has(iso)) count++;
+      d.setDate(d.getDate() + 1);
+    }
+    if (halfDay && count > 0) count -= 0.5;
+    return count;
+  }
+
+  overlapsBlackout(startISO, endISO) {
+    // Blackout windows come from the central config (HR-configurable in Settings).
+    if (!startISO || !endISO || !this._config) return false;
+    return !!this._config.blackoutOverlap(startISO, endISO);
+  }
+
+  overlapsCoverage(startISO, endISO) {
+    // Seeded team-off window Aug 11–15 (2 of 3 already off)
+    if (!startISO || !endISO) return false;
+    const s = new Date(startISO), e = new Date(endISO);
+    const cStart = new Date("2026-08-11"), cEnd = new Date("2026-08-15");
+    return s <= cEnd && e >= cStart;
+  }
+
+  noticeDays(startISO) {
+    if (!startISO) return 999;
+    const now = new Date("2026-07-02T00:00:00");
+    const s = new Date(startISO + "T00:00:00");
+    return Math.round((s - now) / 86400000);
+  }
+
+  loadScenario(kind) {
+    const base = { halfDay: false, delegate: "marcus", reason: "", hasAttachment: false, submitted: false, pickPhase: "start" };
+    const go = (extra) => {
+      const st = extra.startDate;
+      this.setState({ ...base, ...extra, viewYear: +st.slice(0, 4), viewMonth: +st.slice(5, 7) - 1 });
+    };
+    if (kind === "balance") go({ leaveType: "annual", startDate: "2026-08-03", endDate: "2026-08-21", delegate: "marcus" });
+    if (kind === "blackout") go({ leaveType: "annual", startDate: "2026-12-22", endDate: "2026-12-24" });
+    if (kind === "coverage") go({ leaveType: "annual", startDate: "2026-08-11", endDate: "2026-08-14" });
+    if (kind === "notice") go({ leaveType: "annual", startDate: "2026-07-04", endDate: "2026-07-08" });
+    if (kind === "cert") go({ leaveType: "sick", startDate: "2026-07-20", endDate: "2026-07-23", hasAttachment: false });
+    if (kind === "clean") go({ leaveType: "annual", startDate: "2026-09-29", endDate: "2026-10-03" });
+  }
+
+  // ---- Calendar ----
+  pad(n) { return String(n).padStart(2, "0"); }
+
+  prevMonth() {
+    let m = this.state.viewMonth - 1, y = this.state.viewYear;
+    if (m < 0) { m = 11; y--; }
+    this.setState({ viewMonth: m, viewYear: y });
+  }
+  nextMonth() {
+    let m = this.state.viewMonth + 1, y = this.state.viewYear;
+    if (m > 11) { m = 0; y++; }
+    this.setState({ viewMonth: m, viewYear: y });
+  }
+
+  pickDay(iso) {
+    const { startDate: s, pickPhase } = this.state;
+    if (pickPhase === "end" && s && iso >= s) {
+      this.setState({ endDate: iso, pickPhase: "start", submitted: false });
+    } else {
+      this.setState({ startDate: iso, endDate: iso, pickPhase: "end", submitted: false });
+    }
+  }
+
+  buildWeeks() {
+    const y = this.state.viewYear, m = this.state.viewMonth;
+    const P = (n) => this.pad(n);
+    const holidays = new Set((this._config ? this._config.getHolidays() : []).map((h) => h.date));
+    const blackouts = this._config ? this._config.getBlackouts() : [];
+    const today = "2026-07-03";
+    const s = this.state.startDate, e = this.state.endDate;
+    const startDow = new Date(y, m, 1).getDay();
+    const daysInMonth = new Date(y, m + 1, 0).getDate();
+
+    const cells = [];
+    for (let i = 0; i < startDow; i++) cells.push({ empty: true, day: "" });
+    for (let d = 1; d <= daysInMonth; d++) {
+      const iso = y + "-" + P(m + 1) + "-" + P(d);
+      const dow = new Date(y, m, d).getDay();
+      const weekend = dow === 0 || dow === 6;
+      const isHoliday = holidays.has(iso);
+      const isBlackout = blackouts.some((b) => iso >= b.start && iso <= b.end);
+      const inRange = s && e && iso >= s && iso <= e;
+      const isStart = iso === s;
+      const isEnd = iso === e;
+      const endpoint = isStart || isEnd;
+      const isToday = iso === today;
+
+      let bandRadius = "0";
+      if (inRange) {
+        if (isStart && isEnd) bandRadius = "18px";
+        else if (isStart) bandRadius = "18px 0 0 18px";
+        else if (isEnd) bandRadius = "0 18px 18px 0";
+      }
+
+      let marker = false, markerColor = "transparent";
+      if (isHoliday) { marker = true; markerColor = endpoint ? "#fff" : "#c68a2a"; }
+      else if (isBlackout) { marker = true; markerColor = endpoint ? "#fff" : "#d0563f"; }
+
+      cells.push({
+        empty: false, day: d, iso,
+        bandBg: inRange ? "#eaf1fa" : "transparent",
+        bandRadius,
+        dotBg: endpoint ? "#17457f" : "transparent",
+        fg: endpoint ? "#fff" : (weekend ? "#c3cad3" : "#3a4453"),
+        weight: endpoint || isToday ? "700" : "500",
+        ring: isToday && !endpoint ? "inset 0 0 0 1.5px #b9c9e0" : "none",
+        marker, markerColor,
+        onClick: () => this.pickDay(iso),
+      });
+    }
+    while (cells.length % 7 !== 0) cells.push({ empty: true, day: "" });
+    const weeks = [];
+    for (let i = 0; i < cells.length; i += 7) weeks.push({ days: cells.slice(i, i + 7) });
+    return weeks;
+  }
+
+  renderVals() {
+    const u = this.state.user;
+    const st = this.state;
+    const shellUser = u || { avatarBg: "#c7cdd6", initials: "", name: "", roleLabel: "", dept: "", email: "" };
+    if (!u) return { user: shellUser, isApprover: false, approvalCount: 0, scenarios: [], types: [], checks: [] };
+
+    const fmtChip = (iso) => iso ? new Date(iso + "T00:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }) : "—";
+    const isApprover = u.role === "manager" || u.role === "hr";
+    const wd = this.workingDays(st.startDate, st.endDate, st.halfDay);
+    const policy = this._config ? this._config.getLeave() : { noticeDays: 7, ceilingDays: 10, sickCertDays: 2, types: [] };
+    const ceilingDays = policy.ceilingDays;
+    const sickCertDays = policy.sickCertDays;
+    const noticeReq = policy.noticeDays;
+    // Annual remaining = configured allowance minus this year's used annual days.
+    const annualAllowance = this._config ? this._config.allowanceFor("annual") : 25;
+    const usedAnnual = this._store
+      ? this._store.forEmployee(u.id)
+          .filter((r) => r.type === "annual" && (r.status === "approved" || r.status === "posted"))
+          .reduce((sum, r) => sum + (r.days || 0), 0)
+      : 0;
+    const annualRemaining = Math.max(0, annualAllowance - usedAnnual);
+
+    const typeMeta = {
+      annual: { label: "Annual", dot: "#3f7cc4" },
+      sick: { label: "Sick", dot: "#5aa17f" },
+      unpaid: { label: "Unpaid", dot: "#8894a3" },
+      parental: { label: "Parental", dot: "#9b7fc4" },
+      bereavement: { label: "Bereavement", dot: "#b56b8f" },
+    };
+    const types = Object.entries(typeMeta).map(([id, m]) => {
+      const on = st.leaveType === id;
+      return { label: m.label, dot: m.dot, onClick: () => this.setState({ leaveType: id, submitted: false }),
+        border: on ? "#17457f" : "#e4e8ed", bg: on ? "#f2f7fc" : "#fff", fg: on ? "#17457f" : "#4a5563" };
+    });
+
+    // ---- Policy checks ----
+    const okItem = (title) => ({ ok: true, bad: false, iconBg: "#4a9d7a", titleColor: "#3a4453", title, detail: "", code: "" });
+    const errItem = (title, detail, code) => ({ ok: false, bad: true, iconBg: "#d0563f", titleColor: "#b23b2e", title, detail, code });
+
+    const checks = [];
+    // 1 balance
+    if (st.leaveType === "annual" && wd > annualRemaining)
+      checks.push(errItem("Insufficient balance", "Requested " + wd + " days; annual balance is " + annualRemaining + ".", "422"));
+    else checks.push(okItem("Sufficient balance"));
+    // 2 blackout
+    if (this.overlapsBlackout(st.startDate, st.endDate)) {
+      const bo = this._config ? this._config.blackoutOverlap(st.startDate, st.endDate) : null;
+      checks.push(errItem("Blackout period", (bo ? bo.label + ": " : "") + "leave is restricted on these dates.", "422"));
+    }
+    else checks.push(okItem("No blackout conflict"));
+    // 3 coverage
+    if (this.overlapsCoverage(st.startDate, st.endDate))
+      checks.push(errItem("Team-coverage conflict", "2 of 3 team members already off on these dates.", "422"));
+    else checks.push(okItem("Team coverage OK"));
+    // 4 notice
+    if (st.leaveType === "annual" && this.noticeDays(st.startDate) < noticeReq)
+      checks.push(errItem("Notice-period violation", "Annual leave requires " + noticeReq + " days' notice; " + Math.max(0, this.noticeDays(st.startDate)) + " given.", "422"));
+    else checks.push(okItem("Notice period met"));
+    // 5 medical cert
+    const needsAttachment = st.leaveType === "sick" && wd > sickCertDays;
+    if (needsAttachment && !st.hasAttachment)
+      checks.push(errItem("Missing medical certificate", "Sick leave over " + sickCertDays + " days requires a certificate.", "422"));
+    else if (needsAttachment) checks.push(okItem("Medical certificate attached"));
+
+    // 6 overlap with the requester's own existing leave
+    const mine = this._store ? this._store.forEmployee(u.id).filter(r => r.status !== "rejected" && r.status !== "cancelled") : [];
+    const overlap = mine.find(r => {
+      const s1 = new Date(st.startDate), e1 = new Date(st.endDate);
+      const s2 = new Date(r.startDate), e2 = new Date(r.endDate);
+      return s1 <= e2 && e1 >= s2;
+    });
+    if (overlap) {
+      const otm = this._store.TYPE_META[overlap.type];
+      checks.push(errItem("Overlaps existing leave", "You already have " + (otm ? otm.short : overlap.type) + " leave on " + this._store.formatRange(overlap.startDate, overlap.endDate) + " (" + overlap.id + ").", "409"));
+    } else checks.push(okItem("No overlap with your leave"));
+
+    const errorCount = checks.filter(c => c.code).length;
+    const clean = errorCount === 0 && wd > 0;
+
+    // ceiling / HITL
+    const overCeiling = wd > ceilingDays || st.leaveType === "parental" || st.leaveType === "unpaid";
+    const ceilingReason = wd > ceilingDays ? ("Requests over " + ceilingDays + " days exceed a manager's authority.") : "Extended " + (typeMeta[st.leaveType] ? typeMeta[st.leaveType].label.toLowerCase() : "") + " leave requires higher approval.";
+
+    const balAfter = st.leaveType === "annual" ? (annualRemaining - wd) : annualRemaining;
+    const balanceNeg = st.leaveType === "annual" && balAfter < 0;
+
+    const sc = [["clean", "Valid request"], ["balance", "Insufficient balance"], ["blackout", "Blackout period"], ["coverage", "Coverage conflict"], ["notice", "Short notice"], ["cert", "Missing certificate"]];
+
+    return {
+      user: u, isApprover, approvalCount: this._store ? this._store.pendingCountFor(u) : 0,
+      scenarios: sc.map(([k, l]) => ({ label: l, onClick: () => this.loadScenario(k) })),
+      types,
+      startDate: st.startDate, endDate: st.endDate, halfDay: st.halfDay, delegate: st.delegate, reason: st.reason,
+      weeks: this.buildWeeks(),
+      weekdayLabels: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+      monthLabel: new Date(st.viewYear, st.viewMonth, 1).toLocaleDateString("en-US", { month: "long", year: "numeric" }),
+      onPrevMonth: () => this.prevMonth(),
+      onNextMonth: () => this.nextMonth(),
+      startChip: fmtChip(st.startDate),
+      endChip: fmtChip(st.endDate),
+      pickHint: st.pickPhase === "end" ? "Now pick the end date" : "Pick a start date, then an end date",
+      onHalf: (e) => this.setState({ halfDay: e.target.checked, submitted: false }),
+      onDelegate: (e) => this.setState({ delegate: e.target.value }),
+      onReason: (e) => this.setState({ reason: e.target.value }),
+      needsAttachment,
+      attachBorder: st.hasAttachment ? "#c8e6d4" : "#e6c9b6",
+      attachBg: st.hasAttachment ? "#f2faf5" : "#fdf6ef",
+      attachIcon: st.hasAttachment ? "#4a9d7a" : "#c68a2a",
+      attachTitleColor: st.hasAttachment ? "#2f6f4f" : "#3a4453",
+      attachBtn: st.hasAttachment ? "Attached ✓" : "Attach file",
+      onAttach: () => this.setState({ hasAttachment: !st.hasAttachment, submitted: false }),
+      typeLabel: typeMeta[st.leaveType].label + " leave",
+      workingDays: wd + (wd === 1 ? " day" : " days"),
+      balanceAfter: st.leaveType === "annual" ? (balAfter + " days") : "— (non-annual)",
+      balanceColor: balanceNeg ? "#b23b2e" : "#28323f",
+      approverName: overCeiling ? "P. Nair (HR)" : "D. Okonkwo",
+      approverShort: "D. Okonkwo",
+      overCeiling, ceilingReason,
+      checks,
+      checkBadge: clean ? "All passed" : (errorCount + " failed"),
+      checkBadgeBg: clean ? "#e6f3ec" : "#fbe9e7",
+      checkBadgeFg: clean ? "#2f6f4f" : "#b23b2e",
+      submitDisabled: !clean,
+      submitBg: clean ? "#17457f" : "#e4e8ed",
+      submitFg: clean ? "#fff" : "#9aa3ad",
+      submitCursor: clean ? "pointer" : "not-allowed",
+      submitLabel: clean ? (overCeiling ? "Submit for HR approval" : "Submit for approval") : "Resolve " + errorCount + " issue" + (errorCount === 1 ? "" : "s") + " to submit",
+      submitted: st.submitted,
+      submittedMsg: overCeiling
+        ? "Saved & escalated to P. Nair (HR) — over the manager ceiling. It now appears in your leave history and in HR's queue."
+        : "Saved & routed to D. Okonkwo — within manager authority. It now appears in your leave history and in the approver's queue.",
+      onSubmit: () => {
+        if (!clean || !this._store) return;
+        const coverName = ({ marcus: "M. Reid", elena: "E. Vasquez", tom: "T. Bradley" })[st.delegate] || "—";
+        const approverId = overCeiling ? "priya.nair" : (u.id === "david.okonkwo" ? "priya.nair" : "david.okonkwo");
+        this._store.addRequest({
+          empId: u.id, empName: u.name, empInitials: u.initials, empBg: u.avatarBg, empRole: u.title,
+          type: st.leaveType, startDate: st.startDate, endDate: st.endDate, days: wd, cover: coverName,
+          reason: st.reason, managerId: "david.okonkwo", approverId, overCeiling,
+          status: overCeiling ? "escalated" : "pending",
+        });
+        this.setState({ submitted: true });
+      },
+      onSignOut: () => { this._m.signOut(); location.href = "Login.dc.html"; },
+    };
+  }
+}
+</script>
+</body>
+</html>

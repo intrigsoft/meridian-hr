@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; }
+  body { font-family: 'Public Sans', system-ui, -apple-system, sans-serif; background: #eceff3; color: #1e2733; -webkit-font-smoothing: antialiased; }
+  a { text-decoration: none; color: inherit; }
+  textarea, input, select { font-family: inherit; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: #cdd4dc; border-radius: 6px; border: 2px solid #eceff3; }
+</style>
+</helmet>
+
+<dc-import name="AppShell" active="recruitment" note-title="{{ noteTitle }}" note-sub="{{ noteSub }}" hint-size="100%,100%">
+  <div style="max-width:900px;">
+    <a href="{{ backHref }}" style="display:inline-flex; align-items:center; gap:6px; margin-bottom:14px; font-size:12.5px; color:#8894a3; font-weight:600;" style-hover="color:#5a6472;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      {{ reqTitle }} pipeline
+    </a>
+
+    <sc-if value="{{ hasCand }}" hint-placeholder-val="{{ true }}">
+    <div>
+      <!-- Strip -->
+      <div style="display:flex; align-items:center; gap:16px; background:#fff; border:1px solid #e4e8ed; border-radius:12px; padding:18px 20px; margin-bottom:16px;">
+        <div style="width:54px; height:54px; border-radius:50%; background:{{ bg }}; color:#fff; font-size:18px; font-weight:600; display:flex; align-items:center; justify-content:center; flex-shrink:0;">{{ initials }}</div>
+        <div style="flex:1; min-width:0;">
+          <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+            <span style="font-size:19px; font-weight:700; color:#1a2331;">{{ name }}</span>
+            <span style="font-size:11px; font-weight:600; padding:3px 10px; border-radius:20px; background:{{ stageBg }}; color:{{ stageFg }};">{{ stageLabel }}</span>
+          </div>
+          <div style="font-size:12.5px; color:#8894a3; margin-top:3px;">{{ currentRole }} · {{ exp }}</div>
+          <div style="font-size:11.5px; color:#9aa3ad; margin-top:4px;">{{ source }} · applied {{ appliedAgo }} · {{ email }}</div>
+        </div>
+        <div style="text-align:center; padding-left:18px; border-left:1px solid #eef1f4;">
+          <div style="font-size:11px; color:#8894a3; font-weight:600; text-transform:uppercase; letter-spacing:0.04em;">Fit</div>
+          <div style="font-size:24px; font-weight:700; color:{{ fitColor }};">{{ fit }}</div>
+        </div>
+      </div>
+
+      <!-- Action bar -->
+      <sc-if value="{{ showActions }}" hint-placeholder-val="">
+        <div style="display:flex; align-items:center; gap:9px; margin-bottom:16px; flex-wrap:wrap;">
+          <sc-if value="{{ canAdvance }}" hint-placeholder-val="">
+            <button onClick="{{ onAdvance }}" style="height:38px; padding:0 16px; border:none; border-radius:8px; background:#17457f; color:#fff; font-family:inherit; font-size:13px; font-weight:600; cursor:pointer;">{{ advanceLabel }}</button>
+          </sc-if>
+          <sc-if value="{{ canStartOffer }}" hint-placeholder-val="">
+            <button onClick="{{ onStartOffer }}" style="height:38px; padding:0 16px; border:none; border-radius:8px; background:#9a6a1a; color:#fff; font-family:inherit; font-size:13px; font-weight:600; cursor:pointer;">Prepare offer</button>
+          </sc-if>
+          <sc-if value="{{ canReject }}" hint-placeholder-val="">
+            <button onClick="{{ onReject }}" style="height:38px; padding:0 14px; border:1px solid #f0cfc9; border-radius:8px; background:#fff; color:#b23b2e; font-family:inherit; font-size:13px; font-weight:600; cursor:pointer;">Reject</button>
+          </sc-if>
+        </div>
+      </sc-if>
+
+      <!-- About -->
+      <div style="background:#fff; border:1px solid #e4e8ed; border-radius:12px; padding:16px 18px; margin-bottom:16px;">
+        <div style="font-size:13px; font-weight:700; color:#1a2331; margin-bottom:8px;">CV summary</div>
+        <p style="margin:0; font-size:12.5px; line-height:1.6; color:#4a5563;">{{ summary }}</p>
+      </div>
+
+      <!-- Debrief -->
+      <sc-if value="{{ hasDebrief }}" hint-placeholder-val="">
+        <div style="background:#fff; border:1px solid #e4e8ed; border-radius:12px; padding:18px 20px; margin-bottom:16px;">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+            <div style="font-size:14px; font-weight:700; color:#1a2331;">Debrief</div>
+            <span style="font-size:11.5px; font-weight:600; padding:4px 12px; border-radius:20px; background:{{ overallBg }}; color:{{ overallFg }};">{{ overallLabel }} · {{ debriefCount }} interviews</span>
+          </div>
+          <div style="display:grid; grid-template-columns:1.3fr 1fr; gap:22px;">
+            <div style="display:flex; flex-direction:column; gap:11px;">
+              <sc-for list="{{ debriefAttrs }}" as="a" hint-placeholder-count="5">
+                <div>
+                  <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                    <span style="font-size:12px; font-weight:600; color:#4a5563;">{{ a.name }}</span>
+                    <span style="font-size:12px; font-weight:700; color:#28323f;">{{ a.avg }}</span>
+                  </div>
+                  <div style="height:8px; border-radius:5px; background:#f1f4f7; overflow:hidden;"><div style="height:100%; width:{{ a.pct }}%; background:{{ a.color }}; border-radius:5px;"></div></div>
+                </div>
+              </sc-for>
+            </div>
+            <div>
+              <div style="font-size:11px; font-weight:700; color:#9aa3ad; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:10px;">Recommendations</div>
+              <div style="display:flex; flex-direction:column; gap:8px;">
+                <sc-for list="{{ recTally }}" as="r" hint-placeholder-count="4">
+                  <div style="display:flex; align-items:center; gap:9px;">
+                    <span style="width:24px; height:24px; border-radius:6px; background:{{ r.bg }}; color:{{ r.color }}; font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center;">{{ r.count }}</span>
+                    <span style="font-size:12.5px; color:#4a5563;">{{ r.label }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- Scorecards -->
+      <div style="background:#fff; border:1px solid #e4e8ed; border-radius:12px; padding:18px 20px; margin-bottom:16px;">
+        <div style="font-size:14px; font-weight:700; color:#1a2331; margin-bottom:4px;">Interview scorecards</div>
+        <div style="font-size:11.5px; color:#9aa3ad; margin-bottom:14px;">Structured per attribute · humans decide</div>
+
+        <sc-for list="{{ scoreStages }}" as="st" hint-placeholder-count="2">
+          <div style="margin-bottom:16px;">
+            <div style="font-size:12px; font-weight:700; color:#5b3ea8; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:9px;">{{ st.label }}</div>
+            <div style="display:flex; flex-direction:column; gap:9px;">
+              <sc-for list="{{ st.cards }}" as="c" hint-placeholder-count="2">
+                <div style="border:1px solid #eef1f4; border-radius:10px; padding:12px 14px;">
+                  <div style="display:flex; align-items:center; gap:10px;">
+                    <div style="width:28px; height:28px; border-radius:50%; background:{{ c.bg }}; color:#fff; font-size:11px; font-weight:600; display:flex; align-items:center; justify-content:center;">{{ c.initials }}</div>
+                    <div style="flex:1; min-width:0;"><div style="font-size:12.5px; font-weight:600; color:#28323f;">{{ c.who }}</div><div style="font-size:11px; color:#9aa3ad;">{{ c.title }}</div></div>
+                    <sc-if value="{{ c.submitted }}" hint-placeholder-val="{{ true }}">
+                      <span style="font-size:11px; font-weight:700; color:{{ c.recColor }}; background:{{ c.recBg }}; padding:3px 10px; border-radius:20px;">{{ c.recLabel }}</span>
+                    </sc-if>
+                    <sc-if value="{{ c.pending }}" hint-placeholder-val="">
+                      <span style="font-size:11px; font-weight:600; color:#9aa3ad; background:#f1f4f7; padding:3px 10px; border-radius:20px;">Pending</span>
+                    </sc-if>
+                  </div>
+                  <sc-if value="{{ c.hasComment }}" hint-placeholder-val="">
+                    <p style="margin:9px 0 0; font-size:12px; line-height:1.55; color:#5a6472;">{{ c.comment }}</p>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-for>
+
+        <!-- Scorecard entry (interviewer) -->
+        <sc-if value="{{ canSubmitCard }}" hint-placeholder-val="">
+          <div style="border:1.5px solid #cfdbe9; border-radius:11px; padding:15px 16px; background:#f8fbff;">
+            <div style="font-size:12.5px; font-weight:700; color:#17457f; margin-bottom:12px;">Your scorecard · {{ cardStageLabel }}</div>
+            <sc-for list="{{ cardRows }}" as="r" hint-placeholder-count="5">
+              <div style="display:flex; align-items:center; gap:14px; padding:8px 0; border-bottom:1px solid #eef4fb;">
+                <div style="flex:1; font-size:12.5px; font-weight:600; color:#28323f;">{{ r.name }}</div>
+                <div style="display:flex; gap:5px;">
+                  <sc-for list="{{ r.pills }}" as="p" hint-placeholder-count="5">
+                    <button onClick="{{ p.onPick }}" style="width:34px; height:32px; border:1px solid {{ p.border }}; border-radius:7px; background:{{ p.bg }}; color:{{ p.fg }}; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer;">{{ p.n }}</button>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-for>
+            <div style="margin-top:13px;">
+              <div style="font-size:11.5px; font-weight:600; color:#8894a3; margin-bottom:7px;">Recommendation</div>
+              <div style="display:flex; gap:7px; flex-wrap:wrap;">
+                <sc-for list="{{ recOptions }}" as="o" hint-placeholder-count="4">
+                  <button onClick="{{ o.onPick }}" style="height:34px; padding:0 13px; border:1px solid {{ o.border }}; border-radius:8px; background:{{ o.bg }}; color:{{ o.fg }}; font-family:inherit; font-size:12.5px; font-weight:600; cursor:pointer;">{{ o.label }}</button>
+                </sc-for>
+              </div>
+            </div>
+            <textarea value="{{ cardComment }}" onChange="{{ onCardComment }}" placeholder="What stood out? Evidence for your rating…" style="width:100%; min-height:80px; margin-top:13px; border:1px solid #dde2e8; border-radius:9px; padding:11px 13px; font-size:12.5px; line-height:1.55; color:#28323f; outline:none; resize:vertical;"></textarea>
+            <button onClick="{{ onSubmitCard }}" style="margin-top:12px; height:38px; padding:0 18px; border:none; border-radius:8px; background:#17457f; color:#fff; font-family:inherit; font-size:13px; font-weight:600; cursor:pointer;">Submit scorecard</button>
+          </div>
+        </sc-if>
+      </div>
+
+      <!-- Offer -->
+      <sc-if value="{{ showOffer }}" hint-placeholder-val="">
+        <div style="background:#fff; border:1px solid #e4e8ed; border-radius:12px; padding:18px 20px; margin-bottom:16px;">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+            <div style="font-size:14px; font-weight:700; color:#1a2331;">Offer</div>
+            <sc-if value="{{ hasOffer }}" hint-placeholder-val="">
+              <span style="font-size:11.5px; font-weight:600; padding:4px 12px; border-radius:20px; background:{{ offerStatusBg }}; color:{{ offerStatusFg }};">{{ offerStatusLabel }}</span>
+            </sc-if>
+          </div>
+
+          <!-- builder -->
+          <sc-if value="{{ offerBuilding }}" hint-placeholder-val="">
+            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;">
+              <div><label style="display:block; font-size:11px; font-weight:600; color:#9aa3ad; margin-bottom:5px;">Base (£k)</label><input type="number" value="{{ ofBase }}" onChange="{{ onOfBase }}" style="width:100%; height:36px; border:1px solid #dde2e8; border-radius:8px; padding:0 10px; font-size:13px; color:#28323f; outline:none;" /></div>
+              <div><label style="display:block; font-size:11px; font-weight:600; color:#9aa3ad; margin-bottom:5px;">Bonus (%)</label><input type="number" value="{{ ofBonus }}" onChange="{{ onOfBonus }}" style="width:100%; height:36px; border:1px solid #dde2e8; border-radius:8px; padding:0 10px; font-size:13px; color:#28323f; outline:none;" /></div>
+              <div><label style="display:block; font-size:11px; font-weight:600; color:#9aa3ad; margin-bottom:5px;">Start date</label><input type="date" value="{{ ofStart }}" onChange="{{ onOfStart }}" style="width:100%; height:36px; border:1px solid #dde2e8; border-radius:8px; padding:0 10px; font-size:12.5px; color:#28323f; outline:none;" /></div>
+            </div>
+            <div style="display:flex; gap:9px; margin-top:14px;">
+              <button onClick="{{ onSubmitOffer }}" style="height:38px; padding:0 16px; border:none; border-radius:8px; background:#17457f; color:#fff; font-family:inherit; font-size:13px; font-weight:600; cursor:pointer;">Send for approval</button>
+              <button onClick="{{ onCancelOffer }}" style="height:38px; padding:0 14px; border:1px solid #dde2e8; border-radius:8px; background:#fff; color:#5a6472; font-family:inherit; font-size:13px; font-weight:600; cursor:pointer;">Cancel</button>
+            </div>
+          </sc-if>
+
+          <!-- existing offer -->
+          <sc-if value="{{ hasOffer }}" hint-placeholder-val="">
+            <div style="display:flex; gap:26px; padding:6px 0 4px;">
+              <div><div style="font-size:11px; color:#9aa3ad; font-weight:600;">Base</div><div style="font-size:17px; font-weight:700; color:#1a2331;">£{{ offerBase }}k</div></div>
+              <div><div style="font-size:11px; color:#9aa3ad; font-weight:600;">Bonus</div><div style="font-size:17px; font-weight:700; color:#1a2331;">{{ offerBonus }}%</div></div>
+              <div><div style="font-size:11px; color:#9aa3ad; font-weight:600;">Level</div><div style="font-size:17px; font-weight:700; color:#1a2331;">{{ offerLevel }}</div></div>
+              <div><div style="font-size:11px; color:#9aa3ad; font-weight:600;">Start</div><div style="font-size:17px; font-weight:700; color:#1a2331;">{{ offerStart }}</div></div>
+            </div>
+            <div style="display:flex; gap:9px; margin-top:14px; flex-wrap:wrap;">
+              <sc-if value="{{ canApproveOffer }}" hint-placeholder-val="">
+                <button onClick="{{ onApproveOffer }}" style="height:36px; padding:0 15px; border:none; border-radius:8px; background:#2f6f4f; color:#fff; font-family:inherit; font-size:12.5px; font-weight:600; cursor:pointer;">Approve offer</button>
+              </sc-if>
+              <sc-if value="{{ canExtendOffer }}" hint-placeholder-val="">
+                <button onClick="{{ onExtendOffer }}" style="height:36px; padding:0 15px; border:none; border-radius:8px; background:#17457f; color:#fff; font-family:inherit; font-size:12.5px; font-weight:600; cursor:pointer;">Send to candidate</button>
+              </sc-if>
+              <sc-if value="{{ canDecide }}" hint-placeholder-val="">
+                <button onClick="{{ onAccept }}" style="height:36px; padding:0 15px; border:none; border-radius:8px; background:#2f6f4f; color:#fff; font-family:inherit; font-size:12.5px; font-weight:600; cursor:pointer;">Mark accepted</button>
+                <button onClick="{{ onDecline }}" style="height:36px; padding:0 14px; border:1px solid #f0cfc9; border-radius:8px; background:#fff; color:#b23b2e; font-family:inherit; font-size:12.5px; font-weight:600; cursor:pointer;">Mark declined</button>
+              </sc-if>
+            </div>
+            <sc-if value="{{ hiredHandoff }}" hint-placeholder-val="">
+              <div style="display:flex; align-items:center; gap:11px; margin-top:14px; padding:12px 14px; background:#edf6f0; border:1px solid #cfe4d6; border-radius:9px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2f6f4f" stroke-width="2" style="flex-shrink:0;"><path d="M20 6L9 17l-5-5"/></svg>
+                <div style="flex:1; font-size:12.5px; color:#2f6f4f;"><strong>Hired.</strong> An onboarding case was created automatically.</div>
+                <a href="{{ onboardingHref }}" style="font-size:12.5px; font-weight:700; color:#2f6f4f; white-space:nowrap;">View onboarding →</a>
+              </div>
+            </sc-if>
+          </sc-if>
+        </div>
+      </sc-if>
+
+      <!-- Notes -->
+      <div style="background:#fff; border:1px solid #e4e8ed; border-radius:12px; padding:18px 20px;">
+        <div style="font-size:14px; font-weight:700; color:#1a2331; margin-bottom:12px;">Notes</div>
+        <div style="display:flex; gap:9px; margin-bottom:14px;">
+          <input value="{{ noteDraft }}" onChange="{{ onNoteDraft }}" placeholder="Add an internal note…" style="flex:1; height:38px; border:1px solid #dde2e8; border-radius:8px; padding:0 12px; font-size:12.5px; color:#28323f; outline:none;" />
+          <button onClick="{{ onAddNote }}" style="height:38px; padding:0 15px; border:none; border-radius:8px; background:#17457f; color:#fff; font-family:inherit; font-size:12.5px; font-weight:600; cursor:pointer;">Post</button>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:12px;">
+          <sc-for list="{{ notes }}" as="n" hint-placeholder-count="0">
+            <div style="display:flex; gap:11px;">
+              <div style="width:28px; height:28px; border-radius:50%; background:{{ n.bg }}; color:#fff; font-size:11px; font-weight:600; display:flex; align-items:center; justify-content:center; flex-shrink:0;">{{ n.initials }}</div>
+              <div style="flex:1; min-width:0;">
+                <div style="font-size:12px;"><strong style="color:#28323f;">{{ n.who }}</strong> <span style="color:#b6bdc6;">· {{ n.ago }}</span></div>
+                <div style="font-size:12.5px; color:#4a5563; line-height:1.5; margin-top:2px;">{{ n.text }}</div>
+              </div>
+            </div>
+          </sc-for>
+          <sc-if value="{{ noNotes }}" hint-placeholder-val="{{ true }}">
+            <div style="font-size:12px; color:#b6bdc6;">No notes yet.</div>
+          </sc-if>
+        </div>
+      </div>
+    </div>
+    </sc-if>
+
+    <sc-if value="{{ noCand }}" hint-placeholder-val="">
+      <div style="background:#fff; border:1px dashed #d5dbe2; border-radius:12px; padding:48px 20px; text-align:center;">
+        <div style="font-size:14px; font-weight:600; color:#5a6472;">Candidate not found</div>
+      </div>
+    </sc-if>
+  </div>
+
+  <!-- Reject modal -->
+  <sc-if value="{{ rejectOpen }}" hint-placeholder-val="">
+    <div style="position:fixed; inset:0; background:rgba(20,30,50,0.32); display:flex; align-items:center; justify-content:center; z-index:300;">
+      <div style="width:400px; max-width:90vw; background:#fff; border-radius:14px; box-shadow:0 24px 60px rgba(20,30,50,0.3); overflow:hidden;">
+        <div style="padding:18px 20px 4px;"><div style="font-size:15px; font-weight:700; color:#1a2331;">Reject {{ name }}</div><div style="font-size:12.5px; color:#8894a3; margin-top:3px;">Pick a reason — recorded on the candidate.</div></div>
+        <div style="padding:14px 20px;">
+          <select value="{{ rejectReason }}" onChange="{{ onRejectReason }}" style="width:100%; height:40px; border:1px solid #dde2e8; border-radius:8px; padding:0 11px; font-size:13px; color:#28323f; background:#fff; outline:none;">
+            <sc-for list="{{ reasonOpts }}" as="r" hint-placeholder-count="6"><option value="{{ r }}">{{ r }}</option></sc-for>
+          </select>
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:9px; padding:6px 20px 18px;">
+          <button onClick="{{ onRejectCancel }}" style="height:36px; padding:0 15px; border:1px solid #dde2e8; border-radius:8px; background:#fff; color:#5a6472; font-family:inherit; font-size:13px; font-weight:600; cursor:pointer;">Cancel</button>
+          <button onClick="{{ onRejectConfirm }}" style="height:36px; padding:0 16px; border:none; border-radius:8px; background:#b23b2e; color:#fff; font-family:inherit; font-size:13px; font-weight:600; cursor:pointer;">Reject</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <div style="position:fixed; right:22px; bottom:22px; display:flex; flex-direction:column; gap:10px; z-index:400;">
+    <sc-for list="{{ toasts }}" as="t" hint-placeholder-count="0">
+      <div style="display:flex; align-items:center; gap:11px; background:#1a2331; color:#fff; padding:12px 14px; border-radius:10px; box-shadow:0 10px 28px rgba(20,30,50,0.28); min-width:280px; max-width:380px;">
+        <span style="width:8px; height:8px; border-radius:50%; background:{{ t.dot }}; flex-shrink:0;"></span>
+        <span style="flex:1; font-size:12.5px; font-weight:500; line-height:1.4;">{{ t.msg }}</span>
+        <button onClick="{{ t.onClose }}" style="border:none; background:transparent; color:#8894a3; font-size:16px; line-height:1; cursor:pointer; padding:0;">×</button>
+      </div>
+    </sc-for>
+  </div>
+</dc-import>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:&quot;100%&quot;,&quot;height&quot;:&quot;100%&quot;}}">
+class Component extends DCLogic {
+  state = { user: null, reqId: null, candId: null, cardDraft: null, noteDraft: "", offerBuilding: false, offerForm: null, rejecting: false, rejectReason: "", toasts: [] };
+  _tid = 0;
+
+  componentDidMount() {
+    Promise.all([import("./session.js"), import("./recruitment-store.js")]).then(([s, rec]) => {
+      this._s = s; this._rec = rec;
+      const user = s.requireSession();
+      if (!user) return;
+      const params = new URLSearchParams(location.search);
+      this.setState({ user, reqId: params.get("req"), candId: params.get("cand"), rejectReason: rec.REJECTION_REASONS[0] });
+    });
+  }
+
+  addToast(msg, dot, dur) {
+    const id = ++this._tid;
+    this.setState((st) => ({ toasts: [...st.toasts, { id, msg, dot: dot || "#3ecf8e" }] }));
+    setTimeout(() => this.setState((st) => ({ toasts: st.toasts.filter((t) => t.id !== id) })), dur || 4200);
+  }
+  closeToast(id) { this.setState((st) => ({ toasts: st.toasts.filter((t) => t.id !== id) })); }
+  reload() { this.forceUpdate(); }
+  ago(ts) { if (!ts) return ""; const d = Math.round((Date.now() - ts) / 86400000); return d <= 0 ? "today" : d === 1 ? "yesterday" : d + "d ago"; }
+
+  advance() { const c = this._rec.getCandidate(this.state.candId); this._rec.advanceCandidate(c.id); const nx = this._rec.getCandidate(c.id); this.addToast(c.name + " → " + this._rec.stageMeta(nx.stage).label + ".", "#3ecf8e"); this.reload(); }
+  confirmReject() { const c = this._rec.getCandidate(this.state.candId); this._rec.rejectCandidate(c.id, this.state.rejectReason); this.setState({ rejecting: false }); this.addToast(c.name + " rejected.", "#8894a3"); }
+
+  // scorecard entry
+  ensureCardDraft(req) { if (this.state.cardDraft) return this.state.cardDraft; const ratings = {}; req.scorecard.forEach((a) => (ratings[a] = 3)); const d = { ratings, rec: "yes", comment: "" }; return d; }
+  pickRating(aid, n) { const d = this.state.cardDraft || {}; this.setState({ cardDraft: { ...d, ratings: { ...(d.ratings || {}), [aid]: n } } }); }
+  pickRec(rid) { const d = this.state.cardDraft || {}; this.setState({ cardDraft: { ...d, rec: rid } }); }
+  submitCard(stageId) {
+    const d = this.state.cardDraft; const c = this._rec.getCandidate(this.state.candId);
+    this._rec.submitScorecard(c.id, stageId, this.state.user.id, d.ratings, d.rec, d.comment);
+    this.setState({ cardDraft: null });
+    this.addToast("Scorecard submitted for " + c.name + ".", "#3ecf8e");
+  }
+
+  // notes
+  addNote() { const t = this.state.noteDraft.trim(); if (!t) return; this._rec.addNote(this.state.candId, this.state.user.id, t); this.setState({ noteDraft: "" }); }
+
+  // offers
+  startOffer(req, c) {
+    const base = req.dept === "Engineering" ? 150 : req.dept === "Revenue" ? 125 : req.dept === "Design" ? 118 : 98;
+    this.setState({ offerBuilding: true, offerForm: { base, bonus: 12, equity: 0.04, level: req.level, startDate: "2026-08-17" } });
+  }
+  submitOffer() {
+    const f = this.state.offerForm;
+    this._rec.makeOffer(this.state.candId, { base: parseFloat(f.base) || 0, bonus: parseFloat(f.bonus) || 0, equity: f.equity, level: f.level, startDate: f.startDate });
+    this.setState({ offerBuilding: false });
+    this.addToast("Offer drafted — sent to " + this._rec.person("alex.vp").name + " for approval.", "#3ecf8e");
+  }
+  approveOffer() { this._rec.approveOffer(this.state.candId); this.addToast("Offer approved.", "#3ecf8e"); this.reload(); }
+  extendOffer() { this._rec.extendOffer(this.state.candId); this.addToast("Offer sent to the candidate.", "#3ecf8e"); this.reload(); }
+  decline() { this._rec.declineOffer(this.state.candId); this.addToast("Offer declined — candidate moved to rejected.", "#8894a3"); this.reload(); }
+  accept() {
+    const c = this._rec.getCandidate(this.state.candId);
+    this._rec.acceptOffer(this.state.candId).then((kase) => {
+      this.addToast(c.name + " hired — onboarding started" + (kase ? "." : " (offline)."), "#3ecf8e", 5200);
+      this.reload();
+    });
+    this.reload();
+  }
+
+  renderVals() {
+    const rec = this._rec, u = this.state.user;
+    if (!rec || !u) return { hasCand: false, noCand: false, toasts: [], backHref: "Recruitment.dc.html", reqTitle: "", scoreStages: [], debriefAttrs: [], recTally: [], notes: [], cardRows: [], recOptions: [], noteTitle: "", noteSub: "" };
+    const c = rec.getCandidate(this.state.candId);
+    const req = rec.getReq(this.state.reqId) || (c ? rec.getReq(c.reqId) : null);
+    if (!c || !req) return { hasCand: false, noCand: true, toasts: [], backHref: "Recruitment.dc.html", reqTitle: "", scoreStages: [], debriefAttrs: [], recTally: [], notes: [], cardRows: [], recOptions: [], noteTitle: "Candidate", noteSub: "" };
+
+    const isHr = u.role === "hr";
+    const canManage = isHr || req.ownerId === u.id;
+    const stage = c.stage;
+    const sm = rec.stageMeta(stage);
+    const fitC = c.fit >= 90 ? "#2f6f4f" : c.fit >= 82 ? "#2f6aa8" : "#9a6a1a";
+
+    // action bar
+    const canAdvance = canManage && ["applied", "screen", "interview", "onsite"].indexOf(stage) >= 0;
+    const nextStage = rec.STAGE_ORDER[rec.STAGE_ORDER.indexOf(stage) + 1];
+    const canStartOffer = canManage && stage === "onsite" && !c.offer;
+    const canReject = canManage && stage !== "hired" && stage !== "rejected" && stage !== "offer";
+    const showActions = canAdvance || canStartOffer || canReject;
+
+    // debrief
+    const db = rec.debriefFor(c.id);
+    const hasDebrief = db && db.count > 0;
+    const debriefAttrs = hasDebrief ? db.attrs.filter((a) => a.avg != null).map((a) => ({ name: a.name, avg: a.avg.toFixed(1), pct: Math.round((a.avg / 5) * 100), color: a.avg >= 4 ? "#3d8564" : a.avg >= 3 ? "#3f7cc4" : "#c68a2a" })) : [];
+    const recTally = hasDebrief ? rec.REC_ORDER.map((rid) => ({ label: rec.RECS[rid].label, count: db.recTally[rid] || 0, color: rec.RECS[rid].color, bg: rec.RECS[rid].bg })) : [];
+    const overall = hasDebrief ? db.overall : 0;
+    const overallLabel = overall >= 1.4 ? "Strong hire" : overall >= 0.4 ? "Hire" : overall >= -0.4 ? "Mixed" : "No hire";
+    const overallFg = overall >= 0.4 ? "#2f6f4f" : overall >= -0.4 ? "#9a6a1a" : "#b23b2e";
+    const overallBg = overall >= 0.4 ? "#e6f3ec" : overall >= -0.4 ? "#f7f1e0" : "#fbeae8";
+
+    // scorecards per scored stage
+    const scoreStages = [];
+    (req.interviewPlan || []).forEach((ip) => {
+      if (rec.SCORED_STAGES.indexOf(ip.stageId) < 0) return;
+      const reached = rec.STAGE_ORDER.indexOf(stage === "rejected" ? "onsite" : stage) >= rec.STAGE_ORDER.indexOf(ip.stageId);
+      if (!reached) return;
+      const cardMap = (c.scorecards || {})[ip.stageId] || {};
+      const cards = ip.interviewerIds.map((iid) => {
+        const p = rec.person(iid); const card = cardMap[iid];
+        if (card) { const rmeta = rec.RECS[card.rec] || {}; return { who: p.name, initials: p.initials, bg: p.bg, title: p.title, submitted: true, pending: false, recLabel: rmeta.label, recColor: rmeta.color, recBg: rmeta.bg, hasComment: !!card.comment, comment: card.comment }; }
+        return { who: p.name, initials: p.initials, bg: p.bg, title: p.title, submitted: false, pending: true, hasComment: false, comment: "" };
+      });
+      scoreStages.push({ stageId: ip.stageId, label: rec.stageMeta(ip.stageId).label, cards });
+    });
+
+    // scorecard entry: viewer is interviewer on the current scored stage and hasn't submitted
+    const curIp = (req.interviewPlan || []).find((ip) => ip.stageId === stage);
+    const isInterviewerNow = curIp && curIp.interviewerIds.indexOf(u.id) >= 0 && rec.SCORED_STAGES.indexOf(stage) >= 0;
+    const alreadyCarded = ((c.scorecards || {})[stage] || {})[u.id];
+    const canSubmitCard = !!isInterviewerNow && !alreadyCarded;
+    let cardRows = [], recOptions = [], cardStageLabel = "", cardComment = "";
+    if (canSubmitCard) {
+      const draft = this.state.cardDraft || this.ensureCardDraft(req);
+      if (!this.state.cardDraft) this.state.cardDraft = draft; // seed once
+      cardStageLabel = rec.stageMeta(stage).label;
+      cardComment = draft.comment;
+      cardRows = req.scorecard.map((aid) => ({
+        name: rec.attr(aid).name,
+        pills: [1, 2, 3, 4, 5].map((n) => { const on = draft.ratings[aid] === n; const col = n >= 4 ? "#3d8564" : n >= 3 ? "#3f7cc4" : "#c68a2a"; return { n, onPick: () => this.pickRating(aid, n), bg: on ? col : "#fff", fg: on ? "#fff" : "#8894a3", border: on ? col : "#dde2e8" }; }),
+      }));
+      recOptions = rec.REC_ORDER.map((rid) => { const on = draft.rec === rid; const m = rec.RECS[rid]; return { label: m.label, onPick: () => this.pickRec(rid), bg: on ? m.bg : "#fff", fg: on ? m.color : "#8894a3", border: on ? m.color : "#dde2e8" }; });
+    }
+
+    // offer
+    const showOffer = canManage && (["onsite", "offer", "hired"].indexOf(stage) >= 0 || !!c.offer);
+    const of = c.offer;
+    const offerStatusMap = { pending_approval: { bg: "#f7f1e0", fg: "#9a6a1a", label: "Pending approval" }, approved: { bg: "#e9f0f9", fg: "#2f6aa8", label: "Approved · ready to send" }, extended: { bg: "#f0ecfd", fg: "#5b3ea8", label: "Extended to candidate" }, accepted: { bg: "#e6f3ec", fg: "#2f6f4f", label: "Accepted" }, declined: { bg: "#fbeae8", fg: "#b23b2e", label: "Declined" } };
+    const osm = of ? (offerStatusMap[of.status] || {}) : {};
+    const ff = this.state.offerForm || {};
+
+    // notes
+    const notes = (c.notes || []).map((n) => { const p = rec.person(n.authorId); return { who: p.name, initials: p.initials, bg: p.bg, text: n.text, ago: this.ago(n.at) }; });
+
+    return {
+      hasCand: true, noCand: false,
+      backHref: "Requisition.dc.html?req=" + encodeURIComponent(req.id), reqTitle: req.title,
+      name: c.name, initials: c.initials, bg: c.bg, currentRole: c.currentRole, exp: c.exp || "—",
+      source: c.source, email: c.email, appliedAgo: this.ago(c.appliedAt), fit: c.fit, fitColor: fitC,
+      stageLabel: sm.label, stageBg: sm.bg, stageFg: sm.fg, summary: c.summary,
+
+      showActions, canAdvance, advanceLabel: nextStage ? ("Advance to " + rec.stageMeta(nextStage).label) : "Advance",
+      onAdvance: () => this.advance(),
+      canStartOffer, onStartOffer: () => this.startOffer(req, c),
+      canReject, onReject: () => this.setState({ rejecting: true }),
+
+      hasDebrief, debriefCount: hasDebrief ? db.count : 0, debriefAttrs, recTally, overallLabel, overallFg, overallBg,
+
+      scoreStages,
+      canSubmitCard, cardRows, recOptions, cardStageLabel, cardComment,
+      onCardComment: (e) => { const d = this.state.cardDraft || {}; this.setState({ cardDraft: { ...d, comment: e.target.value } }); },
+      onSubmitCard: () => this.submitCard(stage),
+
+      showOffer, hasOffer: !!of, offerBuilding: this.state.offerBuilding,
+      offerStatusBg: osm.bg, offerStatusFg: osm.fg, offerStatusLabel: osm.label,
+      offerBase: of ? of.base : "", offerBonus: of ? of.bonus : "", offerLevel: of ? of.level : "", offerStart: of ? of.startDate : "",
+      ofBase: ff.base, ofBonus: ff.bonus, ofStart: ff.startDate,
+      onOfBase: (e) => this.setState({ offerForm: { ...this.state.offerForm, base: e.target.value } }),
+      onOfBonus: (e) => this.setState({ offerForm: { ...this.state.offerForm, bonus: e.target.value } }),
+      onOfStart: (e) => this.setState({ offerForm: { ...this.state.offerForm, startDate: e.target.value } }),
+      onSubmitOffer: () => this.submitOffer(), onCancelOffer: () => this.setState({ offerBuilding: false }),
+      canApproveOffer: !!of && of.status === "pending_approval" && isHr,
+      canExtendOffer: !!of && of.status === "approved" && canManage,
+      canDecide: !!of && of.status === "extended" && canManage,
+      onApproveOffer: () => this.approveOffer(), onExtendOffer: () => this.extendOffer(),
+      onAccept: () => this.accept(), onDecline: () => this.decline(),
+      hiredHandoff: stage === "hired" && !!c.onboardingCaseId,
+      onboardingHref: c.onboardingCaseId ? ("Onboarding.dc.html?case=" + encodeURIComponent(c.onboardingCaseId)) : "Onboarding.dc.html",
+
+      noteDraft: this.state.noteDraft, onNoteDraft: (e) => this.setState({ noteDraft: e.target.value }),
+      onAddNote: () => this.addNote(), notes, noNotes: notes.length === 0,
+
+      rejectOpen: this.state.rejecting, rejectReason: this.state.rejectReason, reasonOpts: rec.REJECTION_REASONS,
+      onRejectReason: (e) => this.setState({ rejectReason: e.target.value }),
+      onRejectCancel: () => this.setState({ rejecting: false }), onRejectConfirm: () => this.confirmReject(),
+
+      noteTitle: c.name, noteSub: req.title + " · " + sm.label,
+      toasts: this.state.toasts.map((t) => ({ ...t, onClose: () => this.closeToast(t.id) })),
+    };
+  }
+}
+</script>
+</body>
+</html>

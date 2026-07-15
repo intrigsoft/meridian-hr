@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+<head>
+    <title layout:fragment="title">Pipeline · Meridian HR</title>
+    <th:block layout:fragment="head"><style>.cand:hover { border-color:#cfdbe9 !important; box-shadow:0 4px 12px rgba(20,30,50,.06); }</style></th:block>
+</head>
+<body>
+<div layout:fragment="content" style="max-width:1120px;">
+
+    <a th:href="@{/recruitment}" style="display:inline-flex; align-items:center; gap:6px; margin-bottom:14px; font-size:12.5px; color:#8894a3; font-weight:600;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        Back to requisitions
+    </a>
+
+    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:14px; margin-bottom:18px;">
+        <div>
+            <div style="font-size:12.5px; color:#8894a3; font-weight:500; margin-bottom:2px;">Recruitment / Pipeline</div>
+            <h1 style="margin:0; font-size:23px; font-weight:700; letter-spacing:-0.02em; color:#1a2331;" th:text="${req.title} + ' pipeline'">Senior Backend Engineer pipeline</h1>
+            <div style="font-size:12.5px; color:#8894a3; margin-top:4px;" th:text="${req.dept} + ' · ' + ${req.level} + ' · HM ' + ${ownerName}">Engineering · Senior · HM David Okonkwo</div>
+        </div>
+        <a th:href="@{/recruitment/req/{id}(id=${req.id})}" class="btn btn-ghost">Requisition details</a>
+    </div>
+
+    <!-- Add candidate -->
+    <form th:action="@{/recruitment/req/{id}/candidate(id=${req.id})}" method="post" style="display:flex; gap:10px; margin-bottom:18px; flex-wrap:wrap; align-items:center; background:#fff; border:1px solid #e4e8ed; border-radius:10px; padding:12px 14px;">
+        <input name="name" placeholder="Candidate name" required style="flex:1; min-width:160px; height:36px; border:1px solid #dde2e8; border-radius:8px; padding:0 11px; font-size:13px; color:#28323f; outline:none; font-family:inherit;"/>
+        <input name="currentRole" placeholder="Current role (optional)" style="flex:1; min-width:160px; height:36px; border:1px solid #dde2e8; border-radius:8px; padding:0 11px; font-size:13px; color:#28323f; outline:none; font-family:inherit;"/>
+        <select name="source" style="height:36px; border:1px solid #dde2e8; border-radius:8px; padding:0 10px; font-size:13px; color:#28323f; background:#fff; outline:none;">
+            <option th:each="s : ${sourceOptions}" th:value="${s}" th:text="${s}">Referral</option>
+        </select>
+        <button type="submit" class="btn btn-primary" style="height:36px;">Add candidate</button>
+    </form>
+
+    <!-- Board -->
+    <div style="display:grid; grid-auto-flow:column; grid-auto-columns:minmax(180px, 1fr); gap:12px; overflow-x:auto; padding-bottom:6px;">
+        <div th:each="col : ${columns}" style="background:#f6f8fa; border:1px solid #eef1f4; border-radius:10px; padding:10px; min-width:180px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; padding:0 2px;">
+                <span style="font-size:12px; font-weight:700; color:#28323f;" th:text="${col.label()}">Applied</span>
+                <span style="font-size:11px; font-weight:700; padding:1px 8px; border-radius:10px;" th:styleappend="'; ' + ('background:' + ${col.bg()} + '; color:' + ${col.color()})" th:text="${col.count()}">2</span>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+                <a th:each="cc : ${col.cards()}" th:href="@{/recruitment/candidate/{id}(id=${cc.id()})}" class="cand"
+                   style="display:block; background:#fff; border:1px solid #e4e8ed; border-radius:9px; padding:11px 12px;">
+                    <div style="display:flex; align-items:center; gap:9px;">
+                        <div style="width:30px; height:30px; border-radius:50%; color:#fff; font-size:11px; font-weight:600; display:flex; align-items:center; justify-content:center; flex-shrink:0;" th:styleappend="'; ' + ('background:' + ${cc.bg()})" th:text="${cc.initials()}">WZ</div>
+                        <div style="min-width:0;">
+                            <div style="font-size:12.5px; font-weight:600; color:#1a2331; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" th:text="${cc.name()}">Wei Zhang</div>
+                            <div style="font-size:10.5px; color:#8894a3; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" th:text="${cc.role()}">Staff Engineer, Stripe</div>
+                        </div>
+                    </div>
+                    <div style="display:flex; align-items:center; justify-content:space-between; margin-top:9px;">
+                        <span style="font-size:10px; font-weight:600; color:#6b7480; background:#eef1f4; padding:1px 7px; border-radius:10px;" th:text="${cc.source()}">Referral</span>
+                        <span style="font-size:11px; font-weight:700; color:#2f6f4f;" th:text="${cc.fit()} + '% fit'">92% fit</span>
+                    </div>
+                </a>
+                <div th:if="${col.cards().isEmpty()}" style="font-size:11px; color:#b6bdc6; text-align:center; padding:12px 0;">—</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<th:block layout:fragment="content-after">
+    <div th:if="${toast != null}" style="position:fixed; right:22px; bottom:22px; z-index:400; display:flex; align-items:center; gap:11px; background:#1a2331; color:#fff; padding:12px 14px; border-radius:10px; box-shadow:0 10px 28px rgba(20,30,50,0.28); min-width:280px; max-width:390px;">
+        <span style="width:8px; height:8px; border-radius:50%; flex-shrink:0;" th:styleappend="'; ' + ('background:' + (${toastDot} ?: '#3ecf8e'))"></span>
+        <span style="flex:1; font-size:12.5px; font-weight:500; line-height:1.4;" th:text="${toast}">Done.</span>
+    </div>
+</th:block>
+</body>
+</html>

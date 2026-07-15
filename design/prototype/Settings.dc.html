@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; }
+  body { font-family: 'Public Sans', system-ui, -apple-system, sans-serif; background: #eceff3; color: #1e2733; -webkit-font-smoothing: antialiased; }
+  a { text-decoration: none; color: inherit; }
+  a:hover { color: inherit; }
+  input, select { font-family: inherit; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: #cdd4dc; border-radius: 6px; border: 2px solid #eceff3; }
+</style>
+</helmet>
+
+<dc-import name="AppShell" active="settings" note-title="{{ noteTitle }}" note-sub="{{ noteSub }}" hint-size="100%,100%">
+  <div style="max-width:840px;">
+
+    <div style="margin-bottom:20px;">
+      <div style="font-size:12.5px; color:#8894a3; font-weight:500; margin-bottom:2px;">Admin / Settings</div>
+      <h1 style="margin:0; font-size:24px; font-weight:700; letter-spacing:-0.02em; color:#1a2331;">Policies & configuration</h1>
+    </div>
+
+    <sc-if value="{{ restricted }}" hint-placeholder-val="">
+      <div style="background:#f7f9fb; border:1px dashed #d9e0e8; border-radius:13px; padding:56px 20px; text-align:center;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#9aa3ad" stroke-width="1.8" style="margin-bottom:10px;"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+        <div style="font-size:15px; font-weight:600; color:#5a6472;">Configuration is HR-only</div>
+        <div style="font-size:12.5px; color:#9aa3ad; margin-top:4px;">These constraints govern the whole organization. Ask your HR business partner to change them.</div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ allowed }}" hint-placeholder-val="{{ true }}">
+    <div style="display:flex; align-items:center; gap:9px; margin-bottom:16px; padding:11px 14px; background:#eef4fb; border:1px solid #dbe6f3; border-radius:10px;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3a5aa8" stroke-width="1.9" style="flex-shrink:0;"><path d="M12 16v-4M12 8h.01"/><circle cx="12" cy="12" r="9"/></svg>
+      <div style="font-size:12px; color:#3a5aa8; line-height:1.45;">Changes here take effect immediately — holidays and hour targets flow into <strong>My Time</strong>, and allowances, notice, ceiling &amp; blackouts drive the <strong>leave request</strong> policy checks.</div>
+    </div>
+
+    <!-- ===== Work week ===== -->
+    <div style="background:#fff; border:1px solid #e4e8ed; border-radius:13px; padding:22px; margin-bottom:16px;">
+      <div style="font-size:15px; font-weight:700; color:#1a2331; margin-bottom:3px;">Work week</div>
+      <div style="font-size:12px; color:#9aa3ad; margin-bottom:18px;">Standard hours and working days used for timesheet targets.</div>
+      <div style="display:flex; align-items:center; gap:14px; margin-bottom:18px;">
+        <div style="font-size:13px; font-weight:600; color:#3a4453; width:150px;">Weekly target hours</div>
+        <input value="{{ targetHours }}" onInput="{{ onTargetHours }}" inputmode="numeric" style="width:90px; height:36px; border:1px solid #dde2e8; border-radius:8px; background:#f8fafc; padding:0 12px; font-size:14px; font-weight:600; color:#28323f; text-align:center; outline:none;" />
+        <span style="font-size:12.5px; color:#9aa3ad;">hours / week</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:14px;">
+        <div style="font-size:13px; font-weight:600; color:#3a4453; width:150px;">Working days</div>
+        <div style="display:flex; gap:6px;">
+          <sc-for list="{{ workdayChips }}" as="d" hint-placeholder-count="7">
+            <button onClick="{{ d.onClick }}" style="width:40px; height:36px; border:1px solid {{ d.border }}; border-radius:8px; background:{{ d.bg }}; color:{{ d.fg }}; font-family:inherit; font-size:12px; font-weight:600; cursor:pointer;">{{ d.label }}</button>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== Leave allowances ===== -->
+    <div style="background:#fff; border:1px solid #e4e8ed; border-radius:13px; padding:22px; margin-bottom:16px;">
+      <div style="font-size:15px; font-weight:700; color:#1a2331; margin-bottom:3px;">Leave types &amp; annual allowance</div>
+      <div style="font-size:12px; color:#9aa3ad; margin-bottom:18px;">Days granted per year for each leave type.</div>
+      <div style="display:flex; flex-direction:column;">
+        <sc-for list="{{ leaveTypes }}" as="t" hint-placeholder-count="6">
+          <div style="display:flex; align-items:center; gap:12px; padding:11px 0; border-bottom:1px solid #f4f6f8;">
+            <span style="width:10px; height:10px; border-radius:3px; background:{{ t.color }}; flex-shrink:0;"></span>
+            <span style="flex:1; font-size:13px; font-weight:600; color:#28323f;">{{ t.label }}</span>
+            <input value="{{ t.allowance }}" onInput="{{ t.onInput }}" inputmode="numeric" style="width:80px; height:34px; border:1px solid #dde2e8; border-radius:8px; background:#f8fafc; padding:0 11px; font-size:13.5px; font-weight:600; color:#28323f; text-align:center; outline:none;" />
+            <span style="width:54px; font-size:12px; color:#9aa3ad;">days/yr</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <!-- ===== Approval rules ===== -->
+    <div style="background:#fff; border:1px solid #e4e8ed; border-radius:13px; padding:22px; margin-bottom:16px;">
+      <div style="font-size:15px; font-weight:700; color:#1a2331; margin-bottom:3px;">Approval rules</div>
+      <div style="font-size:12px; color:#9aa3ad; margin-bottom:18px;">Thresholds that route requests and gate submission.</div>
+      <div style="display:flex; flex-direction:column; gap:14px;">
+        <sc-for list="{{ rules }}" as="r" hint-placeholder-count="3">
+          <div style="display:flex; align-items:center; gap:14px;">
+            <div style="flex:1;">
+              <div style="font-size:13px; font-weight:600; color:#3a4453;">{{ r.label }}</div>
+              <div style="font-size:11.5px; color:#9aa3ad; margin-top:1px;">{{ r.hint }}</div>
+            </div>
+            <input value="{{ r.value }}" onInput="{{ r.onInput }}" inputmode="numeric" style="width:80px; height:36px; border:1px solid #dde2e8; border-radius:8px; background:#f8fafc; padding:0 11px; font-size:14px; font-weight:600; color:#28323f; text-align:center; outline:none;" />
+            <span style="width:46px; font-size:12px; color:#9aa3ad;">days</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <!-- ===== Performance competencies ===== -->
+    <div style="background:#fff; border:1px solid #e4e8ed; border-radius:13px; padding:22px; margin-bottom:16px;">
+      <div style="display:flex; align-items:baseline; justify-content:space-between; margin-bottom:3px;">
+        <div style="font-size:15px; font-weight:700; color:#1a2331;">Performance competencies</div>
+        <span style="font-size:11.5px; color:#9aa3ad;">{{ compCount }} in library</span>
+      </div>
+      <div style="font-size:12px; color:#9aa3ad; margin-bottom:16px;">The catalog HR picks from when designing a review cycle. Edit names and descriptions inline.</div>
+      <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:14px;">
+        <sc-for list="{{ competencies }}" as="c" hint-placeholder-count="6">
+          <div style="display:flex; align-items:center; gap:10px; padding:10px 12px; background:#f8fafc; border:1px solid #eef1f4; border-radius:9px;">
+            <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:5px;">
+              <input value="{{ c.name }}" onChange="{{ c.onName }}" style="height:32px; border:1px solid #e4e8ed; border-radius:7px; padding:0 10px; font-size:13px; font-weight:600; color:#28323f; background:#fff; outline:none;" style-focus="border-color:#bcd0ea;" />
+              <input value="{{ c.blurb }}" onChange="{{ c.onBlurb }}" placeholder="Short description…" style="height:30px; border:1px solid #eef1f4; border-radius:7px; padding:0 10px; font-size:12px; color:#6b7480; background:#fff; outline:none;" style-focus="border-color:#bcd0ea;" />
+            </div>
+            <button onClick="{{ c.onRemove }}" disabled="{{ c.removeDisabled }}" title="{{ c.removeTitle }}" style="width:32px; height:32px; border:1px solid {{ c.removeBorder }}; border-radius:8px; background:#fff; display:flex; align-items:center; justify-content:center; cursor:{{ c.removeCursor }}; color:{{ c.removeColor }}; flex-shrink:0;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+            </button>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display:flex; gap:9px; align-items:center; padding-top:14px; border-top:1px solid #f4f6f8;">
+        <input value="{{ compName }}" onInput="{{ onCompName }}" placeholder="New competency name" style="flex:1; height:36px; border:1px solid #dde2e8; border-radius:8px; background:#fff; padding:0 12px; font-size:13px; color:#28323f; outline:none;" />
+        <button onClick="{{ onAddComp }}" style="height:36px; padding:0 15px; border:none; border-radius:8px; background:{{ compBtnBg }}; color:#fff; font-family:inherit; font-size:13px; font-weight:600; cursor:{{ compBtnCursor }};">Add</button>
+      </div>
+    </div>
+
+    <!-- ===== Job-change types ===== -->
+    <div style="background:#fff; border:1px solid #e4e8ed; border-radius:13px; padding:22px; margin-bottom:16px;">
+      <div style="font-size:15px; font-weight:700; color:#1a2331; margin-bottom:3px;">Job-change types</div>
+      <div style="font-size:12px; color:#9aa3ad; margin-bottom:18px;">Which employee fields each change type is allowed to edit. Toggle a field to include it in that request form.</div>
+      <div style="display:flex; flex-direction:column; gap:14px;">
+        <sc-for list="{{ changeTypes }}" as="ct" hint-placeholder-count="4">
+          <div style="border:1px solid #eef1f4; border-radius:11px; padding:14px 15px;">
+            <div style="display:flex; align-items:center; gap:9px; margin-bottom:11px;">
+              <span style="font-size:12px; font-weight:700; padding:3px 11px; border-radius:20px; background:{{ ct.bg }}; color:{{ ct.color }};">{{ ct.label }}</span>
+              <span style="font-size:11.5px; color:#9aa3ad;">{{ ct.fieldCount }} fields</span>
+            </div>
+            <div style="display:flex; flex-wrap:wrap; gap:7px;">
+              <sc-for list="{{ ct.fieldChips }}" as="fc" hint-placeholder-count="5">
+                <button onClick="{{ fc.onToggle }}" style="height:30px; padding:0 12px; border:1px solid {{ fc.border }}; border-radius:20px; background:{{ fc.bg }}; color:{{ fc.fg }}; font-family:inherit; font-size:12px; font-weight:600; cursor:pointer;">{{ fc.label }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <!-- ===== Blackout periods ===== -->
+    <div style="background:#fff; border:1px solid #e4e8ed; border-radius:13px; padding:22px; margin-bottom:16px;">
+      <div style="font-size:15px; font-weight:700; color:#1a2331; margin-bottom:3px;">Blackout periods</div>
+      <div style="font-size:12px; color:#9aa3ad; margin-bottom:16px;">Windows when leave is restricted org-wide.</div>
+      <div style="display:flex; flex-direction:column; gap:9px; margin-bottom:14px;">
+        <sc-for list="{{ blackouts }}" as="b" hint-placeholder-count="1">
+          <div style="display:flex; align-items:center; gap:12px; padding:11px 13px; background:#f8fafc; border:1px solid #eef1f4; border-radius:9px;">
+            <div style="width:34px; height:34px; border-radius:8px; background:#fbe9e7; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b23b2e" stroke-width="1.9"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/></svg>
+            </div>
+            <div style="flex:1; min-width:0;">
+              <div style="font-size:12.5px; font-weight:600; color:#28323f;">{{ b.label }}</div>
+              <div style="font-size:11px; color:#9aa3ad;">{{ b.range }} · {{ b.scope }}</div>
+            </div>
+            <button onClick="{{ b.onRemove }}" style="width:30px; height:30px; border:1px solid #f0dcd9; border-radius:8px; background:#fff; color:#b23b2e; font-size:16px; line-height:1; cursor:pointer;">×</button>
+          </div>
+        </sc-for>
+        <sc-if value="{{ noBlackouts }}" hint-placeholder-val="">
+          <div style="padding:14px; text-align:center; font-size:12px; color:#9aa3ad;">No blackout periods configured.</div>
+        </sc-if>
+      </div>
+      <div style="display:flex; gap:9px; align-items:center; padding-top:14px; border-top:1px solid #f4f6f8;">
+        <input value="{{ boLabel }}" onInput="{{ onBoLabel }}" placeholder="Label (e.g. Year-end freeze)" style="flex:1; height:36px; border:1px solid #dde2e8; border-radius:8px; background:#fff; padding:0 12px; font-size:13px; color:#28323f; outline:none;" />
+        <input type="date" value="{{ boStart }}" onInput="{{ onBoStart }}" style="height:36px; border:1px solid #dde2e8; border-radius:8px; background:#fff; padding:0 10px; font-size:13px; color:#28323f; outline:none;" />
+        <input type="date" value="{{ boEnd }}" onInput="{{ onBoEnd }}" style="height:36px; border:1px solid #dde2e8; border-radius:8px; background:#fff; padding:0 10px; font-size:13px; color:#28323f; outline:none;" />
+        <button onClick="{{ onAddBlackout }}" style="height:36px; padding:0 15px; border:none; border-radius:8px; background:{{ boBtnBg }}; color:#fff; font-family:inherit; font-size:13px; font-weight:600; cursor:{{ boBtnCursor }};">Add</button>
+      </div>
+    </div>
+
+    <!-- ===== Public holidays ===== -->
+    <div style="background:#fff; border:1px solid #e4e8ed; border-radius:13px; padding:22px; margin-bottom:16px;">
+      <div style="display:flex; align-items:baseline; justify-content:space-between; margin-bottom:3px;">
+        <div style="font-size:15px; font-weight:700; color:#1a2331;">Public holidays</div>
+        <span style="font-size:11.5px; color:#9aa3ad;">{{ holidayCount }} days</span>
+      </div>
+      <div style="font-size:12px; color:#9aa3ad; margin-bottom:16px;">Paid company holidays — auto-filled on timesheets and excluded from leave day counts.</div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:14px;">
+        <sc-for list="{{ holidays }}" as="h" hint-placeholder-count="8">
+          <div style="min-width:0; display:flex; align-items:center; gap:11px; padding:9px 11px; background:#f8fafc; border:1px solid #eef1f4; border-radius:9px;">
+            <div style="width:40px; flex-shrink:0; text-align:center; background:#eef4fb; border:1px solid #dbe6f3; border-radius:8px; padding:3px 0;">
+              <div style="font-size:9px; font-weight:700; color:#3a5aa8; text-transform:uppercase;">{{ h.mon }}</div>
+              <div style="font-size:14px; font-weight:700; color:#17457f; line-height:1;">{{ h.day }}</div>
+            </div>
+            <div style="flex:1; min-width:0;">
+              <div style="font-size:12px; font-weight:600; color:#28323f; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ h.name }}</div>
+              <div style="font-size:10.5px; color:#9aa3ad;">{{ h.weekday }}</div>
+            </div>
+            <button onClick="{{ h.onRemove }}" style="width:26px; height:26px; border:1px solid #e4e8ed; border-radius:7px; background:#fff; color:#9aa3ad; font-size:15px; line-height:1; cursor:pointer; flex-shrink:0;">×</button>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display:flex; gap:9px; align-items:center; padding-top:14px; border-top:1px solid #f4f6f8;">
+        <input type="date" value="{{ holDate }}" onInput="{{ onHolDate }}" style="height:36px; border:1px solid #dde2e8; border-radius:8px; background:#fff; padding:0 10px; font-size:13px; color:#28323f; outline:none;" />
+        <input value="{{ holName }}" onInput="{{ onHolName }}" placeholder="Holiday name" style="flex:1; height:36px; border:1px solid #dde2e8; border-radius:8px; background:#fff; padding:0 12px; font-size:13px; color:#28323f; outline:none;" />
+        <button onClick="{{ onAddHoliday }}" style="height:36px; padding:0 15px; border:none; border-radius:8px; background:{{ holBtnBg }}; color:#fff; font-family:inherit; font-size:13px; font-weight:600; cursor:{{ holBtnCursor }};">Add</button>
+      </div>
+    </div>
+    </sc-if>
+  </div>
+
+  <!-- Toasts -->
+  <div style="position:fixed; right:22px; bottom:22px; display:flex; flex-direction:column; gap:10px; z-index:400;">
+    <sc-for list="{{ toasts }}" as="t" hint-placeholder-count="0">
+      <div style="display:flex; align-items:center; gap:11px; background:#1a2331; color:#fff; padding:12px 14px; border-radius:10px; box-shadow:0 10px 28px rgba(20,30,50,0.28); min-width:260px; max-width:380px;">
+        <span style="width:8px; height:8px; border-radius:50%; background:{{ t.dot }}; flex-shrink:0;"></span>
+        <span style="flex:1; font-size:12.5px; font-weight:500; line-height:1.4;">{{ t.msg }}</span>
+        <button onClick="{{ t.onClose }}" style="border:none; background:transparent; color:#8894a3; font-size:16px; line-height:1; cursor:pointer; padding:0;">×</button>
+      </div>
+    </sc-for>
+  </div>
+</dc-import>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:&quot;100%&quot;,&quot;height&quot;:&quot;100%&quot;}}">
+class Component extends DCLogic {
+  state = { user: null, tick: 0, boLabel: "", boStart: "", boEnd: "", holDate: "", holName: "", compName: "", toasts: [] };
+  _tid = 0;
+
+  componentDidMount() {
+    Promise.all([import("./session.js"), import("./config-store.js"), import("./performance-store.js"), import("./jobchange-store.js")]).then(([s, config, perf, jc]) => {
+      this._s = s; this._config = config; this._perf = perf; this._jc = jc;
+      const user = s.requireSession();
+      if (!user) return;
+      this.setState({ user });
+    });
+  }
+
+  addToast(msg, dot) {
+    const id = ++this._tid;
+    this.setState((st) => ({ toasts: [...st.toasts, { id, msg, dot: dot || "#3ecf8e" }] }));
+    setTimeout(() => this.setState((st) => ({ toasts: st.toasts.filter((t) => t.id !== id) })), 3400);
+  }
+  closeToast(id) { this.setState((st) => ({ toasts: st.toasts.filter((t) => t.id !== id) })); }
+  bump() { this.setState({ tick: this.state.tick + 1 }); }
+
+  setTarget(v) { const n = Math.max(0, Math.min(80, parseInt((v || "").replace(/[^0-9]/g, ""), 10) || 0)); this._config.setWorkweek({ targetHours: n }); this.bump(); }
+  toggleDay(id) {
+    const wk = this._config.getWorkweek();
+    const days = wk.workingDays.indexOf(id) >= 0 ? wk.workingDays.filter((d) => d !== id) : [...wk.workingDays, id];
+    this._config.setWorkweek({ workingDays: days }); this.bump();
+  }
+  setAllowance(id, v) { this._config.setLeaveTypeAllowance(id, (v || "").replace(/[^0-9]/g, "")); this.bump(); }
+  setRule(key, v) { const n = Math.max(0, parseInt((v || "").replace(/[^0-9]/g, ""), 10) || 0); this._config.setLeavePolicy({ [key]: n }); this.bump(); }
+
+  addBlackout() {
+    const { boLabel, boStart, boEnd } = this.state;
+    if (!boStart || !boEnd || boEnd < boStart) return;
+    this._config.addBlackout(boLabel || "Blackout", boStart, boEnd, "All teams");
+    this.setState({ boLabel: "", boStart: "", boEnd: "" });
+    this.addToast("Blackout period added.", "#e0483a");
+  }
+  removeBlackout(id) { this._config.removeBlackout(id); this.addToast("Blackout removed.", "#8894a3"); this.bump(); }
+
+  addHoliday() {
+    const { holDate, holName } = this.state;
+    if (!holDate) return;
+    this._config.addHoliday(holDate, holName || "Holiday");
+    this.setState({ holDate: "", holName: "" });
+    this.addToast("Holiday added.", "#3ecf8e");
+  }
+  removeHoliday(id) { this._config.removeHoliday(id); this.addToast("Holiday removed.", "#8894a3"); this.bump(); }
+
+  // ---- Performance competencies ----
+  addComp() {
+    const nm = (this.state.compName || "").trim();
+    if (!nm) return;
+    this._perf.addCompetency(nm, "");
+    this.setState({ compName: "" }); this.addToast('Competency "' + nm + '" added.', "#4a9d7a");
+  }
+  updateComp(id, patch) { this._perf.updateCompetency(id, patch); this.bump(); }
+  removeComp(id) { this._perf.removeCompetency(id); this.addToast("Competency removed.", "#8894a3"); this.bump(); }
+
+  // ---- Job-change types ----
+  toggleField(typeId, field) {
+    const t = this._jc.changeType(typeId);
+    const has = (t.fields || []).indexOf(field) >= 0;
+    const fields = has ? t.fields.filter((f) => f !== field) : [...t.fields, field];
+    this._jc.setTypeFields(typeId, fields); this.bump();
+  }
+
+  renderVals() {
+    const u = this.state.user, config = this._config;
+    const base = { restricted: false, allowed: false, noteTitle: "", noteSub: "",
+      toasts: this.state.toasts.map((t) => ({ ...t, onClose: () => this.closeToast(t.id) })),
+      workdayChips: [], leaveTypes: [], rules: [], blackouts: [], holidays: [], targetHours: 40,
+      competencies: [], changeTypes: [], compCount: 0 };
+    if (!u || !config) return base;
+    if (u.role !== "hr") return { ...base, restricted: true };
+
+    const wk = config.getWorkweek();
+    const leave = config.getLeave();
+    const DAYS = [["mon", "M"], ["tue", "T"], ["wed", "W"], ["thu", "T"], ["fri", "F"], ["sat", "S"], ["sun", "S"]];
+    const workdayChips = DAYS.map(([id, label]) => {
+      const on = wk.workingDays.indexOf(id) >= 0;
+      return { label, border: on ? "#17457f" : "#dde2e8", bg: on ? "#eef4fb" : "#fff", fg: on ? "#17457f" : "#9aa3ad", onClick: () => this.toggleDay(id) };
+    });
+
+    const leaveTypes = leave.types.map((t) => ({ label: t.label, color: t.color, allowance: t.allowance,
+      onInput: (e) => this.setAllowance(t.id, e.target.value) }));
+
+    const rules = [
+      { key: "noticeDays", label: "Annual leave notice period", hint: "Minimum days' notice before annual leave starts", value: leave.noticeDays, onInput: (e) => this.setRule("noticeDays", e.target.value) },
+      { key: "ceilingDays", label: "Manager authority ceiling", hint: "Requests longer than this escalate to HR", value: leave.ceilingDays, onInput: (e) => this.setRule("ceilingDays", e.target.value) },
+      { key: "sickCertDays", label: "Medical certificate threshold", hint: "Sick leave beyond this needs a certificate", value: leave.sickCertDays, onInput: (e) => this.setRule("sickCertDays", e.target.value) },
+    ];
+
+    const fmtRange = (a, b) => {
+      const f = (iso) => new Date(iso + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      return f(a) + " – " + f(b) + ", " + new Date(b + "T00:00:00").getFullYear();
+    };
+    const blackouts = config.getBlackouts().map((b) => ({ label: b.label, range: fmtRange(b.start, b.end), scope: b.scope,
+      onRemove: () => this.removeBlackout(b.id) }));
+
+    const hols = config.getHolidays().map((h) => {
+      const d = new Date(h.date + "T00:00:00");
+      return { name: h.name, mon: d.toLocaleDateString("en-US", { month: "short" }), day: d.getDate(),
+        weekday: d.toLocaleDateString("en-US", { weekday: "long", year: "numeric" }), onRemove: () => this.removeHoliday(h.id) };
+    });
+
+    const boReady = !!(this.state.boStart && this.state.boEnd && this.state.boEnd >= this.state.boStart);
+    const holReady = !!this.state.holDate;
+    const compReady = !!this.state.compName.trim();
+
+    // Performance competencies
+    const lib = this._perf ? this._perf.getLibrary() : [];
+    const competencies = lib.map((c) => ({ name: c.name, blurb: c.blurb || "",
+      onName: (e) => this.updateComp(c.id, { name: e.target.value }),
+      onBlurb: (e) => this.updateComp(c.id, { blurb: e.target.value }),
+      removeDisabled: lib.length <= 1, removeTitle: lib.length <= 1 ? "Keep at least one" : "Remove competency",
+      removeBorder: lib.length <= 1 ? "#eef1f4" : "#f0cfc9", removeColor: lib.length <= 1 ? "#cdd4dc" : "#b23b2e",
+      removeCursor: lib.length <= 1 ? "not-allowed" : "pointer", onRemove: () => this.removeComp(c.id) }));
+
+    // Job-change types
+    const jc = this._jc;
+    const changeTypes = jc ? jc.getChangeTypes().map((t) => ({
+      label: t.label, bg: t.bg, color: t.color, fieldCount: (t.fields || []).length,
+      fieldChips: jc.ALL_CHANGE_FIELDS.map((f) => {
+        const on = (t.fields || []).indexOf(f) >= 0;
+        return { label: jc.FIELD_LABELS[f] || f, onToggle: () => this.toggleField(t.id, f),
+          border: on ? "#bcd0ea" : "#e4e8ed", bg: on ? "#eef4fb" : "#fff", fg: on ? "#17457f" : "#9aa3ad" };
+      }),
+    })) : [];
+
+    return {
+      ...base, allowed: true, restricted: false,
+      targetHours: wk.targetHours, onTargetHours: (e) => this.setTarget(e.target.value),
+      workdayChips, leaveTypes, rules,
+      blackouts, noBlackouts: blackouts.length === 0,
+      boLabel: this.state.boLabel, boStart: this.state.boStart, boEnd: this.state.boEnd,
+      onBoLabel: (e) => this.setState({ boLabel: e.target.value }),
+      onBoStart: (e) => this.setState({ boStart: e.target.value }),
+      onBoEnd: (e) => this.setState({ boEnd: e.target.value }),
+      onAddBlackout: () => this.addBlackout(),
+      boBtnBg: boReady ? "#17457f" : "#b8c2ce", boBtnCursor: boReady ? "pointer" : "not-allowed",
+      holidays: hols, holidayCount: hols.length,
+      holDate: this.state.holDate, holName: this.state.holName,
+      onHolDate: (e) => this.setState({ holDate: e.target.value }),
+      onHolName: (e) => this.setState({ holName: e.target.value }),
+      onAddHoliday: () => this.addHoliday(),
+      holBtnBg: holReady ? "#17457f" : "#b8c2ce", holBtnCursor: holReady ? "pointer" : "not-allowed",
+      competencies, compCount: lib.length,
+      compName: this.state.compName, onCompName: (e) => this.setState({ compName: e.target.value }), onAddComp: () => this.addComp(),
+      compBtnBg: compReady ? "#17457f" : "#b8c2ce", compBtnCursor: compReady ? "pointer" : "not-allowed",
+      changeTypes,
+      noteTitle: "Org policies", noteSub: hols.length + " holidays · " + leave.types.length + " leave types",
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; }
+  body { font-family: 'Public Sans', system-ui, -apple-system, sans-serif; background: #eceff3; color: #1e2733; -webkit-font-smoothing: antialiased; }
+  a { text-decoration: none; color: inherit; }
+  a:hover { color: inherit; }
+  input, select { font-family: inherit; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: #cdd4dc; border-radius: 6px; border: 2px solid #eceff3; }
+</style>
+</helmet>
+
+<dc-import name="AppShell" active="offboarding" note-title="{{ noteTitle }}" note-sub="{{ noteSub }}" hint-size="100%,100%">
+  <div style="max-width:900px;">
+
+    <!-- Header -->
+    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:18px;">
+      <div>
+        <div style="font-size:12.5px; color:#8894a3; font-weight:500; margin-bottom:2px;">People Ops / Offboarding</div>
+        <h1 style="margin:0; font-size:24px; font-weight:700; letter-spacing:-0.02em; color:#1a2331;">Offboarding</h1>
+      </div>
+      <sc-if value="{{ allowed }}" hint-placeholder-val="{{ true }}">
+        <button onClick="{{ onStart }}" style="display:flex; align-items:center; gap:8px; height:38px; padding:0 16px; background:#17457f; color:#fff; border:none; border-radius:8px; font-family:inherit; font-size:13.5px; font-weight:600; cursor:pointer;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+          Initiate offboarding
+        </button>
+      </sc-if>
+    </div>
+
+    <sc-if value="{{ restricted }}" hint-placeholder-val="">
+      <div style="background:#f7f9fb; border:1px dashed #d9e0e8; border-radius:13px; padding:56px 20px; text-align:center;">
+        <div style="font-size:15px; font-weight:600; color:#5a6472;">Offboarding is available to managers and HR</div>
+        <div style="font-size:12.5px; color:#9aa3ad; margin-top:4px;">Contact HR to begin an exit process.</div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ allowed }}" hint-placeholder-val="{{ true }}">
+    <!-- Stat tiles -->
+    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:18px;">
+      <sc-for list="{{ stats }}" as="s" hint-placeholder-count="3">
+        <div style="min-width:0; background:#fff; border:1px solid #e4e8ed; border-radius:12px; padding:15px 16px;">
+          <div style="font-size:11.5px; font-weight:600; color:#8894a3;">{{ s.label }}</div>
+          <div style="font-size:24px; font-weight:700; color:#1a2331; margin-top:4px;">{{ s.value }}</div>
+        </div>
+      </sc-for>
+    </div>
+
+    <!-- Cases -->
+    <div style="display:flex; flex-direction:column; gap:14px;">
+      <sc-for list="{{ cases }}" as="c" hint-placeholder-count="2">
+        <div style="background:#fff; border:1px solid #e4e8ed; border-radius:13px; padding:18px 20px;">
+          <div style="display:flex; align-items:flex-start; gap:14px;">
+            <div style="width:42px; height:42px; border-radius:50%; background:{{ c.avatarBg }}; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:600; font-size:15px; flex-shrink:0;">{{ c.initials }}</div>
+            <div style="flex:1; min-width:0;">
+              <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                <span style="font-size:15px; font-weight:700; color:#1a2331;">{{ c.name }}</span>
+                <span style="font-size:11px; font-weight:600; padding:3px 10px; border-radius:20px; background:{{ c.typeBg }}; color:{{ c.typeFg }};">{{ c.typeLabel }}</span>
+                <span style="font-size:11px; font-weight:600; padding:3px 10px; border-radius:20px; background:{{ c.statusBg }}; color:{{ c.statusFg }};">{{ c.statusLabel }}</span>
+              </div>
+              <div style="font-size:12.5px; color:#8894a3; margin-top:4px;">{{ c.title }} · {{ c.dept }} · Last day {{ c.lastDayLabel }}</div>
+            </div>
+            <div style="text-align:right; flex-shrink:0;">
+              <div style="font-size:20px; font-weight:700; color:{{ c.pctColor }};">{{ c.pct }}%</div>
+              <div style="font-size:11px; color:#9aa3ad;">{{ c.done }}/{{ c.total }} tasks</div>
+            </div>
+          </div>
+
+          <sc-if value="{{ c.hasReason }}" hint-placeholder-val="">
+            <div style="font-size:12px; color:#6b7480; margin-top:12px; padding:10px 12px; background:#f8fafc; border:1px solid #eef1f4; border-radius:8px; line-height:1.5;">{{ c.reason }}</div>
+          </sc-if>
+
+          <!-- Checklist -->
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:14px;">
+            <sc-for list="{{ c.tasks }}" as="t" hint-placeholder-count="7">
+              <button onClick="{{ t.onToggle }}" disabled="{{ c.locked }}" style="display:flex; align-items:center; gap:10px; padding:10px 12px; border:1px solid {{ t.border }}; border-radius:9px; background:{{ t.bg }}; cursor:{{ c.cursor }}; text-align:left; width:100%;">
+                <span style="width:18px; height:18px; border-radius:5px; border:1.5px solid {{ t.boxBorder }}; background:{{ t.boxBg }}; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                  <sc-if value="{{ t.done }}" hint-placeholder-val=""><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></sc-if>
+                </span>
+                <div style="flex:1; min-width:0;">
+                  <div style="font-size:12px; font-weight:600; color:{{ t.textColor }};">{{ t.label }}</div>
+                  <div style="font-size:10.5px; color:#9aa3ad;">{{ t.owner }}</div>
+                </div>
+              </button>
+            </sc-for>
+          </div>
+
+          <sc-if value="{{ c.active }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex; align-items:center; justify-content:flex-end; gap:9px; margin-top:16px; padding-top:14px; border-top:1px solid #f4f6f8;">
+              <button onClick="{{ c.onCancel }}" style="height:36px; padding:0 14px; border:1px solid #dde2e8; border-radius:8px; background:#fff; color:#b23b2e; font-family:inherit; font-size:12.5px; font-weight:600; cursor:pointer;">Cancel exit</button>
+              <button onClick="{{ c.onComplete }}" style="height:36px; padding:0 16px; border:none; border-radius:8px; background:{{ c.completeBg }}; color:#fff; font-family:inherit; font-size:12.5px; font-weight:600; cursor:{{ c.completeCursor }};">{{ c.completeLabel }}</button>
+            </div>
+          </sc-if>
+          <sc-if value="{{ c.done_case }}" hint-placeholder-val="">
+            <div style="display:flex; align-items:center; gap:8px; margin-top:14px; padding-top:12px; border-top:1px solid #f4f6f8; font-size:12px; font-weight:600; color:#2f6f4f;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6L9 17l-5-5"/></svg>
+              Exit completed — {{ c.name }} marked inactive in the Directory.
+            </div>
+          </sc-if>
+        </div>
+      </sc-for>
+
+      <sc-if value="{{ noCases }}" hint-placeholder-val="">
+        <div style="background:#fff; border:1px dashed #d5dbe2; border-radius:13px; padding:48px 20px; text-align:center;">
+          <div style="font-size:14px; font-weight:600; color:#5a6472;">No offboarding in progress</div>
+          <div style="font-size:12.5px; color:#9aa3ad; margin-top:4px;">Initiate an exit to run the checklist and close out an employee.</div>
+        </div>
+      </sc-if>
+    </div>
+    </sc-if>
+  </div>
+
+  <!-- Initiate modal -->
+  <sc-if value="{{ addOpen }}" hint-placeholder-val="">
+    <div onClick="{{ onCloseAdd }}" style="position:fixed; inset:0; background:rgba(20,30,50,0.42); z-index:300; display:flex; align-items:center; justify-content:center; padding:24px;">
+      <div onClick="{{ stop }}" style="width:500px; max-width:100%; background:#fff; border-radius:16px; box-shadow:0 24px 64px rgba(20,30,50,0.32);">
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:18px 22px; border-bottom:1px solid #eef1f4;">
+          <div style="font-size:16px; font-weight:700; color:#1a2331;">Initiate offboarding</div>
+          <button onClick="{{ onCloseAdd }}" style="width:30px; height:30px; border:1px solid #dde2e8; border-radius:8px; background:#fff; color:#8894a3; font-size:18px; line-height:1; cursor:pointer;">×</button>
+        </div>
+        <div style="padding:20px 22px; display:flex; flex-direction:column; gap:15px;">
+          <div><div style="font-size:12px; font-weight:600; color:#5a6472; margin-bottom:5px;">Employee</div>
+            <select value="{{ form.empId }}" onChange="{{ onFormEmp }}" style="{{ inputStyle }}"><option value="">— Select employee —</option><sc-for list="{{ empOptions }}" as="e" hint-placeholder-count="5"><option value="{{ e.id }}">{{ e.label }}</option></sc-for></select>
+          </div>
+          <div><div style="font-size:12px; font-weight:600; color:#5a6472; margin-bottom:5px;">Exit type</div>
+            <select value="{{ form.type }}" onChange="{{ onFormType }}" style="{{ inputStyle }}"><sc-for list="{{ typeOptions }}" as="t" hint-placeholder-count="4"><option value="{{ t.id }}">{{ t.label }}</option></sc-for></select>
+          </div>
+          <div><div style="font-size:12px; font-weight:600; color:#5a6472; margin-bottom:5px;">Last working day</div>
+            <input type="date" value="{{ form.lastDay }}" onInput="{{ onFormLastDay }}" style="{{ inputStyle }}" />
+          </div>
+          <div><div style="font-size:12px; font-weight:600; color:#5a6472; margin-bottom:5px;">Reason / notes</div>
+            <input value="{{ form.reason }}" onInput="{{ onFormReason }}" placeholder="Optional context" style="{{ inputStyle }}" />
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; justify-content:flex-end; gap:10px; padding:16px 22px; border-top:1px solid #eef1f4; background:#fafbfc;">
+          <button onClick="{{ onCloseAdd }}" style="height:38px; padding:0 16px; border:1px solid #dde2e8; border-radius:9px; background:#fff; color:#3a4453; font-family:inherit; font-size:13.5px; font-weight:600; cursor:pointer;">Cancel</button>
+          <button onClick="{{ onSubmitAdd }}" style="height:38px; padding:0 18px; border:none; border-radius:9px; background:{{ startBg }}; color:#fff; font-family:inherit; font-size:13.5px; font-weight:600; cursor:{{ startCursor }};">Start offboarding</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- Toasts -->
+  <div style="position:fixed; right:22px; bottom:22px; display:flex; flex-direction:column; gap:10px; z-index:400;">
+    <sc-for list="{{ toasts }}" as="t" hint-placeholder-count="0">
+      <div style="display:flex; align-items:center; gap:11px; background:#1a2331; color:#fff; padding:12px 14px; border-radius:10px; box-shadow:0 10px 28px rgba(20,30,50,0.28); min-width:280px; max-width:390px;">
+        <span style="width:8px; height:8px; border-radius:50%; background:{{ t.dot }}; flex-shrink:0;"></span>
+        <span style="flex:1; font-size:12.5px; font-weight:500; line-height:1.4;">{{ t.msg }}</span>
+        <button onClick="{{ t.onClose }}" style="border:none; background:transparent; color:#8894a3; font-size:16px; line-height:1; cursor:pointer; padding:0;">×</button>
+      </div>
+    </sc-for>
+  </div>
+</dc-import>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:&quot;100%&quot;,&quot;height&quot;:&quot;100%&quot;}}">
+class Component extends DCLogic {
+  state = { user: null, addOpen: false, form: null, toasts: [], tick: 0 };
+  _tid = 0;
+
+  componentDidMount() {
+    Promise.all([import("./session.js"), import("./people-store.js"), import("./offboarding-store.js")]).then(([s, ppl, off]) => {
+      this._s = s; this._ppl = ppl; this._off = off;
+      const user = s.requireSession();
+      if (!user) return;
+      const q = new URLSearchParams(location.search).get("emp");
+      this.setState({ user });
+      if (q) setTimeout(() => this.openStart(q), 50);
+    });
+  }
+
+  addToast(msg, dot) {
+    const id = ++this._tid;
+    this.setState((st) => ({ toasts: [...st.toasts, { id, msg, dot: dot || "#3ecf8e" }] }));
+    setTimeout(() => this.setState((st) => ({ toasts: st.toasts.filter((t) => t.id !== id) })), 4200);
+  }
+  closeToast(id) { this.setState((st) => ({ toasts: st.toasts.filter((t) => t.id !== id) })); }
+  bump() { this.setState({ tick: this.state.tick + 1 }); }
+
+  openStart(empId) { this.setState({ addOpen: true, form: { empId: empId || "", type: "resignation", lastDay: "", reason: "" } }); }
+  setForm(k, v) { this.setState((st) => ({ form: { ...st.form, [k]: v } })); }
+  submitAdd() {
+    const f = this.state.form;
+    if (!f.empId || !f.lastDay) return;
+    this._off.startOffboarding(f.empId, f.type, f.lastDay, f.reason, this.state.user.id);
+    this.setState({ addOpen: false });
+    this.addToast("Offboarding started — checklist created.", "#e0a13a");
+    this.bump();
+  }
+  toggle(caseId, taskId) { this._off.toggleTask(caseId, taskId); this.bump(); }
+  complete(caseId, name) { this._off.completeOffboarding(caseId, this.state.user.id); this.addToast(name + " offboarded — marked inactive.", "#3ecf8e"); this.bump(); }
+  cancel(caseId) { this._off.cancelOffboarding(caseId); this.addToast("Offboarding cancelled.", "#8894a3"); this.bump(); }
+
+  renderVals() {
+    const u = this.state.user, ppl = this._ppl, off = this._off;
+    const inputStyle = "width:100%; height:38px; border:1px solid #dde2e8; border-radius:9px; background:#fff; padding:0 12px; font-size:13.5px; color:#28323f; outline:none;";
+    const base = { toasts: this.state.toasts.map((t) => ({ ...t, onClose: () => this.closeToast(t.id) })),
+      restricted: false, allowed: false, stats: [], cases: [], noCases: false, addOpen: false, inputStyle,
+      empOptions: [], typeOptions: [], form: { empId: "", type: "resignation", lastDay: "", reason: "" }, noteTitle: "", noteSub: "" };
+    if (!u || !ppl || !off) return base;
+
+    const allowed = u.role === "hr" || u.role === "manager";
+    if (!allowed) return { ...base, restricted: true };
+
+    const sm = off.summary();
+    const stats = [
+      { label: "Active exits", value: sm.active },
+      { label: "Completed", value: sm.completed },
+      { label: "Total cases", value: sm.total },
+    ];
+
+    // scope: HR sees all; manager sees own reports' cases
+    const reports = u.role === "manager" ? ppl.directReports(u.id).map((r) => r.id) : null;
+    const inScope = (empId) => u.role === "hr" || (reports && reports.indexOf(empId) >= 0);
+
+    const cases = off.allCases().filter((c) => inScope(c.empId)).sort((a, b) => b.initiatedAt - a.initiatedAt).map((c) => {
+      const emp = ppl.getEmployee(c.empId); const t = off.exitType(c.type); const prog = off.progressOf(c);
+      const stMeta = off.STATUS_META[c.status] || off.STATUS_META.in_progress;
+      const active = c.status === "in_progress"; const allDone = prog.done === prog.total;
+      const tasks = c.checklist.map((task) => ({ label: task.label, owner: task.owner, done: task.done,
+        border: task.done ? "#cfe6d8" : "#e4e8ed", bg: task.done ? "#f2faf5" : "#fff",
+        boxBorder: task.done ? "#2f6f4f" : "#c7cdd6", boxBg: task.done ? "#2f6f4f" : "#fff",
+        textColor: task.done ? "#2f6f4f" : "#3a4453",
+        onToggle: () => this.toggle(c.id, task.id) }));
+      return { name: c.empName, initials: emp ? emp.initials : "?", avatarBg: emp ? emp.avatarBg : "#c7cdd6",
+        title: c.title, dept: c.dept, lastDayLabel: c.lastDay ? ppl.formatDate(c.lastDay) : "—",
+        typeLabel: t.label, typeBg: t.bg, typeFg: t.color, statusLabel: stMeta.label, statusBg: stMeta.pillBg, statusFg: stMeta.pillFg,
+        pct: prog.pct, done: prog.done, total: prog.total, pctColor: prog.pct === 100 ? "#2f6f4f" : "#17457f",
+        hasReason: !!c.reason, reason: c.reason, tasks,
+        active, locked: !active, cursor: active ? "pointer" : "default", done_case: c.status === "completed",
+        completeBg: allDone ? "#2f6f4f" : "#b8c2ce", completeCursor: allDone ? "pointer" : "not-allowed",
+        completeLabel: allDone ? "Complete exit" : "Finish tasks first",
+        onComplete: () => { if (allDone) this.complete(c.id, c.empName); },
+        onCancel: () => this.cancel(c.id) };
+    });
+
+    const openIds = off.allCases().filter((c) => c.status !== "completed").map((c) => c.empId);
+    const empOptions = ppl.allEmployees().filter((e) => e.status !== "inactive" && openIds.indexOf(e.id) < 0)
+      .sort((a, b) => ppl.fullName(a).localeCompare(ppl.fullName(b)))
+      .map((e) => ({ id: e.id, label: ppl.fullName(e) + " · " + e.title }));
+
+    const form = this.state.form || base.form;
+    const canStart = !!(form.empId && form.lastDay);
+
+    return {
+      ...base, allowed: true, restricted: false, stats,
+      cases, noCases: cases.length === 0,
+      onStart: () => this.openStart(""), addOpen: this.state.addOpen,
+      onCloseAdd: () => this.setState({ addOpen: false }), stop: (e) => e.stopPropagation(),
+      form, empOptions, typeOptions: off.EXIT_TYPES,
+      onFormEmp: (e) => this.setForm("empId", e.target.value),
+      onFormType: (e) => this.setForm("type", e.target.value),
+      onFormLastDay: (e) => this.setForm("lastDay", e.target.value),
+      onFormReason: (e) => this.setForm("reason", e.target.value),
+      onSubmitAdd: () => this.submitAdd(),
+      startBg: canStart ? "#17457f" : "#b8c2ce", startCursor: canStart ? "pointer" : "not-allowed",
+      noteTitle: sm.active + " active exit" + (sm.active === 1 ? "" : "s"), noteSub: sm.completed + " completed",
+    };
+  }
+}
+</script>
+</body>
+</html>

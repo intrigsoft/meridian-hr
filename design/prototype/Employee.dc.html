@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; }
+  body { font-family: 'Public Sans', system-ui, -apple-system, sans-serif; background: #eceff3; color: #1e2733; -webkit-font-smoothing: antialiased; }
+  a { text-decoration: none; color: inherit; }
+  a:hover { color: inherit; }
+  select, input { font-family: inherit; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: #cdd4dc; border-radius: 6px; border: 2px solid #eceff3; }
+</style>
+</helmet>
+
+<dc-import name="AppShell" active="directory" note-title="{{ noteTitle }}" note-sub="{{ noteSub }}" hint-size="100%,100%">
+  <div style="max-width:1000px;">
+
+    <a href="Directory.dc.html" style="display:inline-flex; align-items:center; gap:6px; font-size:12.5px; font-weight:600; color:#6b7480; margin-bottom:16px;" style-hover="color:#17457f;">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      Directory
+    </a>
+
+    <sc-if value="{{ notFound }}" hint-placeholder-val="">
+      <div style="background:#fff; border:1px dashed #d5dbe2; border-radius:13px; padding:56px 20px; text-align:center;">
+        <div style="font-size:15px; font-weight:600; color:#5a6472;">Employee not found</div>
+        <div style="font-size:12.5px; color:#9aa3ad; margin-top:4px;">This record may have been removed.</div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ found }}" hint-placeholder-val="{{ true }}">
+    <!-- ===== Profile header ===== -->
+    <div style="background:#fff; border:1px solid #e4e8ed; border-radius:15px; padding:24px; margin-bottom:16px;">
+      <div style="display:flex; align-items:flex-start; gap:18px;">
+        <div style="position:relative; flex-shrink:0;">
+          <div style="width:72px; height:72px; border-radius:50%; background:{{ e.avatarBg }}; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:600; font-size:26px;">{{ e.initials }}</div>
+          <span style="position:absolute; bottom:2px; right:2px; width:16px; height:16px; border-radius:50%; background:{{ e.statusDot }}; border:2.5px solid #fff;"></span>
+        </div>
+        <div style="flex:1; min-width:0;">
+          <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+            <h1 style="margin:0; font-size:23px; font-weight:700; letter-spacing:-0.02em; color:#1a2331;">{{ e.name }}</h1>
+            <span style="font-size:11.5px; font-weight:600; padding:3px 10px; border-radius:20px; background:{{ e.statusBg }}; color:{{ e.statusFg }};">{{ e.statusLabel }}</span>
+          </div>
+          <div style="font-size:14.5px; color:#5a6472; margin-top:4px;">{{ e.title }} · {{ e.level }}</div>
+          <div style="display:flex; align-items:center; gap:14px; margin-top:12px; flex-wrap:wrap; font-size:12.5px; color:#8894a3;">
+            <span style="display:flex; align-items:center; gap:6px;"><span style="width:9px; height:9px; border-radius:3px; background:{{ e.deptColor }};"></span>{{ e.dept }}</span>
+            <a href="mailto:{{ e.email }}" style="display:flex; align-items:center; gap:6px; color:#2d6cb5; font-family:'IBM Plex Mono', monospace; font-size:12px;" style-hover="text-decoration:underline;">{{ e.email }}</a>
+            <span style="display:flex; align-items:center; gap:6px;">{{ e.phone }}</span>
+          </div>
+        </div>
+        <sc-if value="{{ isHr }}" hint-placeholder-val="">
+          <div style="display:flex; align-items:center; gap:9px; flex-shrink:0;">
+            <sc-if value="{{ editing }}" hint-placeholder-val="">
+              <button onClick="{{ onCancel }}" style="height:36px; padding:0 14px; border:1px solid #dde2e8; border-radius:9px; background:#fff; color:#3a4453; font-family:inherit; font-size:13px; font-weight:600; cursor:pointer;">Cancel</button>
+              <button onClick="{{ onSave }}" style="height:36px; padding:0 16px; border:none; border-radius:9px; background:#17457f; color:#fff; font-family:inherit; font-size:13px; font-weight:600; cursor:pointer;">Save changes</button>
+            </sc-if>
+            <sc-if value="{{ notEditing }}" hint-placeholder-val="{{ true }}">
+              <select value="{{ e.status }}" onChange="{{ onStatus }}" style="height:36px; border:1px solid #dde2e8; border-radius:9px; background:#fff; padding:0 10px; font-size:12.5px; font-weight:600; color:#3a4453; cursor:pointer;">
+                <sc-for list="{{ statusOptions }}" as="s" hint-placeholder-count="4"><option value="{{ s.id }}">{{ s.label }}</option></sc-for>
+              </select>
+              <button onClick="{{ onEdit }}" style="display:flex; align-items:center; gap:7px; height:36px; padding:0 15px; border:1px solid #cfdbe9; border-radius:9px; background:#eef4fb; color:#17457f; font-family:inherit; font-size:13px; font-weight:600; cursor:pointer;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+                Edit
+              </button>
+              <sc-if value="{{ showOffboard }}" hint-placeholder-val="{{ true }}">
+                <a href="{{ jobChangeHref }}" style="display:flex; align-items:center; gap:7px; height:36px; padding:0 15px; border:1px solid #cfdbe9; border-radius:9px; background:#eef4fb; color:#17457f; font-size:13px; font-weight:600;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17l5-5 5 5M7 7l5 5 5-5"/></svg>
+                  Request change
+                </a>
+                <a href="{{ offboardHref }}" style="display:flex; align-items:center; gap:7px; height:36px; padding:0 15px; border:1px solid #f0dcd9; border-radius:9px; background:#fff; color:#b23b2e; font-size:13px; font-weight:600;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>
+                  Offboard
+                </a>
+              </sc-if>
+            </sc-if>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+
+    <sc-if value="{{ hasExit }}" hint-placeholder-val="">
+      <div style="display:flex; align-items:center; gap:11px; margin-bottom:16px; padding:14px 18px; background:#fbe9e7; border:1px solid #f0cfc9; border-radius:12px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#b23b2e" stroke-width="1.9" style="flex-shrink:0;"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>
+        <div style="font-size:12.5px; color:#8a3529; line-height:1.45;"><strong>{{ exitLabel }}</strong> · last day {{ exitLastDay }}. This employee is inactive.</div>
+      </div>
+    </sc-if>
+
+    <!-- HR: pending profile change requests -->
+    <sc-if value="{{ hasPendingChanges }}" hint-placeholder-val="">
+      <div style="background:#fff; border:1px solid #e4e8ed; border-left:3px solid #e0a13a; border-radius:13px; padding:18px 20px; margin-bottom:16px;">
+        <div style="font-size:14px; font-weight:700; color:#1a2331; margin-bottom:12px;">Pending changes awaiting approval · {{ pendingCount }}</div>
+        <div style="display:flex; flex-direction:column; gap:9px;">
+          <sc-for list="{{ pendingChanges }}" as="c" hint-placeholder-count="1">
+            <div style="display:flex; align-items:center; gap:12px; padding:12px 14px; background:#f8fafc; border:1px solid #eef1f4; border-radius:9px;">
+              <div style="flex:1; min-width:0;">
+                <div style="font-size:12.5px; font-weight:600; color:#28323f;">{{ c.label }}</div>
+                <div style="font-size:11.5px; margin-top:3px;"><span style="color:#b23b2e; text-decoration:line-through;">{{ c.oldLabel }}</span> <span style="color:#9aa3ad;">→</span> <span style="color:#2f6f4f; font-weight:600;">{{ c.newLabel }}</span></div>
+              </div>
+              <button onClick="{{ c.onReject }}" style="height:32px; padding:0 13px; border:1px solid #dde2e8; border-radius:8px; background:#fff; color:#b23b2e; font-family:inherit; font-size:12px; font-weight:600; cursor:pointer;">Reject</button>
+              <button onClick="{{ c.onApprove }}" style="height:32px; padding:0 14px; border:none; border-radius:8px; background:#2f6f4f; color:#fff; font-family:inherit; font-size:12px; font-weight:600; cursor:pointer;">Approve</button>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ===== 360° tab bar ===== -->
+    <div style="display:flex; gap:4px; background:#fff; border:1px solid #e4e8ed; border-radius:12px; padding:5px; margin-bottom:16px;">
+      <button onClick="{{ onTabOverview }}" style="{{ tabOverviewStyle }}">Overview</button>
+      <button onClick="{{ onTabTimeLeave }}" style="{{ tabTimeLeaveStyle }}">Time &amp; Leave</button>
+      <button onClick="{{ onTabPerformance }}" style="{{ tabPerformanceStyle }}">Performance</button>
+    </div>
+
+    <sc-if value="{{ tabOverview }}" hint-placeholder-val="{{ true }}">
+    <div style="display:grid; grid-template-columns:1.35fr 1fr; gap:16px; align-items:start;">
+      <!-- ===== Left column ===== -->
+      <div style="display:flex; flex-direction:column; gap:16px;">
+        <!-- Employment -->
+        <div style="background:#fff; border:1px solid #e4e8ed; border-radius:13px; padding:20px;">
+          <div style="font-size:14px; font-weight:700; color:#1a2331; margin-bottom:16px;">Employment</div>
+          <div style="display:flex; flex-direction:column;">
+            <sc-for list="{{ fields }}" as="f" hint-placeholder-count="7">
+              <div style="display:flex; align-items:center; gap:14px; padding:10px 0; border-bottom:1px solid #f4f6f8;">
+                <div style="width:130px; flex-shrink:0; font-size:12.5px; color:#8894a3; font-weight:500;">{{ f.label }}</div>
+                <sc-if value="{{ f.readonly }}" hint-placeholder-val="{{ true }}">
+                  <div style="flex:1; font-size:13px; font-weight:600; color:#28323f;">{{ f.value }}</div>
+                </sc-if>
+                <sc-if value="{{ f.editText }}" hint-placeholder-val="">
+                  <input value="{{ f.value }}" onInput="{{ f.onInput }}" style="flex:1; height:34px; border:1px solid #cfdbe9; border-radius:8px; background:#f8fafc; padding:0 11px; font-size:13px; color:#28323f; outline:none;" />
+                </sc-if>
+                <sc-if value="{{ f.editSelect }}" hint-placeholder-val="">
+                  <select value="{{ f.value }}" onChange="{{ f.onInput }}" style="flex:1; height:34px; border:1px solid #cfdbe9; border-radius:8px; background:#f8fafc; padding:0 9px; font-size:13px; color:#28323f; cursor:pointer;"><sc-for list="{{ f.options }}" as="o" hint-placeholder-count="3"><option value="{{ o }}">{{ o }}</option></sc-for></select>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <!-- Compensation -->
+        <sc-if value="{{ showComp }}" hint-placeholder-val="">
+          <div style="background:#fff; border:1px solid #e4e8ed; border-radius:13px; padding:20px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
+              <div style="font-size:14px; font-weight:700; color:#1a2331;">Compensation</div>
+              <span style="display:flex; align-items:center; gap:5px; font-size:10.5px; font-weight:600; color:#9a6a1a; background:#faf3e6; padding:3px 9px; border-radius:20px;">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+                Restricted
+              </span>
+            </div>
+            <div style="display:flex; align-items:flex-end; gap:14px;">
+              <div>
+                <div style="font-size:11.5px; color:#8894a3; font-weight:500;">Base salary</div>
+                <sc-if value="{{ compReadonly }}" hint-placeholder-val="{{ true }}"><div style="font-size:28px; font-weight:700; color:#1a2331; margin-top:3px;">{{ e.salaryLabel }}<span style="font-size:13px; color:#9aa3ad; font-weight:500;"> / yr</span></div></sc-if>
+                <sc-if value="{{ compEdit }}" hint-placeholder-val=""><input value="{{ form.salary }}" onInput="{{ onSalary }}" style="width:180px; height:38px; margin-top:3px; border:1px solid #cfdbe9; border-radius:8px; background:#f8fafc; padding:0 11px; font-size:16px; font-weight:600; color:#28323f; outline:none;" /></sc-if>
+              </div>
+              <div style="margin-left:auto; text-align:right;">
+                <div style="font-size:11.5px; color:#8894a3; font-weight:500;">Band</div>
+                <div style="font-size:15px; font-weight:700; color:#3a4453; font-family:'IBM Plex Mono', monospace; margin-top:3px;">{{ e.band }}</div>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ compLocked }}" hint-placeholder-val="">
+          <div style="background:#f7f9fb; border:1px dashed #d9e0e8; border-radius:13px; padding:16px 18px; display:flex; align-items:center; gap:11px;">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#9aa3ad" stroke-width="1.9"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+            <div style="font-size:12.5px; color:#8894a3;">Compensation is visible to HR and this person's management chain only.</div>
+          </div>
+        </sc-if>
+
+        <!-- Documents -->
+        <div style="background:#fff; border:1px solid #e4e8ed; border-radius:13px; padding:20px;">
+          <div style="font-size:14px; font-weight:700; color:#1a2331; margin-bottom:14px;">Documents</div>
+          <div style="display:flex; flex-direction:column; gap:9px;">
+            <sc-for list="{{ documents }}" as="d" hint-placeholder-count="2">
+              <div style="display:flex; align-items:center; gap:12px; padding:11px 13px; background:#f8fafc; border:1px solid #eef1f4; border-radius:9px;">
+                <div style="width:32px; height:32px; border-radius:8px; background:#eaf1fa; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3a5aa8" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+                </div>
+                <div style="flex:1; min-width:0;">
+                  <div style="font-size:12.5px; font-weight:600; color:#28323f;">{{ d.name }}</div>
+                  <div style="font-size:11px; color:#9aa3ad;">{{ d.type }} · {{ d.dateLabel }}</div>
+                </div>
+                <span style="font-size:11.5px; font-weight:600; color:#8894a3;">PDF</span>
+              </div>
+            </sc-for>
+            <sc-if value="{{ noDocs }}" hint-placeholder-val="">
+              <div style="padding:18px; text-align:center; font-size:12px; color:#9aa3ad;">No documents on file yet.</div>
+            </sc-if>
+          </div>
+        </div>
+
+        <!-- Personal details -->
+        <div style="background:#fff; border:1px solid #e4e8ed; border-radius:13px; padding:20px;">
+          <div style="font-size:14px; font-weight:700; color:#1a2331; margin-bottom:14px;">Personal &amp; contact</div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:13px 20px;">
+            <sc-for list="{{ personalRows }}" as="r" hint-placeholder-count="6">
+              <div style="min-width:0;"><div style="font-size:11.5px; color:#8894a3; font-weight:500; margin-bottom:3px;">{{ r.label }}</div><div style="font-size:13px; font-weight:600; color:{{ r.color }}; word-break:break-word;">{{ r.value }}</div></div>
+            </sc-for>
+          </div>
+        </div>
+
+        <!-- Emergency & dependents -->
+        <div style="background:#fff; border:1px solid #e4e8ed; border-radius:13px; padding:20px;">
+          <div style="font-size:14px; font-weight:700; color:#1a2331; margin-bottom:14px;">Emergency &amp; dependents</div>
+          <div style="font-size:11.5px; font-weight:700; color:#9aa3ad; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:8px;">Emergency contacts</div>
+          <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:16px;">
+            <sc-for list="{{ emergencyList }}" as="c" hint-placeholder-count="1">
+              <div style="display:flex; align-items:center; gap:10px; padding:9px 12px; background:#f8fafc; border:1px solid #eef1f4; border-radius:9px;">
+                <div style="flex:1;"><span style="font-size:12.5px; font-weight:600; color:#28323f;">{{ c.name }}</span> <span style="font-size:11.5px; color:#9aa3ad;">· {{ c.relationship }}</span></div>
+                <span style="font-size:12px; color:#5a6472;">{{ c.phone }}</span>
+              </div>
+            </sc-for>
+            <sc-if value="{{ noEmergencyList }}" hint-placeholder-val=""><div style="font-size:12px; color:#9aa3ad;">None on file.</div></sc-if>
+          </div>
+          <div style="font-size:11.5px; font-weight:700; color:#9aa3ad; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:8px;">Dependents</div>
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <sc-for list="{{ dependentList }}" as="d" hint-placeholder-count="0">
+              <div style="display:flex; align-items:center; gap:10px; padding:9px 12px; background:#f8fafc; border:1px solid #eef1f4; border-radius:9px;">
+                <div style="flex:1;"><span style="font-size:12.5px; font-weight:600; color:#28323f;">{{ d.name }}</span> <span style="font-size:11.5px; color:#9aa3ad;">· {{ d.relationship }}</span></div>
+                <span style="font-size:12px; color:#5a6472;">{{ d.dob }}</span>
+              </div>
+            </sc-for>
+            <sc-if value="{{ noDependentList }}" hint-placeholder-val="{{ true }}"><div style="font-size:12px; color:#9aa3ad;">None listed.</div></sc-if>
+          </div>
+        </div>
+
+        <!-- Skills & certifications -->
+        <div style="background:#fff; border:1px solid #e4e8ed; border-radius:13px; padding:20px;">
+          <div style="font-size:14px; font-weight:700; color:#1a2331; margin-bottom:14px;">Skills &amp; certifications</div>
+          <div style="display:flex; flex-wrap:wrap; gap:7px; margin-bottom:14px;">
+            <sc-for list="{{ skillList }}" as="s" hint-placeholder-count="3">
+              <span style="font-size:12px; font-weight:600; color:#3a4453; background:#f1f4f7; border:1px solid #e4e8ed; padding:4px 11px; border-radius:20px;">{{ s.name }} <span style="color:#9aa3ad; font-weight:500;">· {{ s.level }}</span></span>
+            </sc-for>
+            <sc-if value="{{ noSkillList }}" hint-placeholder-val=""><span style="font-size:12px; color:#9aa3ad;">No skills added.</span></sc-if>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:7px;">
+            <sc-for list="{{ certList }}" as="c" hint-placeholder-count="1">
+              <div style="display:flex; align-items:center; gap:9px; font-size:12.5px; color:#3a4453;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c68a2a" stroke-width="1.9"><circle cx="12" cy="8" r="6"/><path d="M8.2 13.9L7 22l5-3 5 3-1.2-8.1"/></svg>
+                <span style="font-weight:600;">{{ c.name }}</span><span style="color:#9aa3ad;">· {{ c.issuer }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <!-- Bank & tax (restricted) -->
+        <sc-if value="{{ showComp }}" hint-placeholder-val="">
+          <div style="background:#fff; border:1px solid #e4e8ed; border-radius:13px; padding:20px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
+              <div style="font-size:14px; font-weight:700; color:#1a2331;">Bank &amp; tax</div>
+              <span style="display:flex; align-items:center; gap:5px; font-size:10.5px; font-weight:600; color:#9a6a1a; background:#faf3e6; padding:3px 9px; border-radius:20px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>Restricted</span>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:13px 20px;">
+              <sc-for list="{{ bankRows }}" as="r" hint-placeholder-count="6">
+                <div style="min-width:0;"><div style="font-size:11.5px; color:#8894a3; font-weight:500; margin-bottom:3px;">{{ r.label }}</div><div style="font-size:13px; font-weight:600; color:#28323f; font-family:{{ r.mono }};">{{ r.value }}</div></div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- Assets -->
+        <div style="background:#fff; border:1px solid #e4e8ed; border-radius:13px; padding:20px;">
+          <div style="font-size:14px; font-weight:700; color:#1a2331; margin-bottom:14px;">Equipment &amp; assets</div>
+          <div style="display:flex; flex-direction:column; gap:9px;">
+            <sc-for list="{{ assetList }}" as="a" hint-placeholder-count="1">
+              <div style="display:flex; align-items:center; gap:12px; padding:11px 13px; background:#f8fafc; border:1px solid #eef1f4; border-radius:9px;">
+                <div style="flex:1; min-width:0;"><div style="font-size:12.5px; font-weight:600; color:#28323f;">{{ a.name }}</div><div style="font-size:11px; color:#9aa3ad;">Assigned {{ a.date }}</div></div>
+                <span style="font-size:11px; font-weight:600; color:#6b7480; font-family:'IBM Plex Mono', monospace;">{{ a.tag }}</span>
+              </div>
+            </sc-for>
+            <sc-if value="{{ noAssetList }}" hint-placeholder-val=""><div style="font-size:12px; color:#9aa3ad;">No assets assigned.</div></sc-if>
+          </div>
+        </div>
+
+        <!-- Job history -->
+        <div style="background:#fff; border:1px solid #e4e8ed; border-radius:13px; padding:20px;">
+          <div style="font-size:14px; font-weight:700; color:#1a2331; margin-bottom:16px;">Job history</div>
+          <div style="display:flex; flex-direction:column;">
+            <sc-for list="{{ history }}" as="h" hint-placeholder-count="2">
+              <div style="display:flex; gap:13px;">
+                <div style="display:flex; flex-direction:column; align-items:center; flex-shrink:0;">
+                  <span style="width:11px; height:11px; border-radius:50%; background:{{ h.dot }}; margin-top:3px;"></span>
+                  <span style="flex:1; width:2px; background:#eef1f4; margin:3px 0;"></span>
+                </div>
+                <div style="flex:1; min-width:0; padding-bottom:16px;">
+                  <div style="font-size:12.5px; font-weight:600; color:#28323f;">{{ h.label }}</div>
+                  <div style="font-size:11.5px; color:#8894a3; margin-top:1px;">{{ h.detail }}</div>
+                  <div style="font-size:10.5px; color:#b6bdc6; margin-top:3px;">{{ h.dateLabel }} · {{ h.by }}</div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== Right column: Org ===== -->
+      <div style="display:flex; flex-direction:column; gap:16px;">
+        <div style="background:#fff; border:1px solid #e4e8ed; border-radius:13px; padding:20px;">
+          <div style="font-size:14px; font-weight:700; color:#1a2331; margin-bottom:14px;">Reporting line</div>
+
+          <sc-if value="{{ hasChain }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex; flex-direction:column; gap:2px; margin-bottom:6px;">
+              <sc-for list="{{ chain }}" as="c" hint-placeholder-count="1">
+                <a href="{{ c.href }}" style="display:flex; align-items:center; gap:10px; padding:7px 9px; border-radius:8px; margin-left:{{ c.indent }}px;" style-hover="background:#f6f9fc;">
+                  <div style="width:30px; height:30px; border-radius:50%; background:{{ c.avatarBg }}; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:600; font-size:12px;">{{ c.initials }}</div>
+                  <div style="min-width:0;"><div style="font-size:12.5px; font-weight:600; color:#3a4453;">{{ c.name }}</div><div style="font-size:11px; color:#9aa3ad;">{{ c.title }}</div></div>
+                </a>
+              </sc-for>
+            </div>
+          </sc-if>
+
+          <!-- self -->
+          <div style="display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:9px; margin-left:{{ selfIndent }}px; background:#eef4fb; border:1px solid #dbe6f3;">
+            <div style="width:32px; height:32px; border-radius:50%; background:{{ e.avatarBg }}; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:600; font-size:12.5px;">{{ e.initials }}</div>
+            <div style="min-width:0;"><div style="font-size:13px; font-weight:700; color:#17457f;">{{ e.name }}</div><div style="font-size:11px; color:#5a7ba8;">{{ e.title }}</div></div>
+          </div>
+
+          <sc-if value="{{ hasReports }}" hint-placeholder-val="">
+            <div style="font-size:11px; font-weight:700; color:#9aa3ad; text-transform:uppercase; letter-spacing:0.05em; margin:16px 0 8px; padding-left:2px;">Direct reports · {{ reportCount }}</div>
+            <div style="display:flex; flex-direction:column; gap:2px;">
+              <sc-for list="{{ reports }}" as="r" hint-placeholder-count="3">
+                <a href="{{ r.href }}" style="display:flex; align-items:center; gap:10px; padding:7px 9px; border-radius:8px;" style-hover="background:#f6f9fc;">
+                  <div style="width:30px; height:30px; border-radius:50%; background:{{ r.avatarBg }}; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:600; font-size:12px;">{{ r.initials }}</div>
+                  <div style="flex:1; min-width:0;"><div style="font-size:12.5px; font-weight:600; color:#3a4453;">{{ r.name }}</div><div style="font-size:11px; color:#9aa3ad;">{{ r.title }}</div></div>
+                  <span style="width:7px; height:7px; border-radius:50%; background:{{ r.statusDot }};"></span>
+                </a>
+              </sc-for>
+            </div>
+          </sc-if>
+          <sc-if value="{{ noReports }}" hint-placeholder-val="">
+            <div style="font-size:12px; color:#9aa3ad; margin-top:12px; padding-left:2px;">No direct reports.</div>
+          </sc-if>
+        </div>
+      </div>
+    </div>
+    </sc-if><!-- /tabOverview -->
+
+    <!-- ===== TIME & LEAVE TAB ===== -->
+    <sc-if value="{{ tabTimeLeave }}" hint-placeholder-val="">
+    <div style="display:flex; flex-direction:column; gap:16px;">
+
+      <!-- Leave balances -->
+      <div style="background:#fff; border:1px solid #e4e8ed; border-radius:13px; padding:20px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
+          <div style="font-size:14px; font-weight:700; color:#1a2331;">Leave balances</div>
+          <span style="font-size:11.5px; color:#9aa3ad;">Current year</span>
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:14px;">
+          <sc-for list="{{ balanceTiles }}" as="b" hint-placeholder-count="3">
+            <div style="border:1px solid #eef1f4; border-radius:11px; padding:15px;">
+              <div style="display:flex; align-items:center; gap:7px; margin-bottom:10px;">
+                <span style="width:9px; height:9px; border-radius:3px; background:{{ b.color }};"></span>
+                <span style="font-size:12.5px; font-weight:600; color:#3a4453;">{{ b.label }}</span>
+              </div>
+              <div style="font-size:26px; font-weight:700; color:#1a2331; line-height:1;">{{ b.remaining }}<span style="font-size:12.5px; color:#9aa3ad; font-weight:500;"> left</span></div>
+              <div style="height:6px; border-radius:4px; background:#eef1f4; overflow:hidden; margin:11px 0 6px;">
+                <div style="height:100%; width:{{ b.pct }}; background:{{ b.color }};"></div>
+              </div>
+              <div style="font-size:11px; color:#9aa3ad;">{{ b.used }} of {{ b.allow }} used</div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <!-- Leave requests -->
+      <div style="background:#fff; border:1px solid #e4e8ed; border-radius:13px; padding:20px;">
+        <div style="font-size:14px; font-weight:700; color:#1a2331; margin-bottom:14px;">Leave requests</div>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <sc-for list="{{ leaveRows }}" as="r" hint-placeholder-count="3">
+            <div style="display:flex; align-items:center; gap:12px; padding:11px 13px; background:#f8fafc; border:1px solid #eef1f4; border-radius:9px;">
+              <span style="width:9px; height:9px; border-radius:50%; background:{{ r.dot }}; flex-shrink:0;"></span>
+              <div style="width:150px; flex-shrink:0; font-size:12.5px; font-weight:600; color:#28323f;">{{ r.type }}</div>
+              <div style="flex:1; font-size:12.5px; color:#5a6472;">{{ r.range }}</div>
+              <div style="width:44px; font-size:12px; font-weight:600; color:#3a4453; font-family:'IBM Plex Mono', monospace;">{{ r.days }}</div>
+              <span style="font-size:11.5px; font-weight:600; padding:3px 10px; border-radius:20px; background:{{ r.pillBg }}; color:{{ r.pillFg }};">{{ r.status }}</span>
+            </div>
+          </sc-for>
+          <sc-if value="{{ noLeave }}" hint-placeholder-val="">
+            <div style="padding:18px; text-align:center; font-size:12px; color:#9aa3ad;">No leave requests on record.</div>
+          </sc-if>
+        </div>
+      </div>
+
+      <!-- Timesheets & attendance -->
+      <div style="background:#fff; border:1px solid #e4e8ed; border-radius:13px; padding:20px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+          <div style="font-size:14px; font-weight:700; color:#1a2331;">Timesheets &amp; attendance</div>
+          <sc-if value="{{ isClocked }}" hint-placeholder-val="">
+            <span style="display:flex; align-items:center; gap:6px; font-size:11.5px; font-weight:600; color:#2f6f4f; background:#e6f3ec; padding:3px 10px; border-radius:20px;"><span style="width:7px; height:7px; border-radius:50%; background:#3ecf8e;"></span>Clocked in {{ clockedSince }}</span>
+          </sc-if>
+          <sc-if value="{{ notClocked }}" hint-placeholder-val="{{ true }}">
+            <span style="font-size:11.5px; color:#9aa3ad;">Not clocked in</span>
+          </sc-if>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <sc-for list="{{ weekRows }}" as="w" hint-placeholder-count="4">
+            <div style="display:flex; align-items:center; gap:14px; padding:11px 13px; background:#f8fafc; border:1px solid #eef1f4; border-radius:9px;">
+              <div style="width:170px; flex-shrink:0; font-size:12.5px; font-weight:600; color:#28323f;">{{ w.label }}</div>
+              <div style="flex:1; min-width:0;">
+                <div style="height:6px; border-radius:4px; background:#eef1f4; overflow:hidden;"><div style="height:100%; width:{{ w.barPct }}; background:#4a86d8;"></div></div>
+              </div>
+              <div style="width:82px; text-align:right; font-size:12px; font-weight:600; color:#3a4453; font-family:'IBM Plex Mono', monospace;">{{ w.total }} <span style="color:#b6bdc6; font-weight:500;">{{ w.target }}</span></div>
+              <span style="font-size:11.5px; font-weight:600; padding:3px 10px; border-radius:20px; background:{{ w.pillBg }}; color:{{ w.pillFg }};">{{ w.status }}</span>
+            </div>
+          </sc-for>
+          <sc-if value="{{ noWeeks }}" hint-placeholder-val="">
+            <div style="padding:18px; text-align:center; font-size:12px; color:#9aa3ad;">No timesheets submitted yet.</div>
+          </sc-if>
+        </div>
+      </div>
+    </div>
+    </sc-if><!-- /tabTimeLeave -->
+
+    <!-- ===== PERFORMANCE TAB ===== -->
+    <sc-if value="{{ tabPerformance }}" hint-placeholder-val="">
+    <div style="display:flex; flex-direction:column; gap:16px;">
+      <div style="background:#fff; border:1px solid #e4e8ed; border-radius:13px; padding:20px;">
+        <div style="font-size:14px; font-weight:700; color:#1a2331; margin-bottom:16px;">Review history</div>
+        <div style="display:flex; flex-direction:column; gap:11px;">
+          <sc-for list="{{ perfRows }}" as="p" hint-placeholder-count="2">
+            <div style="border:1px solid #eef1f4; border-radius:11px; padding:15px 16px;">
+              <div style="display:flex; align-items:center; gap:11px; margin-bottom:14px;">
+                <div style="flex:1; min-width:0;">
+                  <div style="font-size:13.5px; font-weight:700; color:#28323f;">{{ p.cycleName }}</div>
+                  <div style="font-size:11.5px; color:#8894a3; margin-top:2px;">{{ p.typeLabel }} · reviewer {{ p.reviewer }}</div>
+                </div>
+                <span style="font-size:11.5px; font-weight:600; padding:3px 11px; border-radius:20px; background:{{ p.statusBg }}; color:{{ p.statusFg }};">{{ p.statusLabel }}</span>
+                <span style="font-size:11.5px; font-weight:700; padding:3px 11px; border-radius:20px; background:{{ p.bandBg }}; color:{{ p.bandFg }};">{{ p.bandLabel }}</span>
+              </div>
+              <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:11px;">
+                <div style="text-align:center; padding:10px; background:#f8fafc; border:1px solid #eef1f4; border-radius:9px;">
+                  <div style="font-size:10.5px; font-weight:700; color:#9aa3ad; text-transform:uppercase; letter-spacing:0.05em;">Self</div>
+                  <div style="font-size:20px; font-weight:700; color:#3a4453; margin-top:4px; font-family:'IBM Plex Mono', monospace;">{{ p.self }}</div>
+                </div>
+                <div style="text-align:center; padding:10px; background:#f8fafc; border:1px solid #eef1f4; border-radius:9px;">
+                  <div style="font-size:10.5px; font-weight:700; color:#9aa3ad; text-transform:uppercase; letter-spacing:0.05em;">Manager</div>
+                  <div style="font-size:20px; font-weight:700; color:#3a4453; margin-top:4px; font-family:'IBM Plex Mono', monospace;">{{ p.mgr }}</div>
+                </div>
+                <div style="text-align:center; padding:10px; background:#eef4fb; border:1px solid #dbe6f3; border-radius:9px;">
+                  <div style="font-size:10.5px; font-weight:700; color:#5a7ba8; text-transform:uppercase; letter-spacing:0.05em;">Calibrated</div>
+                  <div style="font-size:20px; font-weight:700; color:#17457f; margin-top:4px; font-family:'IBM Plex Mono', monospace;">{{ p.cal }}</div>
+                </div>
+              </div>
+            </div>
+          </sc-for>
+          <sc-if value="{{ noPerf }}" hint-placeholder-val="">
+            <div style="padding:22px; text-align:center; font-size:12.5px; color:#9aa3ad;">This person isn't enrolled in any review cycle yet.</div>
+          </sc-if>
+        </div>
+      </div>
+    </div>
+    </sc-if><!-- /tabPerformance -->
+    </sc-if>
+  </div>
+
+  <!-- Toasts -->
+  <div style="position:fixed; right:22px; bottom:22px; display:flex; flex-direction:column; gap:10px; z-index:400;">
+    <sc-for list="{{ toasts }}" as="t" hint-placeholder-count="0">
+      <div style="display:flex; align-items:center; gap:11px; background:#1a2331; color:#fff; padding:12px 14px; border-radius:10px; box-shadow:0 10px 28px rgba(20,30,50,0.28); min-width:280px; max-width:380px;">
+        <span style="width:8px; height:8px; border-radius:50%; background:{{ t.dot }}; flex-shrink:0;"></span>
+        <span style="flex:1; font-size:12.5px; font-weight:500; line-height:1.4;">{{ t.msg }}</span>
+        <button onClick="{{ t.onClose }}" style="border:none; background:transparent; color:#8894a3; font-size:16px; line-height:1; cursor:pointer; padding:0;">×</button>
+      </div>
+    </sc-for>
+  </div>
+</dc-import>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:&quot;100%&quot;,&quot;height&quot;:&quot;100%&quot;}}">
+class Component extends DCLogic {
+  state = { user: null, empId: null, editing: false, form: null, toasts: [], tick: 0, tab: "overview" };
+  _tid = 0;
+
+  componentDidMount() {
+    Promise.all([
+      import("./session.js"), import("./people-store.js"),
+      import("./leave-store.js"), import("./time-store.js"), import("./performance-store.js"),
+    ]).then(([s, ppl, leave, time, perf]) => {
+      this._s = s; this._ppl = ppl; this._leave = leave; this._time = time; this._perf = perf;
+      const user = s.requireSession();
+      if (!user) return;
+      const id = new URLSearchParams(location.search).get("id");
+      this.setState({ user, empId: id });
+    });
+  }
+
+  setTab(t) { this.setState({ tab: t }); }
+  tabStyle(key) {
+    const on = (this.state.tab || "overview") === key;
+    const base = "flex:1; height:36px; border:none; border-radius:8px; font-family:inherit; font-size:13px; font-weight:600; cursor:pointer;";
+    return on ? base + " background:#eaf1fa; color:#17457f;" : base + " background:transparent; color:#6b7480;";
+  }
+
+  addToast(msg, dot) {
+    const id = ++this._tid;
+    this.setState((st) => ({ toasts: [...st.toasts, { id, msg, dot: dot || "#3ecf8e" }] }));
+    setTimeout(() => this.setState((st) => ({ toasts: st.toasts.filter((t) => t.id !== id) })), 4000);
+  }
+  closeToast(id) { this.setState((st) => ({ toasts: st.toasts.filter((t) => t.id !== id) })); }
+
+  startEdit() {
+    const e = this._ppl.getEmployee(this.state.empId);
+    this.setState({ editing: true, form: {
+      title: e.title, level: e.level, location: e.location, workMode: e.workMode,
+      employmentType: e.employmentType, dept: e.dept, salary: e.salary != null ? String(e.salary) : "" } });
+  }
+  setForm(k, v) { this.setState((st) => ({ form: { ...st.form, [k]: v } })); }
+  cancelEdit() { this.setState({ editing: false, form: null }); }
+  save() {
+    const f = this.state.form;
+    this._ppl.updateEmployee(this.state.empId, {
+      title: f.title, level: f.level, location: f.location, workMode: f.workMode,
+      employmentType: f.employmentType, dept: f.dept,
+      salary: f.salary !== "" ? Number(String(f.salary).replace(/[^0-9]/g, "")) : null });
+    this.setState({ editing: false, form: null, tick: this.state.tick + 1 });
+    this.addToast("Profile updated.", "#3ecf8e");
+  }
+  changeStatus(v) {
+    this._ppl.setStatus(this.state.empId, v);
+    this.setState({ tick: this.state.tick + 1 });
+    const lbl = (this._ppl.STATUS_META[v] || {}).label || v;
+    this.addToast("Status set to " + lbl + ".", "#4a86d8");
+  }
+
+  approveChange(id) { this._ppl.approveProfileChange(id, this.state.user.id); this.setState({ tick: this.state.tick + 1 }); this.addToast("Change approved and applied.", "#3ecf8e"); }
+  rejectChange(id) { this._ppl.rejectProfileChange(id, this.state.user.id); this.setState({ tick: this.state.tick + 1 }); this.addToast("Change rejected.", "#8894a3"); }
+
+  renderVals() {
+    const u = this.state.user, ppl = this._ppl;
+    const base = { notFound: false, found: false, isHr: false, editing: false, notEditing: true,
+      toasts: this.state.toasts.map((t) => ({ ...t, onClose: () => this.closeToast(t.id) })),
+      noteTitle: "", noteSub: "", e: {}, fields: [], documents: [], chain: [], reports: [],
+      statusOptions: [], showComp: false, compLocked: false, compReadonly: true, compEdit: false,
+      hasChain: false, hasReports: false, noReports: false, noDocs: false, form: {},
+      personalRows: [], emergencyList: [], noEmergencyList: false, dependentList: [], noDependentList: false,
+      skillList: [], noSkillList: false, certList: [], bankRows: [], assetList: [], noAssetList: false,
+      pendingChanges: [], hasPendingChanges: false, pendingCount: 0,
+      history: [], showOffboard: false, offboardHref: "#", jobChangeHref: "#", hasExit: false, exitLabel: "", exitLastDay: "",
+      tabOverview: true, tabTimeLeave: false, tabPerformance: false,
+      tabOverviewStyle: this.tabStyle("overview"), tabTimeLeaveStyle: this.tabStyle("timeleave"), tabPerformanceStyle: this.tabStyle("performance"),
+      onTabOverview: () => this.setTab("overview"), onTabTimeLeave: () => this.setTab("timeleave"), onTabPerformance: () => this.setTab("performance"),
+      balanceTiles: [], leaveRows: [], noLeave: false, weekRows: [], noWeeks: false,
+      isClocked: false, notClocked: true, clockedSince: "", perfRows: [], noPerf: false };
+    if (!u || !ppl) return base;
+
+    const e = this.state.empId ? ppl.getEmployee(this.state.empId) : null;
+    if (!e) return { ...base, notFound: true };
+
+    const isHr = u.role === "hr";
+    const editing = this.state.editing && isHr;
+    const dm = ppl.deptMeta(e.dept); const sm = ppl.STATUS_META[e.status] || ppl.STATUS_META.active;
+    const canComp = ppl.canViewComp(u, e.id);
+    const form = this.state.form || {};
+
+    const ev = {
+      name: ppl.fullName(e), title: e.title, level: e.level, initials: e.initials, avatarBg: e.avatarBg,
+      dept: e.dept, deptColor: dm.color, email: e.email, phone: e.phone || "—", status: e.status,
+      statusLabel: sm.label, statusBg: sm.pillBg, statusFg: sm.pillFg, statusDot: sm.dot,
+      band: e.band || "—", salaryLabel: ppl.formatSalary(e.salary, e.currency) };
+
+    // ---- employment fields (editable in edit mode) ----
+    const F = (label, key, value, kind, options) => {
+      if (!editing || !kind) return { label, value, readonly: true, editText: false, editSelect: false };
+      if (kind === "select") return { label, value: form[key], readonly: false, editText: false, editSelect: true, options, onInput: (ev2) => this.setForm(key, ev2.target.value) };
+      return { label, value: form[key], readonly: false, editText: true, editSelect: false, onInput: (ev2) => this.setForm(key, ev2.target.value) };
+    };
+    const fields = [
+      F("Job title", "title", e.title, "text"),
+      F("Department", "dept", e.dept, "select", ppl.getDepartments().map((d) => d.id)),
+      F("Level", "level", e.level, "select", ppl.getLevels()),
+      F("Employment", "employmentType", e.employmentType, "select", ppl.EMPLOYMENT_TYPES),
+      F("Work mode", "workMode", e.workMode, "select", ppl.WORK_MODES),
+      F("Location", "location", e.location, "text"),
+      F("Start date", null, ppl.formatDate(e.startDate) + " · " + ppl.tenureLabel(e.startDate) + " tenure", null),
+    ];
+
+    // ---- org ----
+    const chainRaw = ppl.chainOfCommand(e.id);
+    const chain = chainRaw.map((c, i) => ({ name: ppl.fullName(c), title: c.title, initials: c.initials, avatarBg: c.avatarBg,
+      indent: i * 18, href: "Employee.dc.html?id=" + encodeURIComponent(c.id) }));
+    const reportsRaw = ppl.directReports(e.id).sort((a, b) => ppl.fullName(a).localeCompare(ppl.fullName(b)));
+    const reports = reportsRaw.map((r) => { const rs = ppl.STATUS_META[r.status] || ppl.STATUS_META.active;
+      return { name: ppl.fullName(r), title: r.title, initials: r.initials, avatarBg: r.avatarBg, statusDot: rs.dot,
+        href: "Employee.dc.html?id=" + encodeURIComponent(r.id) }; });
+
+    const docs = (e.documents || []).map((d) => ({ name: d.name, type: d.type, dateLabel: ppl.formatDate(d.date) }));
+
+    // ---- extended profile (read-only for admins) ----
+    const dash = (v) => (v && String(v).trim()) ? v : "—";
+    const addr = e.address || {};
+    const addrStr = [addr.line1, [addr.city, addr.state].filter(Boolean).join(", "), addr.zip].filter(Boolean).join(" · ");
+    const personalRows = [
+      { label: "Legal name", value: dash(e.legalName) },
+      { label: "Preferred name", value: dash(e.preferredName) },
+      { label: "Date of birth", value: e.dob ? ppl.formatDate(e.dob) : "—" },
+      { label: "Gender", value: dash(e.gender) },
+      { label: "Pronouns", value: dash(e.pronouns) },
+      { label: "Personal email", value: dash(e.personalEmail) },
+      { label: "Personal phone", value: dash(e.personalPhone) },
+      { label: "Home address", value: addrStr || "—" },
+    ].map((r) => ({ ...r, color: r.value === "—" ? "#b6bdc6" : "#28323f" }));
+    const emergencyList = (e.emergencyContacts || []).map((c) => ({ name: c.name || "—", relationship: c.relationship || "—", phone: c.phone || "—" }));
+    const dependentList = (e.dependents || []).map((d) => ({ name: d.name || "—", relationship: d.relationship || "—", dob: d.dob ? ppl.formatDate(d.dob) : "—" }));
+    const skillList = (e.skills || []).map((s) => ({ name: s.name || "—", level: s.level || "—" }));
+    const certList = (e.certifications || []).map((c) => ({ name: c.name || "—", issuer: c.issuer || "—" }));
+    const mask = (v, prefix) => v ? (prefix ? "•••• " + v : v) : "—";
+    const bank = e.bank || {}; const tax = e.taxIds || {};
+    const bankRows = [
+      { label: "Bank name", value: dash(bank.bankName), mono: "inherit" },
+      { label: "Account holder", value: dash(bank.accountName), mono: "inherit" },
+      { label: "Account (last 4)", value: mask(bank.accountLast4, true), mono: "'IBM Plex Mono', monospace" },
+      { label: "Routing (last 4)", value: mask(bank.routingLast4, true), mono: "'IBM Plex Mono', monospace" },
+      { label: "Tax ID (last 4)", value: mask(tax.ssnLast4, true), mono: "'IBM Plex Mono', monospace" },
+      { label: "National ID", value: dash(tax.nationalId), mono: "'IBM Plex Mono', monospace" },
+    ];
+    const assetList = (e.assets || []).map((a) => ({ name: a.name, tag: a.tag, date: ppl.formatDate(a.assignedDate) }));
+
+    // ---- pending profile change requests (HR approves) ----
+    const changesRaw = isHr ? ppl.pendingChangesFor(e.id) : [];
+    const pendingChanges = changesRaw.map((c) => ({ label: c.label,
+      oldLabel: c.oldValue && c.oldValue.trim() ? c.oldValue : "(empty)",
+      newLabel: c.newValue && c.newValue.trim() ? c.newValue : "(empty)",
+      onApprove: () => this.approveChange(c.id), onReject: () => this.rejectChange(c.id) }));
+
+    // ---- job history ----
+    const histColor = { join: "#2f6f4f", promotion: "#7a5aa8", transfer: "#3a5aa8", comp: "#9a6a1a", status: "#6b7480", job: "#3a4453", exit: "#b23b2e" };
+    const history = ppl.getHistory(e.id).map((h) => ({ label: h.label, detail: h.detail, dateLabel: ppl.formatDate(h.date), by: h.by || "HR", dot: histColor[h.type] || "#8894a3" }));
+    const exitType = e.exit ? (e.exit.typeLabel || "Exit") : "";
+
+    // ---- Time & Leave (this person's own records) ----
+    const tab = this.state.tab || "overview";
+    const leaveReqs = this._leave ? this._leave.forEmployee(e.id) : [];
+    const ALLOW = { annual: 25, sick: 10, personal: 5 };
+    const usedByType = {};
+    leaveReqs.forEach((r) => { if (r.status === "approved" || r.status === "posted") usedByType[r.type] = (usedByType[r.type] || 0) + (r.days || 0); });
+    const balanceTiles = ["annual", "sick", "personal"].map((t) => {
+      const tm = (this._leave && this._leave.TYPE_META[t]) || {};
+      const used = usedByType[t] || 0, allow = ALLOW[t];
+      return { label: tm.short || t, used: String(used), allow: String(allow),
+        remaining: String(Math.max(0, allow - used)), pct: allow ? Math.min(100, Math.round((used / allow) * 100)) + "%" : "0%",
+        color: tm.color || "#3f7cc4" };
+    });
+    const leaveRows = leaveReqs.slice().sort((a, b) => (a.startDate < b.startDate ? 1 : -1)).map((r) => {
+      const tm = (this._leave && this._leave.TYPE_META[r.type]) || {};
+      const sm = (this._leave && this._leave.STATUS_META[r.status]) || {};
+      return { type: tm.label || r.type, dot: tm.dot || "#8894a3",
+        range: this._leave ? this._leave.formatRange(r.startDate, r.endDate) : "",
+        days: (r.days || 0) + "d", status: sm.label || r.status, pillBg: sm.pillBg || "#eef1f4", pillFg: sm.pillFg || "#6b7480" };
+    });
+    const sheets = this._time ? this._time.weeksFor(e.id) : [];
+    const target = this._time ? this._time.targetHours() : 40;
+    const weekRows = sheets.slice(0, 8).map((w) => {
+      const total = this._time.totalHours(w.days), sm = this._time.STATUS_META[w.status] || {};
+      return { label: this._time.weekLabel(w.weekStart), total: total + "h", target: "/ " + target + "h",
+        status: sm.label || w.status, pillBg: sm.pillBg || "#eef1f4", pillFg: sm.pillFg || "#6b7480",
+        barPct: Math.min(100, Math.round((total / target) * 100)) + "%" };
+    });
+    const clock = this._time ? this._time.getClock(e.id) : null;
+    const clockedSince = clock ? new Date(clock.since).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) : "";
+
+    // ---- Performance (this person's reviews across cycles) ----
+    const STATUS_LABEL = { awaiting_self: "Awaiting self", awaiting_manager: "Awaiting manager", in_calibration: "In calibration", committed: "Committed" };
+    const STATUS_PILL = { awaiting_self: { bg: "#fbf1de", fg: "#9a6a1a" }, awaiting_manager: { bg: "#e8eefb", fg: "#3a5aa8" }, in_calibration: { bg: "#f0ecf8", fg: "#6a4a9a" }, committed: { bg: "#e6f3ec", fg: "#2f6f4f" } };
+    const fmtScore = (v) => (v == null ? "\u2014" : v.toFixed(1));
+    const cycles = this._perf ? this._perf.allCycles().filter((c) => c.status !== "draft") : [];
+    const perfRows = cycles.map((c) => {
+      const r = this._perf.getReview(c.id, e.id);
+      if (!r) return null;
+      const st = this._perf.reviewStatus(r);
+      const self = r.self && r.self.submittedAt ? this._perf.weightedAvg(c, r.self.scores) : null;
+      const mgr = r.mgr && r.mgr.submittedAt ? this._perf.weightedAvg(c, r.mgr.scores) : null;
+      const cal = r.cal && r.cal.committed ? this._perf.weightedAvg(c, r.cal.scores) : null;
+      const band = this._perf.scoreBand(cal != null ? cal : (mgr != null ? mgr : self));
+      const sp = STATUS_PILL[st] || { bg: "#eef1f4", fg: "#6b7480" };
+      return { cycleName: c.name, typeLabel: this._perf.cycleTypeLabel(c.type),
+        reviewer: this._perf.reviewerName(r.reviewerId),
+        statusLabel: STATUS_LABEL[st] || st, statusBg: sp.bg, statusFg: sp.fg,
+        bandLabel: band.label, bandBg: band.bg, bandFg: band.color,
+        self: fmtScore(self), mgr: fmtScore(mgr), cal: fmtScore(cal) };
+    }).filter(Boolean);
+
+    return {
+      ...base, found: true, notFound: false, isHr,
+      editing, notEditing: !editing,
+      e: ev, fields,
+      showComp: canComp, compLocked: !canComp, compReadonly: !editing, compEdit: editing,
+      form: { salary: form.salary != null ? form.salary : (e.salary != null ? String(e.salary) : "") },
+      onSalary: (ev2) => this.setForm("salary", ev2.target.value),
+      documents: docs, noDocs: docs.length === 0,
+      personalRows,
+      emergencyList, noEmergencyList: emergencyList.length === 0,
+      dependentList, noDependentList: dependentList.length === 0,
+      skillList, noSkillList: skillList.length === 0, certList,
+      bankRows, assetList, noAssetList: assetList.length === 0,
+      pendingChanges, hasPendingChanges: pendingChanges.length > 0, pendingCount: pendingChanges.length,
+      history,
+      showOffboard: isHr && e.status !== "inactive",
+      offboardHref: "Offboarding.dc.html?emp=" + encodeURIComponent(e.id),
+      hasExit: !!e.exit, exitLabel: exitType, exitLastDay: e.exit ? ppl.formatDate(e.exit.lastDay) : "",
+      jobChangeHref: "Job Changes.dc.html?emp=" + encodeURIComponent(e.id),
+      tabOverview: tab === "overview", tabTimeLeave: tab === "timeleave", tabPerformance: tab === "performance",
+      tabOverviewStyle: this.tabStyle("overview"), tabTimeLeaveStyle: this.tabStyle("timeleave"), tabPerformanceStyle: this.tabStyle("performance"),
+      onTabOverview: () => this.setTab("overview"), onTabTimeLeave: () => this.setTab("timeleave"), onTabPerformance: () => this.setTab("performance"),
+      balanceTiles, leaveRows, noLeave: leaveRows.length === 0,
+      weekRows, noWeeks: weekRows.length === 0,
+      isClocked: !!clock, notClocked: !clock, clockedSince,
+      perfRows, noPerf: perfRows.length === 0,
+      chain, hasChain: chain.length > 0, selfIndent: chain.length * 18,
+      reports, hasReports: reports.length > 0, noReports: reports.length === 0, reportCount: reports.length,
+      statusOptions: Object.keys(ppl.STATUS_META).map((k) => ({ id: k, label: ppl.STATUS_META[k].label })),
+      onEdit: () => this.startEdit(), onCancel: () => this.cancelEdit(), onSave: () => this.save(),
+      onStatus: (ev2) => this.changeStatus(ev2.target.value),
+      noteTitle: ppl.fullName(e), noteSub: e.title + " · " + e.dept,
+    };
+  }
+}
+</script>
+</body>
+</html>
+

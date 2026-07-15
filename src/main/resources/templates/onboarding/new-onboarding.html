@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+<head>
+    <title layout:fragment="title">Start onboarding · Meridian HR</title>
+</head>
+<body>
+<div layout:fragment="content" style="max-width:960px;">
+
+    <div style="margin-bottom:20px;">
+        <a th:href="@{/onboarding}" style="display:inline-flex; align-items:center; gap:6px; font-size:12.5px; color:#8894a3; font-weight:600; margin-bottom:8px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+            Back to Onboarding
+        </a>
+        <h1 style="margin:0; font-size:24px; font-weight:700; letter-spacing:-0.02em; color:#1a2331;">Start onboarding</h1>
+        <div style="font-size:13px; color:#8894a3; margin-top:4px;">Dioschub provisions the hire across every system in the role's schema.</div>
+    </div>
+
+    <!-- Access gate -->
+    <div th:if="${noAccess}" style="background:#fff; border:1px dashed #d5dbe2; border-radius:10px; padding:48px 20px; text-align:center;">
+        <div style="font-size:14px; font-weight:600; color:#5a6472;">HR access required</div>
+        <div style="font-size:12.5px; color:#9aa3ad; margin-top:4px;">Only People Ops can start onboardings. Sign in as Priya Nair (HR).</div>
+    </div>
+
+    <form th:if="${hasAccess}" method="get" action="/onboarding/new">
+        <div style="display:grid; grid-template-columns:1.3fr 1fr; gap:18px; align-items:start;">
+
+            <!-- Form card -->
+            <div style="background:#fff; border:1px solid #e4e8ed; border-radius:10px; padding:22px;">
+                <div style="display:flex; gap:14px; margin-bottom:18px;">
+                    <div style="flex:1;">
+                        <label style="display:block; font-size:12.5px; font-weight:600; color:#3a4453; margin-bottom:7px;">New hire name</label>
+                        <input name="name" th:value="${fName}" placeholder="e.g. Jordan Ellis" style="width:100%; height:40px; border:1px solid #dde2e8; border-radius:8px; padding:0 12px; font-size:13.5px; color:#1e2733; outline:none; background:#fff; font-family:inherit;"/>
+                    </div>
+                    <div style="flex:1;">
+                        <label style="display:block; font-size:12.5px; font-weight:600; color:#3a4453; margin-bottom:7px;">Role title</label>
+                        <input name="title" th:value="${fTitle}" placeholder="e.g. Product Designer" style="width:100%; height:40px; border:1px solid #dde2e8; border-radius:8px; padding:0 12px; font-size:13.5px; color:#1e2733; outline:none; background:#fff; font-family:inherit;"/>
+                    </div>
+                </div>
+
+                <label style="display:block; font-size:12.5px; font-weight:600; color:#3a4453; margin-bottom:7px;">Role family <span style="color:#9aa3ad; font-weight:500;">· selects the provisioning schema</span></label>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:18px;">
+                    <label th:each="ro : ${roleOptions}"
+                           th:styleappend="'; ' + ('display:flex; align-items:center; gap:11px; padding:11px 13px; border:1.5px solid ' + (${ro.on()} ? '#17457f' : '#e4e8ed') + '; background:' + (${ro.on()} ? '#f2f7fc' : '#fff') + '; border-radius:9px; cursor:pointer;')">
+                        <input type="radio" name="role" th:value="${ro.id()}" th:checked="${ro.on()}" onchange="this.form.submit()" style="display:none;"/>
+                        <span style="width:16px; height:16px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0;" th:styleappend="'; ' + ('border:2px solid ' + (${ro.on()} ? '#17457f' : '#c7cdd6'))"><span style="width:7px; height:7px; border-radius:50%;" th:styleappend="'; ' + ('background:' + (${ro.on()} ? '#17457f' : 'transparent'))"></span></span>
+                        <div style="flex:1; min-width:0;">
+                            <div style="font-size:13px; font-weight:600; color:#28323f;" th:text="${ro.label()}">Design / Product</div>
+                            <div style="font-size:11px; color:#8894a3; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" th:text="${ro.tplName()} + ' · ' + ${ro.stepCount()} + ' steps'">Design / Product hire · 7 steps</div>
+                        </div>
+                    </label>
+                </div>
+
+                <div style="display:flex; gap:14px; margin-bottom:18px;">
+                    <div style="flex:1;">
+                        <label style="display:block; font-size:12.5px; font-weight:600; color:#3a4453; margin-bottom:7px;">Start date</label>
+                        <input type="date" name="start" th:value="${fStart}" onchange="this.form.submit()" style="width:100%; height:40px; border:1px solid #dde2e8; border-radius:8px; padding:0 11px; font-size:13.5px; color:#1e2733; outline:none; background:#fff; font-family:inherit;"/>
+                    </div>
+                    <div style="flex:1;">
+                        <label style="display:block; font-size:12.5px; font-weight:600; color:#3a4453; margin-bottom:7px;">Reporting manager</label>
+                        <input name="manager" th:value="${fManager}" placeholder="Manager name" style="width:100%; height:40px; border:1px solid #dde2e8; border-radius:8px; padding:0 12px; font-size:13.5px; color:#1e2733; outline:none; background:#fff; font-family:inherit;"/>
+                    </div>
+                </div>
+
+                <label style="display:block; font-size:12.5px; font-weight:600; color:#3a4453; margin-bottom:7px;">Work email <span style="color:#9aa3ad; font-weight:500;">· optional, auto-derived if blank</span></label>
+                <input name="email" th:value="${fEmail}" th:placeholder="${emailPlaceholder}" style="width:100%; height:40px; border:1px solid #dde2e8; border-radius:8px; padding:0 12px; font-size:13.5px; color:#1e2733; outline:none; background:#fff; font-family:var(--mono);"/>
+            </div>
+
+            <!-- Provisioning preview -->
+            <div style="background:#fff; border:1px solid #e4e8ed; border-radius:10px; overflow:hidden;">
+                <div style="padding:15px 16px; border-bottom:1px solid #eef1f4;">
+                    <div style="font-size:13.5px; font-weight:700; color:#1a2331;">Provisioning preview</div>
+                    <div style="font-size:11.5px; color:#8894a3; margin-top:2px;" th:text="${previewSub}">Design / Product hire · 7 steps</div>
+                </div>
+                <div style="max-height:420px; overflow-y:auto; padding:6px 0;">
+                    <div th:each="pv : ${preview}" style="display:flex; gap:11px; padding:11px 16px; border-bottom:1px solid #f5f7f9;">
+                        <div style="width:22px; height:22px; border-radius:50%; background:#eef1f4; color:#6b7480; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0;" th:text="${pv.order()}">1</div>
+                        <div style="flex:1; min-width:0;">
+                            <div style="display:flex; align-items:center; gap:7px; flex-wrap:wrap;">
+                                <span style="font-size:12.5px; font-weight:600; color:#28323f;" th:text="${pv.title()}">Create identity</span>
+                                <span style="font-size:10px; font-weight:600; padding:1px 6px; border-radius:4px; font-family:var(--mono);" th:styleappend="'; ' + ('color:' + ${pv.sysColor()} + '; background:' + ${pv.sysBg()})" th:text="${pv.sysLabel()}">Azure AD</span>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:8px; margin-top:3px; flex-wrap:wrap;">
+                                <span th:if="${pv.auto()}" style="font-size:10.5px; color:#2f6aa8; display:inline-flex; align-items:center; gap:3px;">
+                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M13 2L3 14h7l-1 8 10-12h-7z"/></svg>Auto-run</span>
+                                <span th:if="${pv.hasDoc()}" style="font-size:10.5px; color:#9a6a1a; display:inline-flex; align-items:center; gap:3px;">
+                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                                    <span th:text="${pv.docName()}">Signed I-9</span></span>
+                                <span th:if="${pv.hasDep()}" style="font-size:10.5px; color:#9aa3ad;" th:text="'after step ' + ${pv.depOrder()}">after step 1</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div style="padding:12px 16px; background:#f8fafc; border-top:1px solid #eef1f4; font-size:11.5px; color:#8894a3; line-height:1.5;">
+                    Dioschub runs each write in the target system as <span style="color:#5a6472; font-family:var(--mono);" th:text="${operator}">priya.nair@meridian.co</span>, holding any step until its dependency clears.
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div style="display:flex; align-items:center; gap:12px; margin-top:18px;">
+            <a th:href="@{/onboarding}" class="btn btn-ghost" style="height:42px;">Cancel</a>
+            <button type="submit" formmethod="post" formaction="/onboarding/new"
+                    style="height:42px; padding:0 20px; border:none; border-radius:9px; background:#17457f; font-family:inherit; font-size:13.5px; font-weight:600; color:#fff; cursor:pointer; display:inline-flex; align-items:center; gap:8px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                <span th:text="'Start onboarding · provision ' + ${startCount} + ' steps'">Start onboarding</span>
+            </button>
+            <span th:if="${needName}" style="font-size:12px; color:#9aa3ad;">Enter the hire's name to continue</span>
+        </div>
+    </form>
+</div>
+</body>
+</html>

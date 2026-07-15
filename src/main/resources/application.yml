@@ -1,0 +1,28 @@
+server:
+  # Railway/containers inject PORT; local dev defaults to 3020 to avoid clashing
+  # with the hub (3333) and admin portal (7001).
+  port: ${PORT:3020}
+
+spring:
+  application:
+    name: meridian-hr
+  thymeleaf:
+    # Server-rendered; disable template caching in dev for fast iteration.
+    cache: ${THYMELEAF_CACHE:false}
+
+meridian:
+  # Demo-workspace bounds (in-memory, no DB). See WorkspaceStore.
+  workspace:
+    idle-ttl: ${MERIDIAN_WORKSPACE_IDLE_TTL:PT2H}   # evict a workspace after 2h idle
+    max-devices: ${MERIDIAN_WORKSPACE_MAX_DEVICES:2000}
+    sweep-interval: ${MERIDIAN_WORKSPACE_SWEEP_INTERVAL:300000}  # scheduled sweep, ms (5 min)
+  # Embedded Dioschub assistant. Empty until the AI-integration phase (rail stays inert).
+  diosc:
+    hub-url: ${MERIDIAN_DIOSC_HUB_URL:}
+    embed-key: ${MERIDIAN_DIOSC_EMBED_KEY:}
+    assistant-id: ${MERIDIAN_DIOSC_ASSISTANT_ID:}
+    bind-endpoint: ${MERIDIAN_DIOSC_BIND_ENDPOINT:/api/diosc/bind}
+
+logging:
+  level:
+    com.meridian.hr: INFO

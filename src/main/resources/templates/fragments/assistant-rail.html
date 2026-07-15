@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+<!--
+  The reserved Dioschub assistant mount. This rail is a first-class part of the
+  shell so the kit is a drop-in: when meridian.diosc.* is configured (the AI phase),
+  the real <diosc-chat> element + loader activate with ZERO template restructuring.
+  Until then, the same slot renders an inert placeholder.
+-->
+<aside th:fragment="rail" class="assistant-rail">
+    <div class="rail-head">
+        <span class="label">Assistant</span>
+        <span class="mount-id">#dioschub-assistant-root</span>
+    </div>
+
+    <!-- CONFIGURED: the live kit (BYOA identity flows via bind-endpoint, not the DOM). -->
+    <th:block th:if="${diosc != null and diosc.configured}">
+        <diosc-chat mode="embed"
+                    th:attr="api-key=${diosc.embedKey},
+                             backend-url=${diosc.hubUrl},
+                             assistant-id=${diosc.assistantId},
+                             bind-endpoint=${diosc.bindEndpoint},
+                             data-operating-user=${currentUser != null ? currentUser.email : ''}"></diosc-chat>
+        <script th:inline="javascript">
+            /*<![CDATA[*/
+            (function () {
+                var hub = /*[[${diosc.hubUrl}]]*/ '';
+                var key = /*[[${diosc.embedKey}]]*/ '';
+                if (!hub || !key || document.getElementById('meridian-diosc-loader')) return;
+                var s = document.createElement('script');
+                s.id = 'meridian-diosc-loader';
+                s.src = hub + '/api/embed/' + key + '/loader.js';
+                s.async = true;
+                document.head.appendChild(s);
+            })();
+            /*]]>*/
+        </script>
+    </th:block>
+
+    <!-- INERT PLACEHOLDER: shown until the assistant is configured. -->
+    <div th:unless="${diosc != null and diosc.configured}" class="assistant-placeholder">
+        <div class="glyph">◆</div>
+        <div class="title">Dioschub Assistant</div>
+        <div class="desc">The embedded assistant mounts here. It operates as <em>you</em>, within your
+            permissions — wired up in the AI-integration phase.</div>
+        <div class="op" th:if="${currentUser != null}"
+             th:text="'operating as ' + ${currentUser.email}">operating as you</div>
+    </div>
+</aside>
+</body>
+</html>

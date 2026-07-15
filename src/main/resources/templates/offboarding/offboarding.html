@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+<head>
+    <title layout:fragment="title">Offboarding · Meridian HR</title>
+</head>
+<body>
+<div layout:fragment="content" style="max-width:900px;">
+
+    <!-- Header -->
+    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:18px;">
+        <div>
+            <div style="font-size:12.5px; color:#8894a3; font-weight:500; margin-bottom:2px;">People Ops / Offboarding</div>
+            <h1 style="margin:0; font-size:24px; font-weight:700; letter-spacing:-0.02em; color:#1a2331;">Offboarding</h1>
+        </div>
+        <a th:if="${allowed}" th:href="@{/offboarding(add='true')}" class="btn btn-primary">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+            Initiate offboarding
+        </a>
+    </div>
+
+    <!-- Restricted -->
+    <div th:if="${restricted}" style="background:#f7f9fb; border:1px dashed #d9e0e8; border-radius:13px; padding:56px 20px; text-align:center;">
+        <div style="font-size:15px; font-weight:600; color:#5a6472;">Offboarding is available to managers and HR</div>
+        <div style="font-size:12.5px; color:#9aa3ad; margin-top:4px;">Contact HR to begin an exit process.</div>
+    </div>
+
+    <th:block th:if="${allowed}">
+        <!-- Stat tiles -->
+        <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:18px;">
+            <div th:each="s : ${stats}" style="min-width:0; background:#fff; border:1px solid #e4e8ed; border-radius:12px; padding:15px 16px;">
+                <div style="font-size:11.5px; font-weight:600; color:#8894a3;" th:text="${s.label()}">Active exits</div>
+                <div style="font-size:24px; font-weight:700; color:#1a2331; margin-top:4px;" th:text="${s.value()}">1</div>
+            </div>
+        </div>
+
+        <!-- Cases -->
+        <div style="display:flex; flex-direction:column; gap:14px;">
+            <div th:each="oc : ${cases}" style="background:#fff; border:1px solid #e4e8ed; border-radius:13px; padding:18px 20px;">
+                <div style="display:flex; align-items:flex-start; gap:14px;">
+                    <div style="width:42px; height:42px; border-radius:50%; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:600; font-size:15px; flex-shrink:0;" th:styleappend="'; ' + ('background:' + ${oc.avatarBg()})" th:text="${oc.initials()}">KI</div>
+                    <div style="flex:1; min-width:0;">
+                        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                            <span style="font-size:15px; font-weight:700; color:#1a2331;" th:text="${oc.name()}">Ken Ito</span>
+                            <span style="font-size:11px; font-weight:600; padding:3px 10px; border-radius:20px;" th:styleappend="'; ' + ('background:' + ${oc.typeBg()} + '; color:' + ${oc.typeFg()})" th:text="${oc.typeLabel()}">Resignation</span>
+                            <span style="font-size:11px; font-weight:600; padding:3px 10px; border-radius:20px;" th:styleappend="'; ' + ('background:' + ${oc.statusBg()} + '; color:' + ${oc.statusFg()})" th:text="${oc.statusLabel()}">In progress</span>
+                        </div>
+                        <div style="font-size:12.5px; color:#8894a3; margin-top:4px;" th:text="${oc.title()} + ' · ' + ${oc.dept()} + ' · Last day ' + ${oc.lastDayLabel()}">Product Designer · Design · Last day —</div>
+                    </div>
+                    <div style="text-align:right; flex-shrink:0;">
+                        <div style="font-size:20px; font-weight:700;" th:styleappend="'; ' + ('color:' + ${oc.pctColor()})" th:text="${oc.pct()} + '%'">43%</div>
+                        <div style="font-size:11px; color:#9aa3ad;" th:text="${oc.done()} + '/' + ${oc.total()} + ' tasks'">3/7 tasks</div>
+                    </div>
+                </div>
+
+                <div th:if="${oc.hasReason()}" style="font-size:12px; color:#6b7480; margin-top:12px; padding:10px 12px; background:#f8fafc; border:1px solid #eef1f4; border-radius:8px; line-height:1.5;" th:text="${oc.reason()}">Reason</div>
+
+                <!-- Checklist -->
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:14px;">
+                    <form th:each="task : ${oc.tasks()}" th:action="@{/offboarding/{cid}/task/{tid}(cid=${oc.id()}, tid=${task.id()})}" method="post" style="margin:0;">
+                        <button type="submit" th:disabled="${!oc.active()}"
+                                style="display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:9px; text-align:left; width:100%; font-family:inherit;"
+                                th:styleappend="'; ' + ('display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:9px; text-align:left; width:100%; font-family:inherit; border:1px solid ' + ${task.border()} + '; background:' + ${task.bg()} + '; cursor:' + (${oc.active()} ? 'pointer' : 'default'))">
+                            <span style="width:18px; height:18px; border-radius:5px; display:flex; align-items:center; justify-content:center; flex-shrink:0;" th:styleappend="'; ' + ('border:1.5px solid ' + ${task.boxBorder()} + '; background:' + ${task.boxBg()})">
+                                <svg th:if="${task.done()}" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>
+                            </span>
+                            <div style="flex:1; min-width:0;">
+                                <div style="font-size:12px; font-weight:600;" th:styleappend="'; ' + ('color:' + ${task.textColor()})" th:text="${task.label()}">Task</div>
+                                <div style="font-size:10.5px; color:#9aa3ad;" th:text="${task.owner()}">HR</div>
+                            </div>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Active actions -->
+                <div th:if="${oc.active()}" style="display:flex; align-items:center; justify-content:flex-end; gap:9px; margin-top:16px; padding-top:14px; border-top:1px solid #f4f6f8;">
+                    <form th:action="@{/offboarding/{cid}/cancel(cid=${oc.id()})}" method="post" style="margin:0;">
+                        <button type="submit" style="height:36px; padding:0 14px; border:1px solid #dde2e8; border-radius:8px; background:#fff; color:#b23b2e; font-family:inherit; font-size:12.5px; font-weight:600; cursor:pointer;">Cancel exit</button>
+                    </form>
+                    <form th:action="@{/offboarding/{cid}/complete(cid=${oc.id()})}" method="post" style="margin:0;">
+                        <button type="submit" th:disabled="${!oc.completeEnabled()}"
+                                style="height:36px; padding:0 16px; border:none; border-radius:8px; color:#fff; font-family:inherit; font-size:12.5px; font-weight:600;"
+                                th:styleappend="'; ' + ('height:36px; padding:0 16px; border:none; border-radius:8px; color:#fff; font-family:inherit; font-size:12.5px; font-weight:600; background:' + ${oc.completeBg()} + '; cursor:' + (${oc.completeEnabled()} ? 'pointer' : 'not-allowed'))"
+                                th:text="${oc.completeLabel()}">Complete exit</button>
+                    </form>
+                </div>
+                <div th:if="${oc.doneCase()}" style="display:flex; align-items:center; gap:8px; margin-top:14px; padding-top:12px; border-top:1px solid #f4f6f8; font-size:12px; font-weight:600; color:#2f6f4f;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6L9 17l-5-5"/></svg>
+                    <span th:text="'Exit completed — ' + ${oc.name()} + ' marked inactive in the Directory.'">Exit completed.</span>
+                </div>
+            </div>
+
+            <div th:if="${noCases}" style="background:#fff; border:1px dashed #d5dbe2; border-radius:13px; padding:48px 20px; text-align:center;">
+                <div style="font-size:14px; font-weight:600; color:#5a6472;">No offboarding in progress</div>
+                <div style="font-size:12.5px; color:#9aa3ad; margin-top:4px;">Initiate an exit to run the checklist and close out an employee.</div>
+            </div>
+        </div>
+    </th:block>
+</div>
+
+<!-- Initiate modal + toast -->
+<th:block layout:fragment="content-after">
+    <div th:if="${addOpen}" class="modal-scrim" style="position:fixed; inset:0; background:rgba(20,30,50,0.42); z-index:300; display:flex; align-items:center; justify-content:center; padding:24px;">
+        <div style="width:500px; max-width:100%; background:#fff; border-radius:16px; box-shadow:0 24px 64px rgba(20,30,50,0.32);">
+            <form th:action="@{/offboarding/new}" method="post">
+                <div style="display:flex; align-items:center; justify-content:space-between; padding:18px 22px; border-bottom:1px solid #eef1f4;">
+                    <div style="font-size:16px; font-weight:700; color:#1a2331;">Initiate offboarding</div>
+                    <a th:href="@{/offboarding}" style="width:30px; height:30px; border:1px solid #dde2e8; border-radius:8px; background:#fff; color:#8894a3; font-size:18px; line-height:28px; text-align:center;">×</a>
+                </div>
+                <div style="padding:20px 22px; display:flex; flex-direction:column; gap:15px;">
+                    <div>
+                        <div style="font-size:12px; font-weight:600; color:#5a6472; margin-bottom:5px;">Employee</div>
+                        <select name="empId" required style="width:100%; height:38px; border:1px solid #dde2e8; border-radius:9px; background:#fff; padding:0 12px; font-size:13.5px; color:#28323f; outline:none;">
+                            <option value="">— Select employee —</option>
+                            <option th:each="eo : ${empOptions}" th:value="${eo.id()}" th:text="${eo.label()}" th:selected="${eo.id() == formEmp}">Ken Ito · Product Designer</option>
+                        </select>
+                    </div>
+                    <div>
+                        <div style="font-size:12px; font-weight:600; color:#5a6472; margin-bottom:5px;">Exit type</div>
+                        <select name="type" style="width:100%; height:38px; border:1px solid #dde2e8; border-radius:9px; background:#fff; padding:0 12px; font-size:13.5px; color:#28323f; outline:none;">
+                            <option th:each="ty : ${typeOptions}" th:value="${ty.id()}" th:text="${ty.label()}">Resignation</option>
+                        </select>
+                    </div>
+                    <div>
+                        <div style="font-size:12px; font-weight:600; color:#5a6472; margin-bottom:5px;">Last working day</div>
+                        <input type="date" name="lastDay" required style="width:100%; height:38px; border:1px solid #dde2e8; border-radius:9px; background:#fff; padding:0 12px; font-size:13.5px; color:#28323f; outline:none;"/>
+                    </div>
+                    <div>
+                        <div style="font-size:12px; font-weight:600; color:#5a6472; margin-bottom:5px;">Reason / notes</div>
+                        <input name="reason" placeholder="Optional context" style="width:100%; height:38px; border:1px solid #dde2e8; border-radius:9px; background:#fff; padding:0 12px; font-size:13.5px; color:#28323f; outline:none; font-family:inherit;"/>
+                    </div>
+                </div>
+                <div style="display:flex; align-items:center; justify-content:flex-end; gap:10px; padding:16px 22px; border-top:1px solid #eef1f4; background:#fafbfc;">
+                    <a th:href="@{/offboarding}" class="btn btn-ghost">Cancel</a>
+                    <button type="submit" class="btn btn-primary">Start offboarding</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div th:if="${toast != null}" style="position:fixed; right:22px; bottom:22px; z-index:400; display:flex; align-items:center; gap:11px; background:#1a2331; color:#fff; padding:12px 14px; border-radius:10px; box-shadow:0 10px 28px rgba(20,30,50,0.28); min-width:280px; max-width:390px;">
+        <span style="width:8px; height:8px; border-radius:50%; flex-shrink:0;" th:styleappend="'; ' + ('background:' + (${toastDot} ?: '#3ecf8e'))"></span>
+        <span style="flex:1; font-size:12.5px; font-weight:500; line-height:1.4;" th:text="${toast}">Started.</span>
+    </div>
+</th:block>
+</body>
+</html>

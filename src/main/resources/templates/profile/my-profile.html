@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+<head>
+    <title layout:fragment="title">My Profile · Meridian HR</title>
+    <th:block layout:fragment="head">
+        <style>.rowin { width:100%; height:34px; border:1px solid #dde2e8; border-radius:8px; background:#f8fafc; padding:0 10px; font-size:12.5px; color:#28323f; outline:none; font-family:inherit; }</style>
+    </th:block>
+</head>
+<body>
+<div layout:fragment="content" style="max-width:860px;">
+
+    <!-- Header -->
+    <div style="display:flex; align-items:center; gap:16px; margin-bottom:18px;">
+        <div style="width:60px; height:60px; border-radius:50%; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:600; font-size:22px; flex-shrink:0;" th:styleappend="'; ' + ('background:' + ${me.avatarBg})" th:text="${me.initials}">SC</div>
+        <div style="flex:1; min-width:0;">
+            <div style="font-size:12.5px; color:#8894a3; font-weight:500;">Workspace / My profile</div>
+            <h1 style="margin:2px 0 0; font-size:23px; font-weight:700; letter-spacing:-0.02em; color:#1a2331;" th:text="${me.fullName()}">Sarah Chen</h1>
+            <div style="font-size:13px; color:#6b7480;" th:text="${me.title} + ' · ' + ${me.dept}">Product Designer · Design</div>
+        </div>
+    </div>
+
+    <!-- Completeness -->
+    <div style="background:#fff; border:1px solid #e4e8ed; border-radius:13px; padding:18px 20px; margin-bottom:16px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+            <div style="font-size:13.5px; font-weight:700; color:#1a2331;">Profile completeness</div>
+            <div style="font-size:13px; font-weight:700;" th:styleappend="'; ' + ('color:' + ${compColor})" th:text="${comp.pct()} + '%'">80%</div>
+        </div>
+        <div style="height:9px; border-radius:5px; background:#eef1f4; overflow:hidden;">
+            <div style="height:100%; border-radius:5px;" th:styleappend="'; ' + ('width:' + ${comp.pct()} + '%; background:' + ${compColor})"></div>
+        </div>
+        <div th:if="${!comp.missing().isEmpty()}" style="display:flex; align-items:center; gap:8px; margin-top:13px; flex-wrap:wrap;">
+            <span style="font-size:12px; color:#8894a3;">Still needed:</span>
+            <span th:each="mf : ${comp.missing()}" style="font-size:11.5px; font-weight:600; color:#9a6a1a; background:#faf3e6; border:1px solid #ece2c6; padding:3px 10px; border-radius:20px;" th:text="${mf.label()}">Tax ID</span>
+        </div>
+        <div th:if="${comp.missing().isEmpty()}" style="display:flex; align-items:center; gap:7px; margin-top:12px; font-size:12px; color:#2f6f4f;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6L9 17l-5-5"/></svg>
+            Your profile is complete. Thanks for keeping it up to date.
+        </div>
+    </div>
+
+    <!-- Work (read-only) -->
+    <div style="background:#fff; border:1px solid #e4e8ed; border-radius:13px; padding:20px; margin-bottom:16px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+            <div style="font-size:15px; font-weight:700; color:#1a2331;">Work</div>
+            <span style="font-size:11px; color:#9aa3ad;">Managed by HR</span>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px 20px;">
+            <div th:each="r : ${ {{'Job title', me.title},{'Department', me.dept},{'Level', me.level},{'Employment type', me.employmentType},{'Work mode', me.workMode},{'Work location', me.location}} }" style="min-width:0;">
+                <div style="font-size:11.5px; color:#8894a3; font-weight:500; margin-bottom:3px;" th:text="${r[0]}">Job title</div>
+                <div style="font-size:13.5px; font-weight:600; color:#28323f;" th:text="${r[1]}">Product Designer</div>
+            </div>
+            <div style="min-width:0;"><div style="font-size:11.5px; color:#8894a3; font-weight:500; margin-bottom:3px;">Reports to</div><div style="font-size:13.5px; font-weight:600; color:#28323f;" th:text="${managerName}">Nadia Rahman</div></div>
+            <div style="min-width:0;"><div style="font-size:11.5px; color:#8894a3; font-weight:500; margin-bottom:3px;">Start date</div><div style="font-size:13.5px; font-weight:600; color:#28323f;" th:text="${startLabel}">May 16, 2022 · 3 yr</div></div>
+            <div style="min-width:0;"><div style="font-size:11.5px; color:#8894a3; font-weight:500; margin-bottom:3px;">Base salary</div><div style="font-size:13.5px; font-weight:600; color:#28323f;" th:text="${salaryLabel} + ' / yr'">$132,000 / yr</div></div>
+            <div style="min-width:0;"><div style="font-size:11.5px; color:#8894a3; font-weight:500; margin-bottom:3px;">Band</div><div style="font-size:13.5px; font-weight:600; color:#28323f;" th:text="${me.band} ?: '—'">IC3</div></div>
+        </div>
+    </div>
+
+    <!-- About you -->
+    <div style="background:#fff; border:1px solid #e4e8ed; border-radius:13px; padding:20px; margin-bottom:16px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
+            <div style="font-size:15px; font-weight:700; color:#1a2331;">About you</div>
+            <a th:unless="${editInfo}" th:href="@{/profile(edit='info')}" style="display:flex; align-items:center; gap:7px; height:34px; padding:0 14px; border:1px solid #cfdbe9; border-radius:8px; background:#eef4fb; color:#17457f; font-size:12.5px; font-weight:600;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit
+            </a>
+        </div>
+        <form th:if="${editInfo}" method="post" action="/profile/info">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px 20px;">
+                <div th:each="fld : ${infoFields}" style="min-width:0;">
+                    <div style="display:flex; align-items:center; gap:6px; font-size:11.5px; color:#8894a3; font-weight:500; margin-bottom:4px;">
+                        <span th:text="${fld.label()}">Legal name</span>
+                        <span th:if="${fld.sensitive()}" style="font-size:9.5px; font-weight:700; color:#9a6a1a; background:#faf3e6; padding:1px 6px; border-radius:5px;">HR APPROVAL</span>
+                    </div>
+                    <input th:name="${fld.key()}" th:type="${fld.type()}" th:value="${fld.value()}" class="rowin" style="height:34px;"/>
+                </div>
+            </div>
+            <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:16px;">
+                <a th:href="@{/profile}" class="btn btn-ghost" style="height:34px;">Cancel</a>
+                <button type="submit" class="btn btn-primary" style="height:34px;">Save</button>
+            </div>
+        </form>
+        <div th:unless="${editInfo}" style="display:grid; grid-template-columns:1fr 1fr; gap:14px 20px;">
+            <div th:each="fld : ${infoFields}" style="min-width:0;">
+                <div style="display:flex; align-items:center; gap:6px; font-size:11.5px; color:#8894a3; font-weight:500; margin-bottom:4px;">
+                    <span th:text="${fld.label()}">Legal name</span>
+                    <span th:if="${fld.sensitive()}" style="font-size:9.5px; font-weight:700; color:#9a6a1a; background:#faf3e6; padding:1px 6px; border-radius:5px;">HR APPROVAL</span>
+                </div>
+                <div style="font-size:13.5px; font-weight:600;" th:styleappend="'; ' + ('color:' + ${fld.textColor()})" th:text="${fld.display()}">Sarah Anne Chen</div>
+                <div th:if="${fld.pending()}" style="font-size:10.5px; font-weight:600; color:#9a6a1a; margin-top:3px;">Change pending HR approval</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lists: emergency / dependents / skills / certs (single form) -->
+    <form method="post" action="/profile/lists">
+        <!-- Emergency contacts -->
+        <div style="background:#fff; border:1px solid #e4e8ed; border-radius:13px; padding:20px; margin-bottom:16px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+                <div style="font-size:15px; font-weight:700; color:#1a2331;">Emergency contacts</div>
+                <button type="submit" name="add" value="em" style="height:32px; padding:0 13px; border:1px solid #dde2e8; border-radius:8px; background:#fff; color:#3a4453; font-family:inherit; font-size:12.5px; font-weight:600; cursor:pointer;">+ Add</button>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:10px;">
+                <div th:each="ec, st : ${me.emergencyContacts}" style="display:grid; grid-template-columns:1.3fr 1fr 1.2fr 34px; gap:9px; align-items:center;">
+                    <input name="em_name" th:value="${ec.name}" placeholder="Name" class="rowin"/>
+                    <input name="em_rel" th:value="${ec.relationship}" placeholder="Relationship" class="rowin"/>
+                    <input name="em_phone" th:value="${ec.phone}" placeholder="Phone" class="rowin"/>
+                    <button type="submit" name="remove" th:value="'em:' + ${st.index}" style="width:34px; height:34px; border:1px solid #f0dcd9; border-radius:8px; background:#fff; color:#b23b2e; font-size:15px; line-height:1; cursor:pointer;">×</button>
+                </div>
+                <div th:if="${me.emergencyContacts.isEmpty()}" style="font-size:12px; color:#9aa3ad; padding:6px 2px;">No emergency contact on file — please add one.</div>
+            </div>
+        </div>
+
+        <!-- Dependents -->
+        <div style="background:#fff; border:1px solid #e4e8ed; border-radius:13px; padding:20px; margin-bottom:16px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+                <div style="font-size:15px; font-weight:700; color:#1a2331;">Dependents &amp; family</div>
+                <button type="submit" name="add" value="dep" style="height:32px; padding:0 13px; border:1px solid #dde2e8; border-radius:8px; background:#fff; color:#3a4453; font-family:inherit; font-size:12.5px; font-weight:600; cursor:pointer;">+ Add</button>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:10px;">
+                <div th:each="dep, st : ${me.dependents}" style="display:grid; grid-template-columns:1.3fr 1fr 1.2fr 34px; gap:9px; align-items:center;">
+                    <input name="dep_name" th:value="${dep.name}" placeholder="Name" class="rowin"/>
+                    <input name="dep_rel" th:value="${dep.relationship}" placeholder="Relationship" class="rowin"/>
+                    <input name="dep_dob" type="date" th:value="${dep.dob}" class="rowin"/>
+                    <button type="submit" name="remove" th:value="'dep:' + ${st.index}" style="width:34px; height:34px; border:1px solid #f0dcd9; border-radius:8px; background:#fff; color:#b23b2e; font-size:15px; line-height:1; cursor:pointer;">×</button>
+                </div>
+                <div th:if="${me.dependents.isEmpty()}" style="font-size:12px; color:#9aa3ad; padding:6px 2px;">No dependents listed.</div>
+            </div>
+        </div>
+
+        <!-- Skills & certs -->
+        <div style="background:#fff; border:1px solid #e4e8ed; border-radius:13px; padding:20px; margin-bottom:16px;">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px;">
+                <div>
+                    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+                        <div style="font-size:14px; font-weight:700; color:#1a2331;">Skills</div>
+                        <button type="submit" name="add" value="sk" style="height:28px; padding:0 11px; border:1px solid #dde2e8; border-radius:7px; background:#fff; color:#3a4453; font-family:inherit; font-size:12px; font-weight:600; cursor:pointer;">+ Add</button>
+                    </div>
+                    <div style="display:flex; flex-direction:column; gap:8px;">
+                        <div th:each="sk, st : ${me.skills}" style="display:grid; grid-template-columns:1.4fr 1fr 30px; gap:7px; align-items:center;">
+                            <input name="sk_name" th:value="${sk.name}" placeholder="Skill" class="rowin"/>
+                            <select name="sk_level" class="rowin"><option th:each="lvl : ${levelOptions}" th:value="${lvl}" th:text="${lvl}" th:selected="${lvl == sk.level}">Intermediate</option></select>
+                            <button type="submit" name="remove" th:value="'sk:' + ${st.index}" style="width:30px; height:34px; border:1px solid #f0dcd9; border-radius:7px; background:#fff; color:#b23b2e; font-size:14px; line-height:1; cursor:pointer;">×</button>
+                        </div>
+                        <div th:if="${me.skills.isEmpty()}" style="font-size:12px; color:#9aa3ad;">No skills added.</div>
+                    </div>
+                </div>
+                <div>
+                    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+                        <div style="font-size:14px; font-weight:700; color:#1a2331;">Certifications</div>
+                        <button type="submit" name="add" value="ct" style="height:28px; padding:0 11px; border:1px solid #dde2e8; border-radius:7px; background:#fff; color:#3a4453; font-family:inherit; font-size:12px; font-weight:600; cursor:pointer;">+ Add</button>
+                    </div>
+                    <div style="display:flex; flex-direction:column; gap:8px;">
+                        <div th:each="ct, st : ${me.certifications}" style="display:grid; grid-template-columns:1.4fr 1fr 30px; gap:7px; align-items:center;">
+                            <input name="ct_name" th:value="${ct.name}" placeholder="Certification" class="rowin"/>
+                            <input name="ct_issuer" th:value="${ct.issuer}" placeholder="Issuer" class="rowin"/>
+                            <button type="submit" name="remove" th:value="'ct:' + ${st.index}" style="width:30px; height:34px; border:1px solid #f0dcd9; border-radius:7px; background:#fff; color:#b23b2e; font-size:14px; line-height:1; cursor:pointer;">×</button>
+                        </div>
+                        <div th:if="${me.certifications.isEmpty()}" style="font-size:12px; color:#9aa3ad;">No certifications added.</div>
+                    </div>
+                </div>
+            </div>
+            <div style="display:flex; justify-content:flex-end; margin-top:16px;">
+                <button type="submit" class="btn btn-primary" style="height:34px;">Save profile lists</button>
+            </div>
+        </div>
+    </form>
+
+    <!-- Bank & tax (sensitive) -->
+    <div style="background:#fff; border:1px solid #e4e8ed; border-radius:13px; padding:20px; margin-bottom:16px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+            <div style="font-size:15px; font-weight:700; color:#1a2331;">Bank &amp; tax</div>
+            <span style="display:flex; align-items:center; gap:5px; font-size:10.5px; font-weight:600; color:#9a6a1a; background:#faf3e6; padding:3px 9px; border-radius:20px;">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>Visible to you &amp; HR
+            </span>
+        </div>
+        <div style="font-size:11.5px; color:#9aa3ad; margin-bottom:16px;">Changes to these details require HR approval before they take effect.</div>
+        <div th:if="${bankPending > 0}" style="display:flex; align-items:center; gap:9px; margin-bottom:14px; padding:11px 13px; background:#f7f1e0; border:1px solid #ece2c6; border-radius:9px; font-size:12px; color:#7c6428;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9a6a1a" stroke-width="2" style="flex-shrink:0;"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+            <span th:text="'You have ' + ${bankPending} + ' change(s) awaiting HR approval.'">pending</span>
+        </div>
+
+        <form th:if="${editBank}" method="post" action="/profile/bank">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px 20px;">
+                <div th:each="bf : ${bankFields}" style="min-width:0;">
+                    <div style="font-size:11.5px; color:#8894a3; font-weight:500; margin-bottom:4px;" th:text="${bf.label()}">Bank name</div>
+                    <input th:name="${bf.key()}" th:value="${bf.value()}" class="rowin" style="height:34px;"/>
+                </div>
+            </div>
+            <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:16px;">
+                <a th:href="@{/profile}" class="btn btn-ghost" style="height:34px;">Cancel</a>
+                <button type="submit" style="height:34px; padding:0 15px; border:none; border-radius:8px; background:#9a6a1a; color:#fff; font-family:inherit; font-size:12.5px; font-weight:600; cursor:pointer;">Submit for approval</button>
+            </div>
+        </form>
+        <div th:unless="${editBank}">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px 20px;">
+                <div th:each="bf : ${bankFields}" style="min-width:0;">
+                    <div style="font-size:11.5px; color:#8894a3; font-weight:500; margin-bottom:4px;" th:text="${bf.label()}">Bank name</div>
+                    <div style="font-size:13.5px; font-weight:600; color:#28323f;" th:styleappend="'; ' + ('font-family:' + ${bf.mono()})" th:text="${bf.display()}">First Republic</div>
+                </div>
+            </div>
+            <div style="display:flex; justify-content:flex-end; margin-top:16px;">
+                <a th:href="@{/profile(edit='bank')}" style="height:34px; padding:0 15px; border:1px solid #cfdbe9; border-radius:8px; background:#eef4fb; color:#17457f; font-size:12.5px; font-weight:600; display:inline-flex; align-items:center;">Request changes</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assets (read-only) -->
+    <div style="background:#fff; border:1px solid #e4e8ed; border-radius:13px; padding:20px; margin-bottom:16px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+            <div style="font-size:15px; font-weight:700; color:#1a2331;">Equipment &amp; assets</div>
+            <span style="font-size:11px; color:#9aa3ad;">Managed by IT</span>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:9px;">
+            <div th:each="a : ${me.assets}" style="display:flex; align-items:center; gap:12px; padding:11px 13px; background:#f8fafc; border:1px solid #eef1f4; border-radius:9px;">
+                <div style="flex:1; min-width:0;"><div style="font-size:12.5px; font-weight:600; color:#28323f;" th:text="${a.name}">MacBook Pro</div><div style="font-size:11px; color:#9aa3ad;" th:text="'Assigned ' + ${a.assignedDate}">Assigned 2022-05-16</div></div>
+                <span style="font-size:11px; font-weight:600; color:#6b7480; font-family:var(--mono);" th:text="${a.tag}">MRD-3391</span>
+            </div>
+            <div th:if="${me.assets.isEmpty()}" style="font-size:12px; color:#9aa3ad;">No assets assigned.</div>
+        </div>
+    </div>
+</div>
+
+<th:block layout:fragment="content-after">
+    <th:block th:replace="~{fragments/request-drawer :: toast}"></th:block>
+</th:block>
+</body>
+</html>

@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+<head>
+    <title layout:fragment="title">Performance · Meridian HR</title>
+    <th:block layout:fragment="head"><style>.pf-row:hover { background: #fafbfc; }</style></th:block>
+</head>
+<body>
+<div layout:fragment="content" style="max-width:1040px;">
+
+    <!-- Header -->
+    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:18px;">
+        <div>
+            <div style="font-size:12.5px; color:#8894a3; font-weight:500; margin-bottom:2px;">People Ops / Performance</div>
+            <h1 style="margin:0; font-size:24px; font-weight:700; letter-spacing:-0.02em; color:#1a2331;" th:text="${heading}">Review cycles</h1>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px;">
+            <form th:if="${showCycleSelect}" method="get" action="/performance">
+                <input type="hidden" name="tab" th:value="${tab}"/>
+                <select name="cycle" onchange="this.form.submit()" style="height:38px; border:1px solid #dde2e8; border-radius:8px; padding:0 12px; font-size:13px; font-weight:600; color:#28323f; background:#fff; outline:none;">
+                    <option th:each="o : ${cycleOptions}" th:value="${o.id()}" th:text="${o.label()}" th:selected="${o.on()}">H1 2026 · active</option>
+                </select>
+            </form>
+            <form th:if="${isHr}" method="post" action="/performance/cycle/new" style="margin:0;">
+                <button type="submit" class="btn btn-primary">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                    New cycle
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div style="display:flex; gap:4px; padding:4px; background:#e4e8ee; border-radius:9px; width:fit-content; margin-bottom:20px;">
+        <a th:each="t : ${tabs}" th:href="@{/performance(tab=${t.key()}, cycle=${selectedCycle})}"
+           th:styleappend="${t.on()} ? 'background:#fff; box-shadow:0 1px 2px rgba(20,30,50,0.08); color:#17457f;' : 'background:transparent; color:#5a6472;'"
+           style="padding:7px 15px; border-radius:6px; font-size:13px; font-weight:600; display:flex; align-items:center; gap:7px;">
+            <span th:text="${t.label()}">Cycles</span>
+            <span th:if="${t.showCount()}" style="font-size:11px; font-weight:700; color:#8894a3;" th:text="${t.count()}">3</span>
+        </a>
+    </div>
+
+    <!-- ===================== CYCLES ===================== -->
+    <div th:if="${tab == 'cycles'}" style="display:flex; flex-direction:column; gap:14px;">
+        <div th:each="c : ${cycleCards}" style="background:#fff; border:1px solid #e4e8ed; border-radius:12px; padding:18px 20px;">
+            <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:14px;">
+                <div style="min-width:0;">
+                    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                        <span style="font-size:16px; font-weight:700; color:#1a2331;" th:text="${c.name()}">H1 2026 Review</span>
+                        <span style="font-size:11px; font-weight:600; padding:3px 10px; border-radius:20px;" th:styleappend="'; ' + ('background:' + ${c.statusBg()} + '; color:' + ${c.statusFg()})" th:text="${c.statusLabel()}">Active</span>
+                    </div>
+                    <div style="font-size:12.5px; color:#8894a3; margin-top:5px;" th:text="${c.typeLabel()} + ' · ' + ${c.dateRange()} + ' · ' + ${c.partCount()} + ' participants'">Half-yearly · Jun 1 – Jul 10 · 15 participants</div>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
+                    <a th:if="${c.canDesign()}" th:href="@{/performance/designer(cycle=${c.id()})}" style="height:34px; padding:0 14px; border:1px solid #dde2e8; border-radius:8px; background:#fff; color:#3a4453; font-size:12.5px; font-weight:600; display:flex; align-items:center;">Design</a>
+                    <form th:if="${c.canDesign()}" th:action="@{/performance/cycle/{id}/launch(id=${c.id()})}" method="post" style="margin:0;">
+                        <button type="submit" style="height:34px; padding:0 14px; border:none; border-radius:8px; background:#17457f; color:#fff; font-family:inherit; font-size:12.5px; font-weight:600; cursor:pointer;">Launch cycle</button>
+                    </form>
+                    <a th:if="${c.canView()}" th:href="@{/performance(tab='reviews', cycle=${c.id()})}" style="height:34px; padding:0 14px; border:1px solid #cfdbe9; border-radius:8px; background:#eef4fb; color:#17457f; font-size:12.5px; font-weight:600; display:flex; align-items:center;">View reviews</a>
+                </div>
+            </div>
+            <div th:if="${c.showProgress()}" style="display:flex; align-items:center; gap:12px; margin-top:14px;">
+                <div style="height:7px; flex:1; border-radius:4px; background:#eef1f4; overflow:hidden;"><div style="height:100%; border-radius:4px;" th:styleappend="'; ' + ('width:' + ${c.pct()} + '%; background:' + ${c.barColor()})"></div></div>
+                <span style="font-size:12px; font-weight:600; color:#5a6472; white-space:nowrap;" th:text="${c.done()} + '/' + ${c.partCount()} + ' committed · ' + ${c.pct()} + '%'">3/15 committed · 20%</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================== REVIEWS ===================== -->
+    <div th:if="${tab == 'reviews'}">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px; flex-wrap:wrap;">
+            <form method="get" action="/performance" style="position:relative; flex:1; min-width:220px; max-width:300px;">
+                <input type="hidden" name="tab" value="reviews"/>
+                <input type="hidden" name="cycle" th:value="${selectedCycle}"/>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9aa3ad" stroke-width="2" style="position:absolute; left:11px; top:50%; transform:translateY(-50%);"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+                <input name="q" th:value="${q}" placeholder="Search people…" style="width:100%; height:36px; border:1px solid #dde2e8; border-radius:8px; background:#fff; padding:0 12px 0 32px; font-size:13px; color:#3a4453; outline:none; font-family:inherit;"/>
+            </form>
+            <div style="display:flex; gap:5px; margin-left:auto; flex-wrap:wrap;">
+                <a th:each="sf : ${statusFilters}" th:href="@{/performance(tab='reviews', cycle=${selectedCycle}, q=${q}, status=${sf.id()})}"
+                   th:styleappend="'; ' + ('height:36px; padding:0 12px; border:1px solid ' + ${sf.border()} + '; border-radius:8px; background:' + ${sf.bg()} + '; font-size:12.5px; font-weight:600; color:' + ${sf.fg()} + '; display:flex; align-items:center; gap:6px;')">
+                    <span th:text="${sf.label()}">All</span>
+                    <span th:text="${sf.count()}" th:styleappend="'; ' + ('font-size:11px; font-weight:700; color:' + ${sf.countFg()} + '; background:' + ${sf.countBg()} + '; min-width:17px; height:17px; border-radius:9px; display:inline-flex; align-items:center; justify-content:center; padding:0 4px;')">0</span>
+                </a>
+            </div>
+        </div>
+
+        <div style="background:#fff; border:1px solid #e4e8ed; border-radius:10px; overflow:hidden;">
+            <div style="display:grid; grid-template-columns:2fr 1.2fr 1.5fr 0.7fr 0.7fr 0.8fr 20px; gap:12px; padding:11px 18px; background:#f8fafc; border-bottom:1px solid #eef1f4; font-size:11px; font-weight:700; color:#9aa3ad; text-transform:uppercase; letter-spacing:0.04em;">
+                <span>Employee</span><span>Reviewer</span><span>Stage</span>
+                <span style="text-align:center;">Self</span><span style="text-align:center;">Mgr</span><span style="text-align:center;">Cal.</span><span></span>
+            </div>
+            <a th:each="r : ${reviewRows}" th:href="@{/performance/review(cycle=${selectedCycle}, emp=${r.empId()})}" class="pf-row"
+               style="display:grid; grid-template-columns:2fr 1.2fr 1.5fr 0.7fr 0.7fr 0.8fr 20px; gap:12px; padding:13px 18px; border-bottom:1px solid #f4f6f8; align-items:center;">
+                <div style="display:flex; align-items:center; gap:11px; min-width:0;">
+                    <div style="width:34px; height:34px; border-radius:50%; color:#fff; font-size:12px; font-weight:600; display:flex; align-items:center; justify-content:center; flex-shrink:0;" th:styleappend="'; ' + ('background:' + ${r.avatarBg()})" th:text="${r.initials()}">SC</div>
+                    <div style="min-width:0;">
+                        <div style="font-size:13.5px; font-weight:600; color:#1a2331; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" th:text="${r.name()}">Sarah Chen</div>
+                        <div style="font-size:11.5px; color:#8894a3; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" th:text="${r.title()} + ' · ' + ${r.dept()}">Product Designer · Design</div>
+                    </div>
+                </div>
+                <span style="font-size:12.5px; color:#5a6472; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" th:text="${r.reviewer()}">Nadia Rahman</span>
+                <div style="display:flex; align-items:center; gap:9px;">
+                    <div style="display:flex; gap:3px;">
+                        <span style="width:16px; height:5px; border-radius:3px;" th:styleappend="'; ' + ('background:' + ${r.seg1()})"></span>
+                        <span style="width:16px; height:5px; border-radius:3px;" th:styleappend="'; ' + ('background:' + ${r.seg2()})"></span>
+                        <span style="width:16px; height:5px; border-radius:3px;" th:styleappend="'; ' + ('background:' + ${r.seg3()})"></span>
+                        <span style="width:16px; height:5px; border-radius:3px;" th:styleappend="'; ' + ('background:' + ${r.seg4()})"></span>
+                    </div>
+                    <span style="font-size:11.5px; font-weight:600; white-space:nowrap;" th:styleappend="'; ' + ('color:' + ${r.stageFg()})" th:text="${r.stageLabel()}">Awaiting self</span>
+                </div>
+                <span style="text-align:center; font-size:13px; font-weight:700; color:#6b7480;" th:text="${r.selfAvg()}">—</span>
+                <span style="text-align:center; font-size:13px; font-weight:700; color:#2f6aa8;" th:text="${r.mgrAvg()}">—</span>
+                <span style="text-align:center; font-size:13px; font-weight:700;" th:styleappend="'; ' + ('color:' + ${r.calFg()})" th:text="${r.calAvg()}">—</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c3cad3" stroke-width="2" style="justify-self:end;"><path d="M9 18l6-6-6-6"/></svg>
+            </a>
+            <div th:if="${emptyReviews}" style="padding:44px 20px; text-align:center;">
+                <div style="font-size:13.5px; font-weight:600; color:#5a6472;" th:text="${emptyTitle}">No reviews</div>
+                <div style="font-size:12.5px; color:#9aa3ad; margin-top:4px;" th:text="${emptySub}">Launch a cycle.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================== REPORTS ===================== -->
+    <div th:if="${tab == 'reports'}" style="display:flex; flex-direction:column; gap:16px;">
+        <div style="background:#fff; border:1px solid #e4e8ed; border-radius:12px; padding:18px 20px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+                <div style="font-size:14px; font-weight:700; color:#1a2331;">Cycle completion</div>
+                <span style="font-size:12px; color:#8894a3;" th:text="${compDone} + ' of ' + ${compTotal} + ' committed'">3 of 15 committed</span>
+            </div>
+            <div style="height:8px; border-radius:5px; background:#eef1f4; overflow:hidden; display:flex; margin-bottom:16px;">
+                <div style="height:100%; background:#4a9d7a;" th:styleappend="'; ' + ('height:100%; background:#4a9d7a; width:' + ${compBarCommitted} + '%')"></div>
+                <div style="height:100%; background:#3f7cc4;" th:styleappend="'; ' + ('height:100%; background:#3f7cc4; width:' + ${compBarCal} + '%')"></div>
+                <div style="height:100%; background:#c68a2a;" th:styleappend="'; ' + ('height:100%; background:#c68a2a; width:' + ${compBarMgr} + '%')"></div>
+                <div style="height:100%; background:#c7cdd6;" th:styleappend="'; ' + ('height:100%; background:#c7cdd6; width:' + ${compBarSelf} + '%')"></div>
+            </div>
+            <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:12px;">
+                <div th:each="t : ${compTiles}" style="border:1px solid #eef1f4; border-radius:9px; padding:12px 14px;">
+                    <div style="display:flex; align-items:center; gap:7px;"><span style="width:9px; height:9px; border-radius:3px;" th:styleappend="'; ' + ('background:' + ${t.color()})"></span><span style="font-size:11.5px; font-weight:600; color:#8894a3;" th:text="${t.label()}">Committed</span></div>
+                    <div style="font-size:24px; font-weight:700; color:#1a2331; margin-top:6px;" th:text="${t.count()}">3</div>
+                </div>
+            </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+            <div style="background:#fff; border:1px solid #e4e8ed; border-radius:12px; padding:18px 20px;">
+                <div style="font-size:14px; font-weight:700; color:#1a2331; margin-bottom:4px;">Rating distribution</div>
+                <div style="font-size:11.5px; color:#9aa3ad; margin-bottom:16px;">Committed calibrated scores</div>
+                <div style="display:flex; flex-direction:column; gap:14px;">
+                    <div th:each="d : ${distBars}">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                            <span style="font-size:12px; font-weight:600; color:#4a5563;" th:text="${d.label()}">Meets</span>
+                            <span style="font-size:12px; font-weight:700; color:#28323f;" th:text="${d.count()}">0</span>
+                        </div>
+                        <div style="height:9px; border-radius:5px; background:#f1f4f7; overflow:hidden;"><div style="height:100%; border-radius:5px;" th:styleappend="'; ' + ('width:' + ${d.pct()} + '%; background:' + ${d.color()})"></div></div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="background:#fff; border:1px solid #e4e8ed; border-radius:12px; padding:18px 20px;">
+                <div style="font-size:14px; font-weight:700; color:#1a2331; margin-bottom:4px;">Self vs. manager gap</div>
+                <div style="font-size:11.5px; color:#9aa3ad; margin-bottom:16px;">Average per competency · fairness signal</div>
+                <div style="display:flex; flex-direction:column; gap:13px;">
+                    <div th:each="g : ${gapRows}">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                            <span style="font-size:12px; font-weight:600; color:#4a5563;" th:text="${g.name()}">Collaboration</span>
+                            <span style="font-size:11px; font-weight:700; padding:2px 8px; border-radius:20px;" th:styleappend="'; ' + ('color:' + ${g.deltaFg()} + '; background:' + ${g.deltaBg()})" th:text="${g.deltaLabel()}">aligned</span>
+                        </div>
+                        <div style="position:relative; height:9px;">
+                            <div style="position:absolute; inset:0; border-radius:5px; background:#f1f4f7;"></div>
+                            <div style="position:absolute; top:0; left:0; height:9px; border-radius:5px; background:#c7cdd6;" th:styleappend="'; ' + ('position:absolute; top:0; left:0; height:9px; border-radius:5px; background:#c7cdd6; width:' + ${g.selfPct()} + '%')"></div>
+                            <div style="position:absolute; top:0; left:0; height:9px; border-radius:5px; background:#3f7cc4;" th:styleappend="'; ' + ('position:absolute; top:0; left:0; height:9px; border-radius:5px; background:#3f7cc4; width:' + ${g.mgrPct()} + '%')"></div>
+                        </div>
+                        <div style="display:flex; gap:14px; margin-top:4px; font-size:10.5px; color:#9aa3ad;">
+                            <span th:text="'Self ' + ${g.selfVal()}">Self 3.0</span><span style="color:#2f6aa8;" th:text="'Mgr ' + ${g.mgrVal()}">Mgr 3.0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div style="background:#fff; border:1px solid #e4e8ed; border-radius:12px; overflow:hidden;">
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid #eef1f4;">
+                <div style="font-size:14px; font-weight:700; color:#1a2331;">Per-employee summary</div>
+                <a th:href="@{/performance/export(cycle=${selectedCycle})}" style="display:flex; align-items:center; gap:7px; height:34px; padding:0 13px; border:1px solid #dde2e8; border-radius:8px; background:#fff; color:#3a4453; font-size:12.5px; font-weight:600;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                    Export CSV
+                </a>
+            </div>
+            <div style="display:grid; grid-template-columns:2fr 1.2fr 1.4fr 0.7fr 0.7fr 0.8fr 1fr; gap:12px; padding:10px 20px; background:#f8fafc; border-bottom:1px solid #eef1f4; font-size:11px; font-weight:700; color:#9aa3ad; text-transform:uppercase; letter-spacing:0.04em;">
+                <span>Employee</span><span>Dept</span><span>Reviewer</span>
+                <span style="text-align:center;">Self</span><span style="text-align:center;">Mgr</span><span style="text-align:center;">Cal.</span><span>Band</span>
+            </div>
+            <div th:each="s : ${summaryRows}" style="display:grid; grid-template-columns:2fr 1.2fr 1.4fr 0.7fr 0.7fr 0.8fr 1fr; gap:12px; padding:11px 20px; border-bottom:1px solid #f4f6f8; align-items:center;">
+                <div style="display:flex; align-items:center; gap:9px; min-width:0;">
+                    <div style="width:28px; height:28px; border-radius:50%; color:#fff; font-size:11px; font-weight:600; display:flex; align-items:center; justify-content:center; flex-shrink:0;" th:styleappend="'; ' + ('background:' + ${s.avatarBg()})" th:text="${s.initials()}">SC</div>
+                    <span style="font-size:12.5px; font-weight:600; color:#28323f; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" th:text="${s.name()}">Sarah Chen</span>
+                </div>
+                <span style="font-size:12px; color:#5a6472; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" th:text="${s.dept()}">Design</span>
+                <span style="font-size:12px; color:#5a6472; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" th:text="${s.reviewer()}">Nadia Rahman</span>
+                <span style="text-align:center; font-size:12.5px; font-weight:700; color:#6b7480;" th:text="${s.self()}">—</span>
+                <span style="text-align:center; font-size:12.5px; font-weight:700; color:#2f6aa8;" th:text="${s.mgr()}">—</span>
+                <span style="text-align:center; font-size:12.5px; font-weight:700;" th:styleappend="'; ' + ('color:' + ${s.calFg()})" th:text="${s.cal()}">—</span>
+                <span style="justify-self:start; font-size:10.5px; font-weight:600; padding:2px 9px; border-radius:20px;" th:styleappend="'; ' + ('background:' + ${s.bandBg()} + '; color:' + ${s.bandFg()})" th:text="${s.band()}">—</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<th:block layout:fragment="content-after">
+    <div th:if="${toast != null}" style="position:fixed; right:22px; bottom:22px; z-index:400; display:flex; align-items:center; gap:11px; background:#1a2331; color:#fff; padding:12px 14px; border-radius:10px; box-shadow:0 10px 28px rgba(20,30,50,0.28); min-width:280px; max-width:390px;">
+        <span style="width:8px; height:8px; border-radius:50%; flex-shrink:0;" th:styleappend="'; ' + ('background:' + (${toastDot} ?: '#3ecf8e'))"></span>
+        <span style="flex:1; font-size:12.5px; font-weight:500; line-height:1.4;" th:text="${toast}">Done.</span>
+    </div>
+</th:block>
+</body>
+</html>

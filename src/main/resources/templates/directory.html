@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+<head>
+    <title layout:fragment="title">Directory · Meridian HR</title>
+    <th:block layout:fragment="head">
+        <style>
+            .emp-card { transition: border-color .14s, box-shadow .14s; }
+            .emp-card:hover { border-color: #cfdbe9 !important; box-shadow: 0 6px 18px rgba(20,30,50,.07); }
+            .emp-row:hover, .org-row:hover { background: #f8fafc; }
+            .modal-scrim { position: fixed; inset: 0; background: rgba(20,30,50,.42); z-index: 300; display: flex; align-items: center; justify-content: center; padding: 24px; }
+            .dir-input { width: 100%; height: 38px; border: 1px solid #dde2e8; border-radius: 9px; background: #fff; padding: 0 12px; font-size: 13.5px; color: #28323f; outline: none; font-family: inherit; }
+        </style>
+    </th:block>
+</head>
+<body>
+<div layout:fragment="content" style="max-width:1080px;">
+
+    <!-- Header -->
+    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:18px;">
+        <div>
+            <div style="font-size:12.5px; color:#8894a3; font-weight:500; margin-bottom:2px;">People Ops / Directory</div>
+            <h1 style="margin:0; font-size:24px; font-weight:700; letter-spacing:-0.02em; color:#1a2331;">Employee directory</h1>
+        </div>
+        <a th:if="${isHr}" th:href="@{/directory(q=${query}, dept=${dept}, view=${view}, add=true)}" class="btn btn-primary">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+            Add employee
+        </a>
+    </div>
+
+    <!-- Stat tiles -->
+    <div style="display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin-bottom:18px;">
+        <div th:each="t : ${statTiles}" style="min-width:0; background:#fff; border:1px solid #e4e8ed; border-radius:11px; padding:14px 15px;">
+            <div style="font-size:11.5px; font-weight:600; color:#8894a3; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" th:text="${t.label()}">Headcount</div>
+            <div style="font-size:24px; font-weight:700; color:#1a2331; margin-top:4px;" th:text="${t.value()}">15</div>
+            <div style="font-size:11px; color:#9aa3ad; margin-top:1px;" th:text="${t.sub()}">across 5 teams</div>
+        </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px; flex-wrap:wrap;">
+        <form method="get" action="/directory" style="position:relative; flex:1; min-width:220px;">
+            <input type="hidden" name="dept" th:value="${dept}"/>
+            <input type="hidden" name="view" th:value="${view}"/>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9aa3ad" stroke-width="2" style="position:absolute; left:12px; top:50%; transform:translateY(-50%);"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+            <input name="q" th:value="${query}" placeholder="Search name, title, email…" style="width:100%; height:38px; border:1px solid #dde2e8; border-radius:9px; background:#fff; padding:0 12px 0 34px; font-size:13.5px; color:#3a4453; outline:none; font-family:inherit;"/>
+        </form>
+        <div style="display:flex; gap:4px; padding:4px; background:#e4e8ee; border-radius:9px;">
+            <a th:each="v : ${ {'grid','list','org'} }"
+               th:href="@{/directory(q=${query}, dept=${dept}, view=${v})}"
+               th:title="${v}"
+               th:styleappend="${v == view} ? 'background:#fff; box-shadow:0 1px 2px rgba(20,30,50,0.1); color:#17457f;' : 'background:transparent; color:#8894a3;'"
+               style="width:36px; height:30px; display:flex; align-items:center; justify-content:center; border-radius:6px; cursor:pointer; text-transform:capitalize; font-size:15px;">
+                <span th:switch="${v}"><span th:case="'grid'">▦</span><span th:case="'list'">☰</span><span th:case="'org'">⛃</span></span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Dept filter chips -->
+    <div style="display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap;">
+        <a th:each="c : ${deptChips}"
+           th:href="@{/directory(q=${query}, dept=${c.id()}, view=${view})}"
+           th:styleappend="${c.on()} ? 'background:#17457f; color:#fff; border-color:#17457f;' : 'background:#fff; color:#5a6472; border-color:#dde2e8;'"
+           style="display:flex; align-items:center; gap:7px; height:30px; padding:0 13px; border:1px solid; border-radius:20px; font-size:12.5px; font-weight:600; cursor:pointer;">
+            <span th:if="${c.showDot()}" th:styleappend="'; ' + ('width:8px; height:8px; border-radius:50%; background:' + ${c.dot()})"></span>
+            <span th:text="${c.label()}">All</span>
+            <span style="font-size:11px; font-weight:700; opacity:0.6;" th:text="${c.count()}">15</span>
+        </a>
+    </div>
+
+    <!-- ===== GRID VIEW ===== -->
+    <div th:if="${view == 'grid'}" style="display:grid; grid-template-columns:repeat(3,1fr); gap:14px;">
+        <a th:each="p : ${rows}" th:href="@{/directory/{id}(id=${p.id()})}" class="emp-card"
+           style="display:block; min-width:0; background:#fff; border:1px solid #e4e8ed; border-radius:13px; padding:18px;">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <div style="position:relative; flex-shrink:0;">
+                    <div style="width:46px; height:46px; border-radius:50%; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:600; font-size:16px;" th:styleappend="'; ' + ('background:' + ${p.avatarBg()})" th:text="${p.initials()}">SC</div>
+                    <span style="position:absolute; bottom:0; right:0; width:12px; height:12px; border-radius:50%; border:2px solid #fff;" th:styleappend="'; ' + ('background:' + ${p.statusDot()})"></span>
+                </div>
+                <div style="min-width:0;">
+                    <div style="font-size:14.5px; font-weight:700; color:#1a2331; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" th:text="${p.name()}">Sarah Chen</div>
+                    <div style="font-size:12.5px; color:#6b7480; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" th:text="${p.title()}">Product Designer</div>
+                </div>
+            </div>
+            <div style="display:flex; align-items:center; gap:7px; margin-top:14px; flex-wrap:wrap;">
+                <span style="font-size:11px; font-weight:600; padding:3px 9px; border-radius:20px;" th:styleappend="'; ' + ('background:' + ${p.deptTint()} + '; color:' + ${p.deptColor()})" th:text="${p.dept()}">Design</span>
+                <span style="font-size:11px; font-weight:600; padding:3px 9px; border-radius:20px;" th:styleappend="'; ' + ('background:' + ${p.statusBg()} + '; color:' + ${p.statusFg()})" th:text="${p.statusLabel()}">Active</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:6px; margin-top:12px; font-size:11.5px; color:#9aa3ad;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                <span th:text="${p.location()} + ' · ' + ${p.tenure()}">San Francisco, CA · 3 yr</span>
+            </div>
+        </a>
+    </div>
+
+    <!-- ===== LIST VIEW ===== -->
+    <div th:if="${view == 'list'}" style="background:#fff; border:1px solid #e4e8ed; border-radius:13px; overflow:hidden;">
+        <div style="display:grid; grid-template-columns:2.2fr 1.4fr 1fr 1.2fr 0.9fr; gap:12px; padding:11px 18px; background:#f7f9fb; border-bottom:1px solid #eef1f4; font-size:11px; font-weight:700; color:#9aa3ad; text-transform:uppercase; letter-spacing:0.05em;">
+            <div>Name</div><div>Department</div><div>Manager</div><div>Location</div><div>Status</div>
+        </div>
+        <a th:each="p : ${rows}" th:href="@{/directory/{id}(id=${p.id()})}" class="emp-row"
+           style="display:grid; min-width:0; grid-template-columns:2.2fr 1.4fr 1fr 1.2fr 0.9fr; gap:12px; align-items:center; padding:12px 18px; border-bottom:1px solid #f4f6f8;">
+            <div style="display:flex; align-items:center; gap:11px; min-width:0;">
+                <div style="width:34px; height:34px; border-radius:50%; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:600; font-size:13px; flex-shrink:0;" th:styleappend="'; ' + ('background:' + ${p.avatarBg()})" th:text="${p.initials()}">SC</div>
+                <div style="min-width:0;">
+                    <div style="font-size:13px; font-weight:600; color:#1a2331; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" th:text="${p.name()}">Sarah Chen</div>
+                    <div style="font-size:11.5px; color:#8894a3; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" th:text="${p.title()}">Product Designer</div>
+                </div>
+            </div>
+            <div><span style="font-size:11px; font-weight:600; padding:3px 9px; border-radius:20px;" th:styleappend="'; ' + ('background:' + ${p.deptTint()} + '; color:' + ${p.deptColor()})" th:text="${p.dept()}">Design</span></div>
+            <div style="font-size:12.5px; color:#5a6472; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" th:text="${p.managerName()}">Nadia Rahman</div>
+            <div style="font-size:12.5px; color:#5a6472; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" th:text="${p.location()}">San Francisco, CA</div>
+            <div style="display:flex; align-items:center; gap:6px;"><span style="width:8px; height:8px; border-radius:50%;" th:styleappend="'; ' + ('background:' + ${p.statusDot()})"></span><span style="font-size:12px; color:#5a6472;" th:text="${p.statusLabel()}">Active</span></div>
+        </a>
+    </div>
+
+    <!-- ===== ORG VIEW ===== -->
+    <div th:if="${view == 'org'}" style="background:#fff; border:1px solid #e4e8ed; border-radius:13px; padding:10px 8px;">
+        <a th:each="o : ${orgRows}" th:href="@{/directory/{id}(id=${o.id()})}" class="org-row"
+           th:styleappend="'; ' + ('margin-left:' + ${o.indent()} + 'px; border-left:' + (${o.railed()} ? '2px solid #eef1f4' : '2px solid transparent'))"
+           style="display:flex; align-items:center; gap:12px; padding:9px 12px; border-radius:9px;">
+            <div style="width:36px; height:36px; border-radius:50%; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:600; font-size:13.5px; flex-shrink:0;" th:styleappend="'; ' + ('background:' + ${o.avatarBg()})" th:text="${o.initials()}">AW</div>
+            <div style="min-width:0; flex:1;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:13.5px; font-weight:700; color:#1a2331;" th:text="${o.name()}">Alex Whitfield</span>
+                    <span th:if="${o.hasReports()}" style="font-size:10.5px; font-weight:700; color:#8894a3; background:#eef1f4; padding:1px 7px; border-radius:10px;" th:text="${o.reportLabel()}">5 reports</span>
+                </div>
+                <div style="font-size:12px; color:#8894a3;" th:text="${o.title()} + ' · ' + ${o.dept()}">VP, Operations · Operations</div>
+            </div>
+            <span style="font-size:11px; font-weight:600; padding:3px 9px; border-radius:20px; flex-shrink:0;" th:styleappend="'; ' + ('background:' + ${o.deptTint()} + '; color:' + ${o.deptColor()})" th:text="${o.dept()}">Operations</span>
+        </a>
+    </div>
+
+    <!-- Empty state -->
+    <div th:if="${isEmpty}" style="background:#fff; border:1px dashed #d5dbe2; border-radius:13px; padding:48px 20px; text-align:center; margin-top:14px;">
+        <div style="font-size:14px; font-weight:600; color:#5a6472;">No one matches your filters</div>
+        <div style="font-size:12.5px; color:#9aa3ad; margin-top:4px;">Try a different search or clear the department filter.</div>
+    </div>
+</div>
+
+<!-- ===== ADD EMPLOYEE MODAL ===== -->
+<th:block layout:fragment="content-after">
+    <div th:if="${addOpen}" class="modal-scrim">
+        <div style="width:560px; max-width:100%; max-height:88vh; overflow-y:auto; background:#fff; border-radius:16px; box-shadow:0 24px 64px rgba(20,30,50,0.32);">
+            <form method="post" action="/directory/new">
+                <div style="display:flex; align-items:center; justify-content:space-between; padding:18px 22px; border-bottom:1px solid #eef1f4;">
+                    <div>
+                        <div style="font-size:16px; font-weight:700; color:#1a2331;">Add employee</div>
+                        <div style="font-size:12px; color:#9aa3ad; margin-top:1px;">Creates a person record and routes them into onboarding.</div>
+                    </div>
+                    <a th:href="@{/directory(q=${query}, dept=${dept}, view=${view})}" style="width:30px; height:30px; border:1px solid #dde2e8; border-radius:8px; background:#fff; color:#8894a3; font-size:18px; line-height:28px; text-align:center;">×</a>
+                </div>
+                <div style="padding:20px 22px; display:flex; flex-direction:column; gap:15px;">
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:13px;">
+                        <div><div style="font-size:12px; font-weight:600; color:#5a6472; margin-bottom:5px;">First name</div><input name="first" class="dir-input" required/></div>
+                        <div><div style="font-size:12px; font-weight:600; color:#5a6472; margin-bottom:5px;">Last name</div><input name="last" class="dir-input" required/></div>
+                    </div>
+                    <div><div style="font-size:12px; font-weight:600; color:#5a6472; margin-bottom:5px;">Job title</div><input name="title" placeholder="e.g. Product Designer" class="dir-input"/></div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:13px;">
+                        <div><div style="font-size:12px; font-weight:600; color:#5a6472; margin-bottom:5px;">Department</div>
+                            <select name="dept" class="dir-input"><option th:each="d : ${deptOptions}" th:value="${d}" th:text="${d}">Engineering</option></select>
+                        </div>
+                        <div><div style="font-size:12px; font-weight:600; color:#5a6472; margin-bottom:5px;">Level</div>
+                            <select name="level" class="dir-input"><option th:each="l : ${levelOptions}" th:value="${l}" th:text="${l}" th:selected="${l == 'Mid'}">Mid</option></select>
+                        </div>
+                    </div>
+                    <div><div style="font-size:12px; font-weight:600; color:#5a6472; margin-bottom:5px;">Reports to</div>
+                        <select name="managerId" class="dir-input"><option value="">— No manager —</option><option th:each="m : ${managerOptions}" th:value="${m.id()}" th:text="${m.label()}">David · Manager</option></select>
+                    </div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:13px;">
+                        <div><div style="font-size:12px; font-weight:600; color:#5a6472; margin-bottom:5px;">Location</div><input name="location" placeholder="City, State" class="dir-input"/></div>
+                        <div><div style="font-size:12px; font-weight:600; color:#5a6472; margin-bottom:5px;">Work mode</div>
+                            <select name="workMode" class="dir-input"><option th:each="w : ${modeOptions}" th:value="${w}" th:text="${w}">Remote</option></select>
+                        </div>
+                    </div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:13px;">
+                        <div><div style="font-size:12px; font-weight:600; color:#5a6472; margin-bottom:5px;">Start date</div><input type="date" name="startDate" class="dir-input"/></div>
+                        <div><div style="font-size:12px; font-weight:600; color:#5a6472; margin-bottom:5px;">Base salary (USD)</div><input name="salary" placeholder="e.g. 130000" class="dir-input"/></div>
+                    </div>
+                </div>
+                <div style="display:flex; align-items:center; justify-content:flex-end; gap:10px; padding:16px 22px; border-top:1px solid #eef1f4; background:#fafbfc;">
+                    <a th:href="@{/directory(q=${query}, dept=${dept}, view=${view})}" class="btn btn-ghost">Cancel</a>
+                    <button type="submit" class="btn btn-primary">Create employee</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div th:if="${toast != null}" style="position:fixed; right:22px; bottom:22px; z-index:400; display:flex; align-items:center; gap:11px; background:#1a2331; color:#fff; padding:12px 14px; border-radius:10px; box-shadow:0 10px 28px rgba(20,30,50,0.28); min-width:280px; max-width:380px;">
+        <span style="width:8px; height:8px; border-radius:50%; flex-shrink:0;" th:styleappend="'; ' + ('background:' + (${toastDot} ?: '#3ecf8e'))"></span>
+        <span style="flex:1; font-size:12.5px; font-weight:500; line-height:1.4;" th:text="${toast}">Added.</span>
+    </div>
+</th:block>
+</body>
+</html>

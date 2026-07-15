@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  @keyframes drawerFade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes drawerSlide { from { transform: translateX(28px); opacity: 0.4; } to { transform: translateX(0); opacity: 1; } }
+</style>
+</helmet>
+
+<sc-if value="{{ open }}" hint-placeholder-val="">
+  <div style="position:fixed; inset:0; z-index:80; display:flex; justify-content:flex-end; font-family:'Public Sans', system-ui, sans-serif;">
+    <div onClick="{{ onClose }}" style="position:absolute; inset:0; background:rgba(20,28,42,0.34); animation:drawerFade 0.16s ease;"></div>
+
+    <div style="position:relative; width:472px; max-width:94vw; height:100%; background:#f7f9fb; box-shadow:-16px 0 44px rgba(20,30,50,0.18); display:flex; flex-direction:column; animation:drawerSlide 0.2s cubic-bezier(0.2,0.7,0.2,1);">
+
+      <!-- Header -->
+      <div style="flex:0 0 auto; background:#fff; border-bottom:1px solid #e6eaef; padding:18px 20px;">
+        <div style="display:flex; align-items:flex-start; gap:13px;">
+          <div style="width:44px; height:44px; border-radius:50%; background:{{ empBg }}; color:#fff; font-size:14px; font-weight:600; display:flex; align-items:center; justify-content:center; flex-shrink:0;">{{ empInitials }}</div>
+          <div style="flex:1; min-width:0;">
+            <div style="display:flex; align-items:center; gap:9px; flex-wrap:wrap;">
+              <span style="font-size:16px; font-weight:700; color:#1a2331;">{{ empName }}</span>
+              <span style="font-size:11.5px; font-weight:600; padding:3px 10px; border-radius:20px; background:{{ statusBg }}; color:{{ statusFg }};">{{ statusLabel }}</span>
+            </div>
+            <div style="font-size:12.5px; color:#8894a3; margin-top:2px;">{{ empRole }} · {{ reqId }}</div>
+          </div>
+          <button onClick="{{ onClose }}" title="Close" style="width:32px; height:32px; border:1px solid #e4e8ed; border-radius:8px; background:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; color:#5a6472;" style-hover="background:#f1f4f7;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Scroll body -->
+      <div style="flex:1; overflow-y:auto; padding:18px 20px 24px;">
+
+        <!-- Facts -->
+        <div style="background:#fff; border:1px solid #e4e8ed; border-radius:11px; padding:4px 16px; margin-bottom:14px;">
+          <sc-for list="{{ facts }}" as="f" hint-placeholder-count="5">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:14px; padding:11px 0; border-bottom:1px solid #f2f4f7;">
+              <span style="font-size:12.5px; color:#8894a3;">{{ f.k }}</span>
+              <span style="font-size:13px; font-weight:600; color:{{ f.color }}; text-align:right;">{{ f.v }}</span>
+            </div>
+          </sc-for>
+        </div>
+
+        <!-- Reason -->
+        <sc-if value="{{ hasReason }}" hint-placeholder-val="">
+          <div style="background:#fff; border:1px solid #e4e8ed; border-radius:11px; padding:14px 16px; margin-bottom:14px;">
+            <div style="font-size:11px; font-weight:700; color:#9aa3ad; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:6px;">Reason from requester</div>
+            <div style="font-size:13px; line-height:1.55; color:#3a4453;">{{ reason }}</div>
+          </div>
+        </sc-if>
+
+        <!-- Ceiling / flag callout -->
+        <sc-if value="{{ hasCallout }}" hint-placeholder-val="">
+          <div style="display:flex; gap:10px; padding:12px 14px; background:{{ calloutBg }}; border:1px solid {{ calloutBorder }}; border-radius:10px; margin-bottom:14px;">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="{{ calloutIcon }}" stroke-width="1.9" style="flex-shrink:0; margin-top:1px;"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+            <div style="font-size:12px; line-height:1.5; color:{{ calloutIcon }};">{{ calloutText }}</div>
+          </div>
+        </sc-if>
+
+        <!-- Timeline -->
+        <div style="font-size:11px; font-weight:700; color:#9aa3ad; text-transform:uppercase; letter-spacing:0.05em; margin:4px 2px 12px;">Activity</div>
+        <div style="position:relative; padding-left:6px;">
+          <sc-for list="{{ timeline }}" as="t" hint-placeholder-count="3">
+            <div style="display:flex; gap:13px; padding-bottom:16px; position:relative;">
+              <div style="display:flex; flex-direction:column; align-items:center; flex-shrink:0;">
+                <div style="width:28px; height:28px; border-radius:50%; background:{{ t.bg }}; display:flex; align-items:center; justify-content:center;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="{{ t.color }}" stroke-width="2"><path d="{{ t.iconPath }}"/></svg>
+                </div>
+                <sc-if value="{{ t.line }}" hint-placeholder-val="{{ true }}">
+                  <div style="width:2px; flex:1; background:#e6eaef; margin-top:3px; min-height:14px;"></div>
+                </sc-if>
+              </div>
+              <div style="flex:1; padding-top:3px;">
+                <div style="display:flex; align-items:baseline; gap:8px; flex-wrap:wrap;">
+                  <span style="font-size:13px; font-weight:600; color:#28323f;">{{ t.label }}</span>
+                  <span style="font-size:11.5px; color:#a2abb5;">{{ t.atLabel }}</span>
+                </div>
+                <div style="font-size:12px; color:#8894a3; margin-top:1px;">{{ t.actorName }}</div>
+                <sc-if value="{{ t.hasNote }}" hint-placeholder-val="">
+                  <div style="font-size:12.5px; line-height:1.5; color:#4a5563; background:#fff; border:1px solid #e9edf1; border-radius:8px; padding:8px 11px; margin-top:7px;">{{ t.note }}</div>
+                </sc-if>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <!-- Action footer -->
+      <sc-if value="{{ showFooter }}" hint-placeholder-val="">
+        <div style="flex:0 0 auto; background:#fff; border-top:1px solid #e6eaef; padding:14px 20px;">
+
+          <!-- View mode: primary buttons -->
+          <sc-if value="{{ modeView }}" hint-placeholder-val="{{ true }}">
+            <sc-if value="{{ canDecide }}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex; gap:9px;">
+                <button onClick="{{ onStartInfo }}" style="flex:0 0 auto; height:40px; padding:0 14px; border:1px solid #dde2e8; border-radius:9px; background:#fff; font-family:inherit; font-size:13px; font-weight:600; color:#5a6472; cursor:pointer;">More info</button>
+                <button onClick="{{ onStartReject }}" style="flex:1; height:40px; border:1px solid #f0cfc9; border-radius:9px; background:#fff; font-family:inherit; font-size:13px; font-weight:600; color:#b23b2e; cursor:pointer;">Reject</button>
+                <button onClick="{{ onApproveClick }}" style="flex:1; height:40px; border:none; border-radius:9px; background:#17457f; font-family:inherit; font-size:13px; font-weight:600; color:#fff; cursor:pointer;">Approve</button>
+              </div>
+            </sc-if>
+            <sc-if value="{{ canWithdraw }}" hint-placeholder-val="">
+              <button onClick="{{ onStartWithdraw }}" style="width:100%; height:40px; border:1px solid #f0cfc9; border-radius:9px; background:#fff; font-family:inherit; font-size:13px; font-weight:600; color:#b23b2e; cursor:pointer;">Withdraw request</button>
+            </sc-if>
+          </sc-if>
+
+          <!-- Reject / info mode: reason capture -->
+          <sc-if value="{{ modeReason }}" hint-placeholder-val="">
+            <div style="font-size:12.5px; font-weight:600; color:#3a4453; margin-bottom:7px;">{{ reasonTitle }}</div>
+            <textarea value="{{ noteText }}" onChange="{{ onNoteChange }}" placeholder="{{ reasonPlaceholder }}" style="width:100%; height:74px; border:1px solid #dde2e8; border-radius:9px; padding:10px 11px; font-family:inherit; font-size:13px; color:#1e2733; outline:none; resize:none; background:#fff; box-sizing:border-box;"></textarea>
+            <div style="display:flex; gap:9px; margin-top:10px;">
+              <button onClick="{{ onCancelMode }}" style="flex:0 0 auto; height:38px; padding:0 15px; border:1px solid #dde2e8; border-radius:9px; background:#fff; font-family:inherit; font-size:13px; font-weight:600; color:#5a6472; cursor:pointer;">Back</button>
+              <button onClick="{{ onConfirmMode }}" disabled="{{ confirmDisabled }}" style="flex:1; height:38px; border:none; border-radius:9px; background:{{ confirmBg }}; font-family:inherit; font-size:13px; font-weight:600; color:{{ confirmFg }}; cursor:{{ confirmCursor }};">{{ confirmLabel }}</button>
+            </div>
+          </sc-if>
+
+          <!-- Withdraw confirm -->
+          <sc-if value="{{ modeWithdraw }}" hint-placeholder-val="">
+            <div style="font-size:13px; color:#3a4453; line-height:1.5; margin-bottom:11px;">Withdraw this request? It will be removed from your approver's queue. This can't be undone.</div>
+            <div style="display:flex; gap:9px;">
+              <button onClick="{{ onCancelMode }}" style="flex:1; height:38px; border:1px solid #dde2e8; border-radius:9px; background:#fff; font-family:inherit; font-size:13px; font-weight:600; color:#5a6472; cursor:pointer;">Keep it</button>
+              <button onClick="{{ onConfirmWithdraw }}" style="flex:1; height:38px; border:none; border-radius:9px; background:#b23b2e; font-family:inherit; font-size:13px; font-weight:600; color:#fff; cursor:pointer;">Withdraw</button>
+            </div>
+          </sc-if>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+</sc-if>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:&quot;100%&quot;,&quot;height&quot;:&quot;100%&quot;},&quot;request&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;object&quot;},&quot;viewer&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;object&quot;},&quot;open&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;onClose&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;() =&gt; void&quot;},&quot;onApprove&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(note: string) =&gt; void&quot;},&quot;onReject&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(note: string) =&gt; void&quot;},&quot;onInfo&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(note: string) =&gt; void&quot;},&quot;onWithdraw&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;() =&gt; void&quot;}}">
+class Component extends DCLogic {
+  state = { mode: "view", note: "" };
+
+  componentDidUpdate(prevProps) {
+    const prevId = prevProps.request ? prevProps.request.id : null;
+    const curId = this.props.request ? this.props.request.id : null;
+    // Reset transient mode when the request changes or the drawer closes.
+    if (prevId !== curId || (prevProps.open && !this.props.open)) {
+      if (this.state.mode !== "view" || this.state.note) this.setState({ mode: "view", note: "" });
+    }
+  }
+
+  EVENT_META() {
+    return {
+      submitted:      { label: "Submitted",         color: "#2f6aa8", bg: "#e9f0f9", iconPath: "M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" },
+      routed:         { label: "Routed to approver", color: "#6b7480", bg: "#eef1f4", iconPath: "M5 12h14M13 6l6 6-6 6" },
+      escalated:      { label: "Escalated to HR",    color: "#c68a2a", bg: "#fbf1de", iconPath: "M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z" },
+      info_requested: { label: "Info requested",     color: "#3a5aa8", bg: "#eef3fb", iconPath: "M12 16v-4M12 8h.01" },
+      approved:       { label: "Approved",           color: "#2f6f4f", bg: "#e6f3ec", iconPath: "M20 6L9 17l-5-5" },
+      rejected:       { label: "Rejected",           color: "#b23b2e", bg: "#fbe9e7", iconPath: "M18 6L6 18M6 6l12 12" },
+      cancelled:      { label: "Withdrawn",          color: "#6b7480", bg: "#eef1f4", iconPath: "M18 6L6 18M6 6l12 12" },
+      posted:         { label: "Posted to calendar", color: "#6b7480", bg: "#eef1f4", iconPath: "M3 4h18v16H3zM3 10h18M8 2v4M16 2v4" },
+    };
+  }
+
+  renderVals() {
+    const r = this.props.request;
+    const viewer = this.props.viewer || {};
+    if (!r) return { open: false };
+
+    const TYPE = {
+      annual: "Annual leave", sick: "Sick leave", personal: "Personal leave",
+      parental: "Parental leave", unpaid: "Unpaid leave", bereavement: "Bereavement",
+    };
+    const STATUS = {
+      pending:   { label: "Pending",        bg: "#fbf1de", fg: "#9a6a1a" },
+      escalated: { label: "Escalated → HR", bg: "#e8eefb", fg: "#3a5aa8" },
+      info:      { label: "Info requested", bg: "#eef3fb", fg: "#3a5aa8" },
+      approved:  { label: "Approved",       bg: "#e6f3ec", fg: "#2f6f4f" },
+      posted:    { label: "Posted",         bg: "#eef1f4", fg: "#6b7480" },
+      rejected:  { label: "Rejected",       bg: "#fbe9e7", fg: "#b23b2e" },
+      cancelled: { label: "Withdrawn",      bg: "#eef1f4", fg: "#6b7480" },
+    };
+    const APPR = { "david.okonkwo": "D. Okonkwo", "priya.nair": "P. Nair (HR)" };
+    const sm = STATUS[r.status] || STATUS.pending;
+
+    const rangeFmt = (iso) => new Date(iso + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    const dateStr = r.startDate === r.endDate ? rangeFmt(r.startDate) : rangeFmt(r.startDate) + " – " + rangeFmt(r.endDate);
+
+    const facts = [
+      { k: "Type", v: TYPE[r.type] || r.type, color: "#28323f" },
+      { k: "Dates", v: dateStr, color: "#28323f" },
+      { k: "Working days", v: r.days + (r.days === 1 ? " day" : " days"), color: "#28323f" },
+      { k: "Coverage", v: r.cover || "—", color: "#28323f" },
+      { k: "Approver", v: APPR[r.approverId] || "—", color: "#28323f" },
+      { k: "Submitted", v: r.submitted, color: "#8894a3" },
+    ];
+
+    // Callout: ceiling note or flag
+    let hasCallout = false, calloutText = "", calloutBg = "#f7f4ec", calloutBorder = "#ece2c6", calloutIcon = "#9a6a1a";
+    if (r.overCeiling && r.ceilingNote) {
+      hasCallout = true; calloutText = r.ceilingNote + " Final approval sits with HR (P. Nair).";
+    } else if (r.flag) {
+      hasCallout = true; calloutText = "Flagged: " + r.flag + ". Follow up before approving.";
+      calloutBg = "#fbe9e7"; calloutBorder = "#f0cfc9"; calloutIcon = "#b23b2e";
+    }
+
+    // Timeline
+    const META = this.EVENT_META();
+    const evs = r.events || [];
+    const timeline = evs.map((e, i) => {
+      const m = META[e.kind] || { label: e.kind, color: "#6b7480", bg: "#eef1f4", iconPath: "M12 8v4l3 2" };
+      return {
+        label: m.label, color: m.color, bg: m.bg, iconPath: m.iconPath,
+        atLabel: e.atLabel, actorName: e.actorName,
+        hasNote: !!e.note, note: e.note, line: i < evs.length - 1,
+      };
+    });
+
+    // Permissions
+    const isOwner = viewer.id === r.empId;
+    const isMyQueue = (viewer.role === "manager" && r.approverId === viewer.id && !r.overCeiling) ||
+                      (viewer.role === "hr" && r.approverId === viewer.id);
+    const canDecide = isMyQueue && (r.status === "pending" || r.status === "escalated");
+    const canWithdraw = isOwner && (r.status === "pending" || r.status === "escalated" || r.status === "info");
+
+    const mode = this.state.mode;
+    const isReject = mode === "reject";
+    const noteFilled = this.state.note.trim().length > 0;
+
+    return {
+      open: !!this.props.open,
+      onClose: this.props.onClose,
+      empBg: r.empBg, empInitials: r.empInitials, empName: r.empName, empRole: r.empRole,
+      reqId: r.id, statusLabel: sm.label, statusBg: sm.bg, statusFg: sm.fg,
+      facts,
+      hasReason: !!r.reason, reason: r.reason,
+      hasCallout, calloutText, calloutBg, calloutBorder, calloutIcon,
+      timeline,
+
+      showFooter: canDecide || canWithdraw,
+      canDecide, canWithdraw,
+      modeView: mode === "view",
+      modeReason: mode === "reject" || mode === "info",
+      modeWithdraw: mode === "withdraw",
+
+      reasonTitle: isReject ? "Reason for rejection" : "What do you need from the requester?",
+      reasonPlaceholder: isReject ? "Let them know why so they can adjust and resubmit…" : "Ask for coverage details, dates, a certificate…",
+      noteText: this.state.note,
+      onNoteChange: (e) => this.setState({ note: e.target.value }),
+      confirmDisabled: !noteFilled,
+      confirmBg: noteFilled ? (isReject ? "#b23b2e" : "#17457f") : "#e4e8ed",
+      confirmFg: noteFilled ? "#fff" : "#9aa3ad",
+      confirmCursor: noteFilled ? "pointer" : "not-allowed",
+      confirmLabel: isReject ? "Confirm rejection" : "Send request",
+
+      onStartReject: () => this.setState({ mode: "reject", note: "" }),
+      onStartInfo: () => this.setState({ mode: "info", note: "" }),
+      onStartWithdraw: () => this.setState({ mode: "withdraw" }),
+      onCancelMode: () => this.setState({ mode: "view", note: "" }),
+      onApproveClick: () => { if (this.props.onApprove) this.props.onApprove(""); },
+      onConfirmMode: () => {
+        if (!noteFilled) return;
+        if (isReject) { if (this.props.onReject) this.props.onReject(this.state.note.trim()); }
+        else { if (this.props.onInfo) this.props.onInfo(this.state.note.trim()); }
+      },
+      onConfirmWithdraw: () => { if (this.props.onWithdraw) this.props.onWithdraw(); },
+    };
+  }
+}
+</script>
+</body>
+</html>

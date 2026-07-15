@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+<head>
+    <title layout:fragment="title">Cycle designer · Meridian HR</title>
+</head>
+<body>
+<div layout:fragment="content" style="max-width:840px;">
+
+    <a th:href="@{/performance(tab='cycles')}" style="display:inline-flex; align-items:center; gap:6px; margin-bottom:14px; font-size:12.5px; color:#8894a3; font-weight:600;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        Back to cycles
+    </a>
+
+    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:14px; margin-bottom:18px;">
+        <div>
+            <div style="font-size:12.5px; color:#8894a3; font-weight:500; margin-bottom:2px;">Performance / Cycle designer</div>
+            <div style="display:flex; align-items:center; gap:10px;">
+                <h1 style="margin:0; font-size:23px; font-weight:700; letter-spacing:-0.02em; color:#1a2331;" th:text="${cycle.name}">H1 2026 Review</h1>
+                <span style="font-size:11px; font-weight:600; padding:3px 10px; border-radius:20px; background:#f7f1e0; color:#9a6a1a;" th:text="${statusLabel}">Draft</span>
+            </div>
+        </div>
+        <form th:if="${isDraft}" th:action="@{/performance/cycle/{id}/launch(id=${cycle.id})}" method="post" style="margin:0;">
+            <button type="submit" class="btn btn-primary">Launch cycle</button>
+        </form>
+    </div>
+
+    <div style="background:#fbfcfd; border:1px dashed #d9e0e8; border-radius:10px; padding:12px 15px; margin-bottom:18px; font-size:12px; color:#6b7480; line-height:1.5;">
+        This designer is <strong>read-only</strong> in the sample — the schema (competencies, weights, timeline,
+        participants) is shown as configured. The interactive editor (reorder, reweight, edit participants) is
+        deferred; a draft is pre-populated with all active employees so it can be launched.
+    </div>
+
+    <!-- Timeline -->
+    <div style="background:#fff; border:1px solid #e4e8ed; border-radius:12px; padding:18px 20px; margin-bottom:16px;">
+        <div style="font-size:14px; font-weight:700; color:#1a2331; margin-bottom:14px;" th:text="${typeLabel}">Half-yearly review</div>
+        <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:12px;">
+            <div><div style="font-size:11px; font-weight:600; color:#9aa3ad; text-transform:uppercase; letter-spacing:0.04em;">Starts</div><div style="font-size:13.5px; font-weight:600; color:#28323f; margin-top:4px;" th:text="${cycle.startDate}">2026-06-01</div></div>
+            <div><div style="font-size:11px; font-weight:600; color:#9aa3ad; text-transform:uppercase; letter-spacing:0.04em;">Self due</div><div style="font-size:13.5px; font-weight:600; color:#28323f; margin-top:4px;" th:text="${cycle.selfDue}">2026-06-19</div></div>
+            <div><div style="font-size:11px; font-weight:600; color:#9aa3ad; text-transform:uppercase; letter-spacing:0.04em;">Manager due</div><div style="font-size:13.5px; font-weight:600; color:#28323f; margin-top:4px;" th:text="${cycle.mgrDue}">2026-06-30</div></div>
+            <div><div style="font-size:11px; font-weight:600; color:#9aa3ad; text-transform:uppercase; letter-spacing:0.04em;">Calibration</div><div style="font-size:13.5px; font-weight:600; color:#28323f; margin-top:4px;" th:text="${cycle.calibrationDate}">2026-07-10</div></div>
+        </div>
+    </div>
+
+    <!-- Competencies -->
+    <div style="background:#fff; border:1px solid #e4e8ed; border-radius:12px; overflow:hidden; margin-bottom:16px;">
+        <div style="padding:14px 20px; border-bottom:1px solid #eef1f4; font-size:14px; font-weight:700; color:#1a2331;">Competencies &amp; weights</div>
+        <div th:each="c : ${comps}" style="display:flex; align-items:center; gap:14px; padding:13px 20px; border-bottom:1px solid #f4f6f8;">
+            <div style="flex:1; min-width:0;">
+                <div style="font-size:13.5px; font-weight:600; color:#28323f;" th:text="${c.name()}">Technical execution</div>
+                <div style="font-size:12px; color:#8894a3; margin-top:2px;" th:text="${c.blurb()}">Ships high-quality work reliably.</div>
+            </div>
+            <div style="display:flex; align-items:center; gap:10px; flex-shrink:0; width:160px;">
+                <div style="height:7px; flex:1; border-radius:4px; background:#eef1f4; overflow:hidden;"><div style="height:100%; background:#3f7cc4; border-radius:4px;" th:styleappend="'; ' + ('height:100%; background:#3f7cc4; border-radius:4px; width:' + ${c.weight()} + '%')"></div></div>
+                <span style="font-size:12.5px; font-weight:700; color:#3a4453; width:34px; text-align:right;" th:text="${c.weight()} + '%'">30%</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Participants -->
+    <div style="background:#fff; border:1px solid #e4e8ed; border-radius:12px; padding:18px 20px;">
+        <div style="font-size:14px; font-weight:700; color:#1a2331; margin-bottom:12px;">Participants <span style="color:#9aa3ad; font-weight:600;" th:text="'· ' + ${participantNames.size()}">· 15</span></div>
+        <div style="display:flex; flex-wrap:wrap; gap:8px;">
+            <span th:each="n : ${participantNames}" style="font-size:12px; font-weight:600; color:#4a5563; background:#f2f5f8; border:1px solid #e4e8ed; padding:4px 11px; border-radius:20px;" th:text="${n}">Sarah Chen</span>
+        </div>
+    </div>
+</div>
+</body>
+</html>

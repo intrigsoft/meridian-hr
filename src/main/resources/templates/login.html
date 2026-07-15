@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Sign in · Meridian HR</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap"
+          rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; }
+        html, body { margin: 0; padding: 0; height: 100%; }
+        body { font-family: 'Public Sans', system-ui, sans-serif; background: #eceff3; color: #1e2733; -webkit-font-smoothing: antialiased; }
+    </style>
+</head>
+<body>
+<div style="display:flex; height:100vh; overflow:hidden;">
+
+    <!-- Brand panel -->
+    <div style="width:44%; max-width:560px; background:linear-gradient(160deg,#163a67 0%,#0f2947 100%); color:#fff; padding:48px 52px; display:flex; flex-direction:column; position:relative; overflow:hidden;">
+        <div style="position:absolute; top:-80px; right:-80px; width:320px; height:320px; border:1px solid rgba(255,255,255,0.06); border-radius:50%;"></div>
+        <div style="position:absolute; top:-40px; right:-40px; width:220px; height:220px; border:1px solid rgba(255,255,255,0.06); border-radius:50%;"></div>
+
+        <div style="display:flex; align-items:center; gap:11px; position:relative;">
+            <div style="width:34px; height:34px; border-radius:8px; background:#fff; display:flex; align-items:center; justify-content:center; color:#17457f; font-weight:800; font-size:18px;">M</div>
+            <div style="font-weight:700; font-size:19px; letter-spacing:-0.01em;">Meridian<span style="color:#8fb0d6; font-weight:600;"> HR</span></div>
+        </div>
+
+        <div style="margin-top:auto; margin-bottom:auto; position:relative;">
+            <h1 style="font-size:30px; font-weight:700; letter-spacing:-0.02em; line-height:1.2; margin:0 0 16px;">Your people operations,<br>in one place.</h1>
+            <p style="font-size:14.5px; line-height:1.6; color:#b6c8de; max-width:380px; margin:0;">Leave, onboarding, performance and recruitment for the whole organization. Sign in with your Meridian account to continue.</p>
+
+            <div style="margin-top:34px; display:flex; align-items:center; gap:11px; padding:13px 15px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.09); border-radius:10px; max-width:380px;">
+                <div style="width:30px; height:30px; border-radius:8px; background:linear-gradient(135deg,#7c5cff,#5b8cff); display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:800; flex-shrink:0;">◆</div>
+                <div style="font-size:12.5px; line-height:1.45; color:#c7d5e6;"><strong style="color:#fff;">Dioschub Assistant</strong> embeds here — it operates as <em style="color:#fff; font-style:normal;">you</em>, within your permissions.</div>
+            </div>
+        </div>
+
+        <div style="font-size:12px; color:#7d95b3; position:relative;">© 2026 Meridian Corp · Internal HR Portal</div>
+    </div>
+
+    <!-- Sign-in panel -->
+    <div style="flex:1; display:flex; align-items:center; justify-content:center; padding:32px;">
+        <div style="width:100%; max-width:400px;">
+            <h2 style="font-size:23px; font-weight:700; letter-spacing:-0.01em; margin:0 0 6px; color:#1a2331;">Sign in</h2>
+            <p style="font-size:13.5px; color:#8894a3; margin:0 0 26px;">Use your corporate email, or pick a demo account.</p>
+
+            <form method="post" action="/login">
+                <label style="display:block; font-size:12.5px; font-weight:600; color:#4a5563; margin-bottom:6px;">Email address</label>
+                <input type="email" name="email" placeholder="name@meridian.co"
+                       style="width:100%; height:42px; border:1px solid #dde2e8; border-radius:9px; padding:0 13px; font-family:inherit; font-size:14px; color:#1e2733; outline:none; margin-bottom:16px; background:#fff;"/>
+
+                <label style="display:block; font-size:12.5px; font-weight:600; color:#4a5563; margin-bottom:6px;">Password</label>
+                <input type="password" name="password" value="demo1234"
+                       style="width:100%; height:42px; border:1px solid #dde2e8; border-radius:9px; padding:0 13px; font-family:inherit; font-size:14px; color:#1e2733; outline:none; margin-bottom:8px; background:#fff;"/>
+
+                <div th:if="${error}" style="font-size:12.5px; color:#c0392b; margin-bottom:8px;">
+                    No account matches that email. Try a demo account below.
+                </div>
+
+                <div style="display:flex; align-items:center; justify-content:space-between; margin:6px 0 20px;">
+                    <label style="display:flex; align-items:center; gap:7px; font-size:12.5px; color:#5a6472;"><input type="checkbox" checked style="width:15px; height:15px;"/> Keep me signed in</label>
+                    <span style="font-size:12.5px; color:#2d6cb5; font-weight:600; cursor:pointer;">Forgot password?</span>
+                </div>
+
+                <button type="submit" style="width:100%; height:44px; background:#17457f; color:#fff; border:none; border-radius:9px; font-family:inherit; font-size:14.5px; font-weight:600; cursor:pointer;">Sign in</button>
+            </form>
+
+            <div style="display:flex; align-items:center; gap:12px; margin:26px 0 18px;">
+                <div style="flex:1; height:1px; background:#e4e8ed;"></div>
+                <span style="font-size:11px; font-weight:600; color:#aab2bc; text-transform:uppercase; letter-spacing:0.06em;">Demo accounts</span>
+                <div style="flex:1; height:1px; background:#e4e8ed;"></div>
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:9px;">
+                <form method="post" action="/login" th:each="u : ${demos}">
+                    <input type="hidden" name="userId" th:value="${u.id()}"/>
+                    <button type="submit"
+                            style="display:flex; align-items:center; gap:12px; width:100%; text-align:left; padding:11px 13px; border:1px solid #e4e8ed; border-radius:10px; background:#fff; cursor:pointer;">
+                        <span th:text="${u.initials()}"
+                              th:styleappend="'; ' + ('width:36px; height:36px; border-radius:50%; color:#fff; font-size:13px; font-weight:600; display:flex; align-items:center; justify-content:center; flex-shrink:0; background:' + ${u.avatarBg()})">SC</span>
+                        <span style="flex:1; min-width:0;">
+                            <span style="display:block; font-size:13.5px; font-weight:600; color:#1e2733;" th:text="${u.name()}">Sarah Chen</span>
+                            <span style="display:block; font-size:12px; color:#8894a3;" th:text="${u.title()}">Product Designer</span>
+                        </span>
+                        <span th:text="${u.roleLabel()}"
+                              th:styleappend="'; ' + ('font-size:11px; font-weight:600; padding:3px 9px; border-radius:20px; color:' + ${u.roleColor()} + '; background:' + ${u.roleTint()})">Employee</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

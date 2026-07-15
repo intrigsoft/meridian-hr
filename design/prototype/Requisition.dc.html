@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; }
+  body { font-family: 'Public Sans', system-ui, -apple-system, sans-serif; background: #eceff3; color: #1e2733; -webkit-font-smoothing: antialiased; }
+  a { text-decoration: none; color: inherit; }
+  select, input { font-family: inherit; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: #cdd4dc; border-radius: 6px; border: 2px solid #eceff3; }
+</style>
+</helmet>
+
+<dc-import name="AppShell" active="recruitment" note-title="{{ noteTitle }}" note-sub="{{ noteSub }}" hint-size="100%,100%">
+  <div style="max-width:1000px;">
+    <a href="Recruitment.dc.html" style="display:inline-flex; align-items:center; gap:6px; margin-bottom:14px; font-size:12.5px; color:#8894a3; font-weight:600;" style-hover="color:#5a6472;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      All requisitions
+    </a>
+
+    <sc-if value="{{ hasReq }}" hint-placeholder-val="{{ true }}">
+    <div>
+      <!-- Header -->
+      <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:14px; margin-bottom:18px;">
+        <div>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <div style="font-size:12.5px; color:#8894a3; font-weight:500;">Recruitment</div>
+            <span style="font-size:11px; font-weight:600; padding:3px 10px; border-radius:20px; background:{{ statusBg }}; color:{{ statusFg }};">{{ statusLabel }}</span>
+          </div>
+          <h1 style="margin:4px 0 0; font-size:24px; font-weight:700; letter-spacing:-0.02em; color:#1a2331;">{{ title }} <span style="font-size:13px; font-weight:600; color:#9aa3ad; font-family:'IBM Plex Mono', monospace;">{{ reqId }}</span></h1>
+          <div style="font-size:12.5px; color:#8894a3; margin-top:5px;">{{ meta }}</div>
+        </div>
+        <sc-if value="{{ canManage }}" hint-placeholder-val="">
+          <button onClick="{{ onAddOpen }}" style="display:flex; align-items:center; gap:8px; height:38px; padding:0 16px; background:#17457f; color:#fff; border:none; border-radius:8px; font-family:inherit; font-size:13.5px; font-weight:600; cursor:pointer;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+            Add candidate
+          </button>
+        </sc-if>
+      </div>
+
+      <!-- Funnel -->
+      <div style="display:flex; gap:8px; margin-bottom:20px;">
+        <sc-for list="{{ funnel }}" as="f" hint-placeholder-count="6">
+          <div style="flex:1; background:#fff; border:1px solid #e4e8ed; border-radius:10px; padding:12px 14px;">
+            <div style="font-size:11.5px; color:#8894a3; font-weight:600;">{{ f.label }}</div>
+            <div style="font-size:22px; font-weight:700; color:#1a2331; margin-top:4px; line-height:1;">{{ f.count }}</div>
+            <div style="height:4px; border-radius:2px; background:{{ f.color }}; margin-top:9px;"></div>
+          </div>
+        </sc-for>
+      </div>
+
+      <!-- Stage sections -->
+      <div style="display:flex; flex-direction:column; gap:16px;">
+        <sc-for list="{{ sections }}" as="s" hint-placeholder-count="4">
+          <div>
+            <div style="display:flex; align-items:center; gap:9px; margin-bottom:9px;">
+              <span style="width:9px; height:9px; border-radius:3px; background:{{ s.color }};"></span>
+              <span style="font-size:13px; font-weight:700; color:#1a2331;">{{ s.label }}</span>
+              <span style="font-size:11.5px; font-weight:700; color:#8894a3;">{{ s.count }}</span>
+            </div>
+            <sc-if value="{{ s.empty }}" hint-placeholder-val="">
+              <div style="font-size:12px; color:#b6bdc6; padding:2px 2px 4px;">No candidates in this stage.</div>
+            </sc-if>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              <sc-for list="{{ s.candidates }}" as="c" hint-placeholder-count="0">
+                <div style="background:#fff; border:1px solid #e4e8ed; border-radius:10px; padding:13px 15px; display:flex; align-items:center; gap:14px;">
+                  <div onClick="{{ c.onOpen }}" style="display:flex; align-items:center; gap:12px; flex:1; min-width:0; cursor:pointer;">
+                    <div style="width:38px; height:38px; border-radius:50%; background:{{ c.bg }}; color:#fff; font-size:13px; font-weight:600; display:flex; align-items:center; justify-content:center; flex-shrink:0;">{{ c.initials }}</div>
+                    <div style="min-width:0;">
+                      <div style="font-size:13.5px; font-weight:600; color:#1a2331; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ c.name }}</div>
+                      <div style="font-size:11.5px; color:#8894a3; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ c.currentRole }} · {{ c.source }}</div>
+                    </div>
+                  </div>
+                  <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
+                    <span style="font-size:11.5px; font-weight:700; color:{{ c.fitColor }}; background:{{ c.fitBg }}; padding:4px 9px; border-radius:20px;">Fit {{ c.fit }}</span>
+                  </div>
+                  <sc-if value="{{ c.showCards }}" hint-placeholder-val="">
+                    <span style="font-size:11px; font-weight:600; color:{{ c.cardsFg }}; background:{{ c.cardsBg }}; padding:4px 9px; border-radius:6px; white-space:nowrap; flex-shrink:0;">{{ c.cardsLabel }}</span>
+                  </sc-if>
+                  <sc-if value="{{ c.showReject }}" hint-placeholder-val="">
+                    <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
+                      <sc-if value="{{ c.showAdvance }}" hint-placeholder-val="">
+                        <button onClick="{{ c.onAdvance }}" style="height:30px; padding:0 12px; border:none; border-radius:7px; background:#17457f; color:#fff; font-family:inherit; font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap;">{{ c.advanceLabel }}</button>
+                      </sc-if>
+                      <button onClick="{{ c.onReject }}" title="Reject" style="width:30px; height:30px; border:1px solid #f0cfc9; border-radius:7px; background:#fff; color:#b23b2e; font-size:13px; font-weight:700; cursor:pointer; line-height:1; flex-shrink:0;">✕</button>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ c.showManageOffer }}" hint-placeholder-val="">
+                    <button onClick="{{ c.onOpen }}" style="height:30px; padding:0 12px; border:1px solid #cfdbe9; border-radius:7px; background:#eef4fb; color:#17457f; font-family:inherit; font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap; flex-shrink:0;">Manage offer</button>
+                  </sc-if>
+                  <sc-if value="{{ c.showOnboarding }}" hint-placeholder-val="">
+                    <a href="{{ c.onboardingHref }}" style="height:30px; padding:0 12px; border:1px solid #cfe4d6; border-radius:7px; background:#edf6f0; color:#2f6f4f; font-family:inherit; font-size:12px; font-weight:600; display:flex; align-items:center; white-space:nowrap; flex-shrink:0;">View onboarding →</a>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-for>
+
+        <!-- Rejected -->
+        <sc-if value="{{ hasRejected }}" hint-placeholder-val="">
+          <div>
+            <div style="display:flex; align-items:center; gap:9px; margin-bottom:9px;">
+              <span style="width:9px; height:9px; border-radius:3px; background:#c0563f;"></span>
+              <span style="font-size:13px; font-weight:700; color:#1a2331;">Rejected</span>
+              <span style="font-size:11.5px; font-weight:700; color:#8894a3;">{{ rejectedCount }}</span>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              <sc-for list="{{ rejected }}" as="c" hint-placeholder-count="0">
+                <div onClick="{{ c.onOpen }}" style="background:#fff; border:1px solid #eef1f4; border-radius:10px; padding:11px 15px; display:flex; align-items:center; gap:14px; cursor:pointer; opacity:0.78;">
+                  <div style="width:32px; height:32px; border-radius:50%; background:{{ c.bg }}; color:#fff; font-size:12px; font-weight:600; display:flex; align-items:center; justify-content:center; flex-shrink:0;">{{ c.initials }}</div>
+                  <div style="flex:1; min-width:0;"><div style="font-size:13px; font-weight:600; color:#5a6472;">{{ c.name }}</div><div style="font-size:11.5px; color:#9aa3ad;">{{ c.currentRole }}</div></div>
+                  <span style="font-size:11px; font-weight:600; color:#b23b2e; background:#fbeae8; padding:3px 10px; border-radius:20px; white-space:nowrap;">{{ c.reason }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+    </sc-if>
+
+    <sc-if value="{{ noReq }}" hint-placeholder-val="">
+      <div style="background:#fff; border:1px dashed #d5dbe2; border-radius:12px; padding:48px 20px; text-align:center;">
+        <div style="font-size:14px; font-weight:600; color:#5a6472;">Requisition not found</div>
+      </div>
+    </sc-if>
+  </div>
+
+  <!-- Reject modal -->
+  <sc-if value="{{ rejectOpen }}" hint-placeholder-val="">
+    <div style="position:fixed; inset:0; background:rgba(20,30,50,0.32); display:flex; align-items:center; justify-content:center; z-index:300;">
+      <div style="width:400px; max-width:90vw; background:#fff; border-radius:14px; box-shadow:0 24px 60px rgba(20,30,50,0.3); overflow:hidden;">
+        <div style="padding:18px 20px 4px;">
+          <div style="font-size:15px; font-weight:700; color:#1a2331;">Reject {{ rejectName }}</div>
+          <div style="font-size:12.5px; color:#8894a3; margin-top:3px;">Pick a reason — it's recorded on the candidate.</div>
+        </div>
+        <div style="padding:14px 20px;">
+          <select value="{{ rejectReason }}" onChange="{{ onRejectReason }}" style="width:100%; height:40px; border:1px solid #dde2e8; border-radius:8px; padding:0 11px; font-size:13px; color:#28323f; background:#fff; outline:none;">
+            <sc-for list="{{ reasonOpts }}" as="r" hint-placeholder-count="6"><option value="{{ r }}">{{ r }}</option></sc-for>
+          </select>
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:9px; padding:6px 20px 18px;">
+          <button onClick="{{ onRejectCancel }}" style="height:36px; padding:0 15px; border:1px solid #dde2e8; border-radius:8px; background:#fff; color:#5a6472; font-family:inherit; font-size:13px; font-weight:600; cursor:pointer;">Cancel</button>
+          <button onClick="{{ onRejectConfirm }}" style="height:36px; padding:0 16px; border:none; border-radius:8px; background:#b23b2e; color:#fff; font-family:inherit; font-size:13px; font-weight:600; cursor:pointer;">Reject candidate</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- Add candidate modal -->
+  <sc-if value="{{ addOpen }}" hint-placeholder-val="">
+    <div style="position:fixed; inset:0; background:rgba(20,30,50,0.32); display:flex; align-items:center; justify-content:center; z-index:300;">
+      <div style="width:440px; max-width:92vw; background:#fff; border-radius:14px; box-shadow:0 24px 60px rgba(20,30,50,0.3); overflow:hidden;">
+        <div style="padding:18px 20px 4px;">
+          <div style="font-size:15px; font-weight:700; color:#1a2331;">Add candidate</div>
+          <div style="font-size:12.5px; color:#8894a3; margin-top:3px;">Enters the pipeline at Applied.</div>
+        </div>
+        <div style="padding:14px 20px; display:flex; flex-direction:column; gap:12px;">
+          <div>
+            <label style="display:block; font-size:11.5px; font-weight:600; color:#8894a3; margin-bottom:5px;">Full name</label>
+            <input value="{{ addName }}" onChange="{{ onAddName }}" placeholder="Jane Doe" style="width:100%; height:38px; border:1px solid #dde2e8; border-radius:8px; padding:0 11px; font-size:13px; color:#28323f; outline:none;" />
+          </div>
+          <div>
+            <label style="display:block; font-size:11.5px; font-weight:600; color:#8894a3; margin-bottom:5px;">Current role</label>
+            <input value="{{ addRole }}" onChange="{{ onAddRole }}" placeholder="Senior Engineer, Acme" style="width:100%; height:38px; border:1px solid #dde2e8; border-radius:8px; padding:0 11px; font-size:13px; color:#28323f; outline:none;" />
+          </div>
+          <div>
+            <label style="display:block; font-size:11.5px; font-weight:600; color:#8894a3; margin-bottom:5px;">Source</label>
+            <select value="{{ addSource }}" onChange="{{ onAddSource }}" style="width:100%; height:38px; border:1px solid #dde2e8; border-radius:8px; padding:0 10px; font-size:13px; color:#28323f; background:#fff; outline:none;">
+              <sc-for list="{{ sourceOpts }}" as="s" hint-placeholder-count="6"><option value="{{ s }}">{{ s }}</option></sc-for>
+            </select>
+          </div>
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:9px; padding:6px 20px 18px;">
+          <button onClick="{{ onAddCancel }}" style="height:36px; padding:0 15px; border:1px solid #dde2e8; border-radius:8px; background:#fff; color:#5a6472; font-family:inherit; font-size:13px; font-weight:600; cursor:pointer;">Cancel</button>
+          <button onClick="{{ onAddConfirm }}" disabled="{{ addDisabled }}" style="height:36px; padding:0 16px; border:none; border-radius:8px; background:{{ addBtnBg }}; color:{{ addBtnFg }}; font-family:inherit; font-size:13px; font-weight:600; cursor:{{ addBtnCursor }};">Add candidate</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <div style="position:fixed; right:22px; bottom:22px; display:flex; flex-direction:column; gap:10px; z-index:400;">
+    <sc-for list="{{ toasts }}" as="t" hint-placeholder-count="0">
+      <div style="display:flex; align-items:center; gap:11px; background:#1a2331; color:#fff; padding:12px 14px; border-radius:10px; box-shadow:0 10px 28px rgba(20,30,50,0.28); min-width:280px; max-width:380px;">
+        <span style="width:8px; height:8px; border-radius:50%; background:{{ t.dot }}; flex-shrink:0;"></span>
+        <span style="flex:1; font-size:12.5px; font-weight:500; line-height:1.4;">{{ t.msg }}</span>
+        <button onClick="{{ t.onClose }}" style="border:none; background:transparent; color:#8894a3; font-size:16px; line-height:1; cursor:pointer; padding:0;">×</button>
+      </div>
+    </sc-for>
+  </div>
+</dc-import>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:&quot;100%&quot;,&quot;height&quot;:&quot;100%&quot;}}">
+class Component extends DCLogic {
+  state = { user: null, reqId: null, rejecting: null, rejectReason: "", addOpen: false, addForm: { name: "", role: "", source: "Inbound" }, toasts: [] };
+  _tid = 0;
+
+  componentDidMount() {
+    Promise.all([import("./session.js"), import("./recruitment-store.js")]).then(([s, rec]) => {
+      this._s = s; this._rec = rec;
+      const user = s.requireSession();
+      if (!user) return;
+      const reqId = new URLSearchParams(location.search).get("req");
+      this.setState({ user, reqId, rejectReason: rec.REJECTION_REASONS[0] });
+    });
+  }
+
+  addToast(msg, dot, dur) {
+    const id = ++this._tid;
+    this.setState((st) => ({ toasts: [...st.toasts, { id, msg, dot: dot || "#3ecf8e" }] }));
+    setTimeout(() => this.setState((st) => ({ toasts: st.toasts.filter((t) => t.id !== id) })), dur || 4000);
+  }
+  closeToast(id) { this.setState((st) => ({ toasts: st.toasts.filter((t) => t.id !== id) })); }
+
+  advance(c) {
+    this._rec.advanceCandidate(c.id);
+    const nx = this._rec.getCandidate(c.id);
+    this.addToast(c.name + " → " + this._rec.stageMeta(nx.stage).label + ".", "#3ecf8e");
+    this.forceUpdate();
+  }
+  openReject(c) { this.setState({ rejecting: c, rejectReason: this._rec.REJECTION_REASONS[0] }); }
+  confirmReject() {
+    const c = this.state.rejecting; if (!c) return;
+    this._rec.rejectCandidate(c.id, this.state.rejectReason);
+    this.setState({ rejecting: null });
+    this.addToast(c.name + " rejected — " + this.state.rejectReason + ".", "#8894a3");
+  }
+  confirmAdd() {
+    const f = this.state.addForm; if (!f.name.trim()) return;
+    this._rec.addCandidate(this.state.reqId, f.name.trim(), f.role.trim(), f.source);
+    this.setState({ addOpen: false, addForm: { name: "", role: "", source: "Inbound" } });
+    this.addToast(f.name.trim() + " added to the pipeline.", "#3ecf8e");
+  }
+
+  renderVals() {
+    const rec = this._rec, u = this.state.user;
+    if (!rec || !u) return { hasReq: false, noReq: false, funnel: [], sections: [], rejected: [], toasts: [], reasonOpts: [], sourceOpts: [], noteTitle: "", noteSub: "" };
+    const req = rec.getReq(this.state.reqId);
+    if (!req) return { hasReq: false, noReq: true, funnel: [], sections: [], rejected: [], toasts: [], reasonOpts: rec.REJECTION_REASONS, sourceOpts: rec.SOURCES, noteTitle: "Requisition", noteSub: "" };
+
+    const isHr = u.role === "hr";
+    const canManage = isHr || req.ownerId === u.id;
+    const cands = rec.candidatesForReq(req.id);
+    const f = rec.funnelFor(req.id);
+
+    const statusMeta = req.status === "open" ? { bg: "#e8eefb", fg: "#3a5aa8", label: "Open" }
+      : req.status === "filled" ? { bg: "#e6f3ec", fg: "#2f6f4f", label: "Filled" }
+      : req.status === "closed" ? { bg: "#eef1f4", fg: "#6b7480", label: "Closed" }
+      : { bg: "#f7f1e0", fg: "#9a6a1a", label: "Pending" };
+
+    const funnel = rec.STAGES.map((st) => ({ label: st.short, count: f.counts[st.id] || 0, color: rec.stageMeta(st.id).color }));
+
+    const fitColor = (n) => n >= 90 ? { fitColor: "#2f6f4f", fitBg: "#e6f3ec" } : n >= 82 ? { fitColor: "#2f6aa8", fitBg: "#e9f0f9" } : { fitColor: "#9a6a1a", fitBg: "#f7f1e0" };
+
+    const plannedFor = (stageId) => { const ip = (req.interviewPlan || []).find((x) => x.stageId === stageId); return ip ? ip.interviewerIds.length : 0; };
+    const cardsDone = (c, stageId) => Object.keys((c.scorecards || {})[stageId] || {}).length;
+
+    const mapCand = (c) => {
+      const idx = rec.STAGE_ORDER.indexOf(c.stage);
+      const canAdvance = canManage && ["applied", "screen", "interview", "onsite"].indexOf(c.stage) >= 0;
+      const nextStage = rec.STAGE_ORDER[idx + 1];
+      const scored = rec.SCORED_STAGES.indexOf(c.stage) >= 0;
+      const done = cardsDone(c, c.stage), planned = plannedFor(c.stage);
+      return {
+        id: c.id, name: c.name, initials: c.initials, bg: c.bg, currentRole: c.currentRole, source: c.source,
+        fit: c.fit, ...fitColor(c.fit),
+        showCards: scored && planned > 0,
+        cardsLabel: done + "/" + planned + " cards",
+        cardsFg: done >= planned && planned > 0 ? "#2f6f4f" : "#9a6a1a", cardsBg: done >= planned && planned > 0 ? "#e6f3ec" : "#f7f1e0",
+        showReject: canManage && c.stage !== "hired" && c.stage !== "offer",
+        showAdvance: canAdvance,
+        advanceLabel: nextStage ? "→ " + rec.stageMeta(nextStage).label : "Advance",
+        showManageOffer: c.stage === "offer",
+        showOnboarding: c.stage === "hired" && !!c.onboardingCaseId,
+        onboardingHref: c.onboardingCaseId ? ("Onboarding.dc.html?case=" + encodeURIComponent(c.onboardingCaseId)) : "Onboarding.dc.html",
+        onOpen: () => { location.href = "Candidate.dc.html?req=" + encodeURIComponent(req.id) + "&cand=" + encodeURIComponent(c.id); },
+        onAdvance: () => this.advance(c),
+        onReject: () => this.openReject(c),
+      };
+    };
+
+    const sections = rec.STAGES.map((st) => {
+      const list = cands.filter((c) => c.stage === st.id).map(mapCand);
+      return { stageId: st.id, label: st.label, color: rec.stageMeta(st.id).color, count: list.length, empty: list.length === 0, candidates: list };
+    });
+
+    const rejectedList = cands.filter((c) => c.stage === "rejected").map((c) => ({
+      id: c.id, name: c.name, initials: c.initials, bg: c.bg, currentRole: c.currentRole,
+      reason: (c.rejected && c.rejected.reason) || "Rejected",
+      onOpen: () => { location.href = "Candidate.dc.html?req=" + encodeURIComponent(req.id) + "&cand=" + encodeURIComponent(c.id); },
+    }));
+
+    const f2 = this.state.addForm;
+    const addOk = f2.name.trim().length > 0;
+
+    return {
+      hasReq: true, noReq: false,
+      title: req.title, reqId: req.id,
+      statusBg: statusMeta.bg, statusFg: statusMeta.fg, statusLabel: statusMeta.label,
+      meta: req.dept + " · " + req.level + " · " + req.location + " · HM " + rec.person(req.ownerId).name + " · Recruiter " + rec.person(req.recruiterId).name,
+      canManage, onAddOpen: () => this.setState({ addOpen: true }),
+      funnel, sections,
+      hasRejected: rejectedList.length > 0, rejected: rejectedList, rejectedCount: rejectedList.length,
+
+      rejectOpen: !!this.state.rejecting, rejectName: this.state.rejecting ? this.state.rejecting.name : "",
+      rejectReason: this.state.rejectReason, reasonOpts: rec.REJECTION_REASONS,
+      onRejectReason: (e) => this.setState({ rejectReason: e.target.value }),
+      onRejectCancel: () => this.setState({ rejecting: null }),
+      onRejectConfirm: () => this.confirmReject(),
+
+      addOpen: this.state.addOpen, sourceOpts: rec.SOURCES,
+      addName: f2.name, addRole: f2.role, addSource: f2.source,
+      onAddName: (e) => this.setState({ addForm: { ...this.state.addForm, name: e.target.value } }),
+      onAddRole: (e) => this.setState({ addForm: { ...this.state.addForm, role: e.target.value } }),
+      onAddSource: (e) => this.setState({ addForm: { ...this.state.addForm, source: e.target.value } }),
+      onAddCancel: () => this.setState({ addOpen: false }),
+      onAddConfirm: () => this.confirmAdd(),
+      addDisabled: !addOk, addBtnBg: addOk ? "#17457f" : "#e4e8ed", addBtnFg: addOk ? "#fff" : "#9aa3ad", addBtnCursor: addOk ? "pointer" : "not-allowed",
+
+      noteTitle: req.title, noteSub: f.active + " active · " + (f.counts.hired || 0) + " hired",
+      toasts: this.state.toasts.map((t) => ({ ...t, onClose: () => this.closeToast(t.id) })),
+    };
+  }
+}
+</script>
+</body>
+</html>

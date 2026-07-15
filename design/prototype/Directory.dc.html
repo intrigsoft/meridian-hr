@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; }
+  body { font-family: 'Public Sans', system-ui, -apple-system, sans-serif; background: #eceff3; color: #1e2733; -webkit-font-smoothing: antialiased; }
+  a { text-decoration: none; color: inherit; }
+  a:hover { color: inherit; }
+  select, input { font-family: inherit; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: #cdd4dc; border-radius: 6px; border: 2px solid #eceff3; }
+</style>
+</helmet>
+
+<dc-import name="AppShell" active="directory" note-title="{{ noteTitle }}" note-sub="{{ noteSub }}" hint-size="100%,100%">
+  <div style="max-width:1080px;">
+
+    <!-- Header -->
+    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:18px;">
+      <div>
+        <div style="font-size:12.5px; color:#8894a3; font-weight:500; margin-bottom:2px;">People Ops / Directory</div>
+        <h1 style="margin:0; font-size:24px; font-weight:700; letter-spacing:-0.02em; color:#1a2331;">Employee directory</h1>
+      </div>
+      <sc-if value="{{ isHr }}" hint-placeholder-val="{{ true }}">
+        <button onClick="{{ onAdd }}" style="display:flex; align-items:center; gap:8px; height:38px; padding:0 16px; background:#17457f; color:#fff; border:none; border-radius:8px; font-family:inherit; font-size:13.5px; font-weight:600; cursor:pointer;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+          Add employee
+        </button>
+      </sc-if>
+    </div>
+
+    <!-- Stat tiles -->
+    <div style="display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin-bottom:18px;">
+      <sc-for list="{{ statTiles }}" as="t" hint-placeholder-count="5">
+        <div style="min-width:0; background:#fff; border:1px solid #e4e8ed; border-radius:11px; padding:14px 15px;">
+          <div style="font-size:11.5px; font-weight:600; color:#8894a3; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ t.label }}</div>
+          <div style="font-size:24px; font-weight:700; color:#1a2331; margin-top:4px;">{{ t.value }}</div>
+          <div style="font-size:11px; color:#9aa3ad; margin-top:1px;">{{ t.sub }}</div>
+        </div>
+      </sc-for>
+    </div>
+
+    <!-- Toolbar -->
+    <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px; flex-wrap:wrap;">
+      <div style="position:relative; flex:1; min-width:220px;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9aa3ad" stroke-width="2" style="position:absolute; left:12px; top:50%; transform:translateY(-50%);"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+        <input value="{{ query }}" onInput="{{ onSearch }}" placeholder="Search name, title, email…" style="width:100%; height:38px; border:1px solid #dde2e8; border-radius:9px; background:#fff; padding:0 12px 0 34px; font-size:13.5px; color:#3a4453; outline:none;" />
+      </div>
+      <div style="display:flex; gap:4px; padding:4px; background:#e4e8ee; border-radius:9px;">
+        <sc-for list="{{ viewTabs }}" as="v" hint-placeholder-count="3">
+          <button onClick="{{ v.onClick }}" title="{{ v.title }}" style="width:36px; height:30px; display:flex; align-items:center; justify-content:center; border:none; border-radius:6px; background:{{ v.bg }}; box-shadow:{{ v.shadow }}; color:{{ v.fg }}; cursor:pointer;">
+            <span style="font-size:15px; line-height:1;" data-icon="{{ v.icon }}">{{ v.glyph }}</span>
+          </button>
+        </sc-for>
+      </div>
+    </div>
+
+    <!-- Dept filter chips -->
+    <div style="display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap;">
+      <sc-for list="{{ deptChips }}" as="c" hint-placeholder-count="6">
+        <button onClick="{{ c.onClick }}" style="display:flex; align-items:center; gap:7px; height:30px; padding:0 13px; border:1px solid {{ c.border }}; border-radius:20px; background:{{ c.bg }}; font-family:inherit; font-size:12.5px; font-weight:600; color:{{ c.fg }}; cursor:pointer;">
+          <sc-if value="{{ c.showDot }}" hint-placeholder-val="{{ true }}"><span style="width:8px; height:8px; border-radius:50%; background:{{ c.dot }};"></span></sc-if>
+          {{ c.label }}
+          <span style="font-size:11px; font-weight:700; opacity:0.6;">{{ c.count }}</span>
+        </button>
+      </sc-for>
+    </div>
+
+    <!-- ===== GRID VIEW ===== -->
+    <sc-if value="{{ showGrid }}" hint-placeholder-val="{{ true }}">
+      <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:14px;">
+        <sc-for list="{{ people }}" as="p" hint-placeholder-count="9">
+          <a href="{{ p.href }}" style="display:block; min-width:0; background:#fff; border:1px solid #e4e8ed; border-radius:13px; padding:18px; transition:border-color 0.14s, box-shadow 0.14s;" style-hover="border-color:#cfdbe9; box-shadow:0 6px 18px rgba(20,30,50,0.07);">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <div style="position:relative; flex-shrink:0;">
+                <div style="width:46px; height:46px; border-radius:50%; background:{{ p.avatarBg }}; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:600; font-size:16px;">{{ p.initials }}</div>
+                <span style="position:absolute; bottom:0; right:0; width:12px; height:12px; border-radius:50%; background:{{ p.statusDot }}; border:2px solid #fff;"></span>
+              </div>
+              <div style="min-width:0;">
+                <div style="font-size:14.5px; font-weight:700; color:#1a2331; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ p.name }}</div>
+                <div style="font-size:12.5px; color:#6b7480; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ p.title }}</div>
+              </div>
+            </div>
+            <div style="display:flex; align-items:center; gap:7px; margin-top:14px; flex-wrap:wrap;">
+              <span style="font-size:11px; font-weight:600; padding:3px 9px; border-radius:20px; background:{{ p.deptTint }}; color:{{ p.deptColor }};">{{ p.dept }}</span>
+              <span style="font-size:11px; font-weight:600; padding:3px 9px; border-radius:20px; background:{{ p.statusBg }}; color:{{ p.statusFg }};">{{ p.statusLabel }}</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:6px; margin-top:12px; font-size:11.5px; color:#9aa3ad;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              {{ p.location }} · {{ p.tenure }}
+            </div>
+          </a>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <!-- ===== LIST VIEW ===== -->
+    <sc-if value="{{ showList }}" hint-placeholder-val="">
+      <div style="background:#fff; border:1px solid #e4e8ed; border-radius:13px; overflow:hidden;">
+        <div style="display:grid; grid-template-columns:2.2fr 1.4fr 1fr 1.2fr 0.9fr; gap:12px; padding:11px 18px; background:#f7f9fb; border-bottom:1px solid #eef1f4; font-size:11px; font-weight:700; color:#9aa3ad; text-transform:uppercase; letter-spacing:0.05em;">
+          <div>Name</div><div>Department</div><div>Manager</div><div>Location</div><div>Status</div>
+        </div>
+        <sc-for list="{{ people }}" as="p" hint-placeholder-count="10">
+          <a href="{{ p.href }}" style="display:grid; min-width:0; grid-template-columns:2.2fr 1.4fr 1fr 1.2fr 0.9fr; gap:12px; align-items:center; padding:12px 18px; border-bottom:1px solid #f4f6f8;" style-hover="background:#f8fafc;">
+            <div style="display:flex; align-items:center; gap:11px; min-width:0;">
+              <div style="width:34px; height:34px; border-radius:50%; background:{{ p.avatarBg }}; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:600; font-size:13px; flex-shrink:0;">{{ p.initials }}</div>
+              <div style="min-width:0;">
+                <div style="font-size:13px; font-weight:600; color:#1a2331; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ p.name }}</div>
+                <div style="font-size:11.5px; color:#8894a3; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ p.title }}</div>
+              </div>
+            </div>
+            <div style="display:flex;"><span style="font-size:11px; font-weight:600; padding:3px 9px; border-radius:20px; background:{{ p.deptTint }}; color:{{ p.deptColor }};">{{ p.dept }}</span></div>
+            <div style="font-size:12.5px; color:#5a6472; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ p.managerName }}</div>
+            <div style="font-size:12.5px; color:#5a6472; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ p.location }}</div>
+            <div style="display:flex; align-items:center; gap:6px;"><span style="width:8px; height:8px; border-radius:50%; background:{{ p.statusDot }};"></span><span style="font-size:12px; color:#5a6472;">{{ p.statusLabel }}</span></div>
+          </a>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <!-- ===== ORG VIEW ===== -->
+    <sc-if value="{{ showOrg }}" hint-placeholder-val="">
+      <div style="background:#fff; border:1px solid #e4e8ed; border-radius:13px; padding:10px 8px;">
+        <sc-for list="{{ orgRows }}" as="o" hint-placeholder-count="12">
+          <a href="{{ o.href }}" style="display:flex; align-items:center; gap:12px; padding:9px 12px; border-radius:9px; margin-left:{{ o.indent }}px; border-left:{{ o.rail }};" style-hover="background:#f6f9fc;">
+            <div style="width:36px; height:36px; border-radius:50%; background:{{ o.avatarBg }}; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:600; font-size:13.5px; flex-shrink:0;">{{ o.initials }}</div>
+            <div style="min-width:0; flex:1;">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-size:13.5px; font-weight:700; color:#1a2331;">{{ o.name }}</span>
+                <sc-if value="{{ o.hasReports }}" hint-placeholder-val=""><span style="font-size:10.5px; font-weight:700; color:#8894a3; background:#eef1f4; padding:1px 7px; border-radius:10px;">{{ o.reportLabel }}</span></sc-if>
+              </div>
+              <div style="font-size:12px; color:#8894a3;">{{ o.title }} · {{ o.dept }}</div>
+            </div>
+            <span style="font-size:11px; font-weight:600; padding:3px 9px; border-radius:20px; background:{{ o.deptTint }}; color:{{ o.deptColor }}; flex-shrink:0;">{{ o.dept }}</span>
+          </a>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isEmpty }}" hint-placeholder-val="">
+      <div style="background:#fff; border:1px dashed #d5dbe2; border-radius:13px; padding:48px 20px; text-align:center; margin-top:14px;">
+        <div style="font-size:14px; font-weight:600; color:#5a6472;">No one matches your filters</div>
+        <div style="font-size:12.5px; color:#9aa3ad; margin-top:4px;">Try a different search or clear the department filter.</div>
+      </div>
+    </sc-if>
+  </div>
+
+  <!-- ===== ADD EMPLOYEE MODAL ===== -->
+  <sc-if value="{{ addOpen }}" hint-placeholder-val="">
+    <div onClick="{{ onCloseAdd }}" style="position:fixed; inset:0; background:rgba(20,30,50,0.42); z-index:300; display:flex; align-items:center; justify-content:center; padding:24px;">
+      <div onClick="{{ stop }}" style="width:560px; max-width:100%; max-height:88vh; overflow-y:auto; background:#fff; border-radius:16px; box-shadow:0 24px 64px rgba(20,30,50,0.32);">
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:18px 22px; border-bottom:1px solid #eef1f4;">
+          <div>
+            <div style="font-size:16px; font-weight:700; color:#1a2331;">Add employee</div>
+            <div style="font-size:12px; color:#9aa3ad; margin-top:1px;">Creates a person record and routes them into onboarding.</div>
+          </div>
+          <button onClick="{{ onCloseAdd }}" style="width:30px; height:30px; border:1px solid #dde2e8; border-radius:8px; background:#fff; color:#8894a3; font-size:18px; line-height:1; cursor:pointer;">×</button>
+        </div>
+        <div style="padding:20px 22px; display:flex; flex-direction:column; gap:15px;">
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:13px;">
+            <div><div style="font-size:12px; font-weight:600; color:#5a6472; margin-bottom:5px;">First name</div><input value="{{ form.first }}" onInput="{{ onFormFirst }}" style="{{ inputStyle }}" /></div>
+            <div><div style="font-size:12px; font-weight:600; color:#5a6472; margin-bottom:5px;">Last name</div><input value="{{ form.last }}" onInput="{{ onFormLast }}" style="{{ inputStyle }}" /></div>
+          </div>
+          <div><div style="font-size:12px; font-weight:600; color:#5a6472; margin-bottom:5px;">Job title</div><input value="{{ form.title }}" onInput="{{ onFormTitle }}" placeholder="e.g. Product Designer" style="{{ inputStyle }}" /></div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:13px;">
+            <div><div style="font-size:12px; font-weight:600; color:#5a6472; margin-bottom:5px;">Department</div>
+              <select value="{{ form.dept }}" onChange="{{ onFormDept }}" style="{{ inputStyle }}"><sc-for list="{{ deptOptions }}" as="d" hint-placeholder-count="5"><option value="{{ d }}">{{ d }}</option></sc-for></select>
+            </div>
+            <div><div style="font-size:12px; font-weight:600; color:#5a6472; margin-bottom:5px;">Level</div>
+              <select value="{{ form.level }}" onChange="{{ onFormLevel }}" style="{{ inputStyle }}"><sc-for list="{{ levelOptions }}" as="l" hint-placeholder-count="6"><option value="{{ l }}">{{ l }}</option></sc-for></select>
+            </div>
+          </div>
+          <div><div style="font-size:12px; font-weight:600; color:#5a6472; margin-bottom:5px;">Reports to</div>
+            <select value="{{ form.managerId }}" onChange="{{ onFormManager }}" style="{{ inputStyle }}"><option value="">— No manager —</option><sc-for list="{{ managerOptions }}" as="m" hint-placeholder-count="5"><option value="{{ m.id }}">{{ m.label }}</option></sc-for></select>
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:13px;">
+            <div><div style="font-size:12px; font-weight:600; color:#5a6472; margin-bottom:5px;">Location</div><input value="{{ form.location }}" onInput="{{ onFormLocation }}" placeholder="City, State" style="{{ inputStyle }}" /></div>
+            <div><div style="font-size:12px; font-weight:600; color:#5a6472; margin-bottom:5px;">Work mode</div>
+              <select value="{{ form.workMode }}" onChange="{{ onFormMode }}" style="{{ inputStyle }}"><sc-for list="{{ modeOptions }}" as="w" hint-placeholder-count="3"><option value="{{ w }}">{{ w }}</option></sc-for></select>
+            </div>
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:13px;">
+            <div><div style="font-size:12px; font-weight:600; color:#5a6472; margin-bottom:5px;">Start date</div><input type="date" value="{{ form.startDate }}" onInput="{{ onFormStart }}" style="{{ inputStyle }}" /></div>
+            <div><div style="font-size:12px; font-weight:600; color:#5a6472; margin-bottom:5px;">Base salary (USD)</div><input value="{{ form.salary }}" onInput="{{ onFormSalary }}" placeholder="e.g. 130000" style="{{ inputStyle }}" /></div>
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; justify-content:flex-end; gap:10px; padding:16px 22px; border-top:1px solid #eef1f4; background:#fafbfc;">
+          <button onClick="{{ onCloseAdd }}" style="height:38px; padding:0 16px; border:1px solid #dde2e8; border-radius:9px; background:#fff; color:#3a4453; font-family:inherit; font-size:13.5px; font-weight:600; cursor:pointer;">Cancel</button>
+          <button onClick="{{ onSaveAdd }}" style="height:38px; padding:0 18px; border:none; border-radius:9px; background:{{ saveBg }}; color:#fff; font-family:inherit; font-size:13.5px; font-weight:600; cursor:{{ saveCursor }};">Create employee</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- Toasts -->
+  <div style="position:fixed; right:22px; bottom:22px; display:flex; flex-direction:column; gap:10px; z-index:400;">
+    <sc-for list="{{ toasts }}" as="t" hint-placeholder-count="0">
+      <div style="display:flex; align-items:center; gap:11px; background:#1a2331; color:#fff; padding:12px 14px; border-radius:10px; box-shadow:0 10px 28px rgba(20,30,50,0.28); min-width:280px; max-width:380px;">
+        <span style="width:8px; height:8px; border-radius:50%; background:{{ t.dot }}; flex-shrink:0;"></span>
+        <span style="flex:1; font-size:12.5px; font-weight:500; line-height:1.4;">{{ t.msg }}</span>
+        <button onClick="{{ t.onClose }}" style="border:none; background:transparent; color:#8894a3; font-size:16px; line-height:1; cursor:pointer; padding:0;">×</button>
+      </div>
+    </sc-for>
+  </div>
+</dc-import>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:&quot;100%&quot;,&quot;height&quot;:&quot;100%&quot;}}">
+class Component extends DCLogic {
+  state = { user: null, query: "", dept: "all", view: "grid", addOpen: false, form: null, toasts: [] };
+  _tid = 0;
+
+  componentDidMount() {
+    Promise.all([import("./session.js"), import("./people-store.js")]).then(([s, ppl]) => {
+      this._s = s; this._ppl = ppl;
+      const user = s.requireSession();
+      if (!user) return;
+      this.setState({ user });
+    });
+  }
+
+  addToast(msg, dot) {
+    const id = ++this._tid;
+    this.setState((st) => ({ toasts: [...st.toasts, { id, msg, dot: dot || "#3ecf8e" }] }));
+    setTimeout(() => this.setState((st) => ({ toasts: st.toasts.filter((t) => t.id !== id) })), 4200);
+  }
+  closeToast(id) { this.setState((st) => ({ toasts: st.toasts.filter((t) => t.id !== id) })); }
+
+  blankForm() {
+    return { first: "", last: "", title: "", dept: this._ppl.getDepartments()[0].id, level: "Mid",
+      managerId: "", location: "", workMode: "Remote", startDate: new Date().toISOString().slice(0, 10), salary: "" };
+  }
+  openAdd() { this.setState({ addOpen: true, form: this.blankForm() }); }
+  closeAdd() { this.setState({ addOpen: false }); }
+  setForm(k, v) { this.setState((st) => ({ form: { ...st.form, [k]: v } })); }
+
+  saveAdd() {
+    const f = this.state.form;
+    if (!f.first.trim() || !f.last.trim()) return;
+    const rec = this._ppl.addEmployee({ ...f, salary: f.salary ? Number(String(f.salary).replace(/[^0-9]/g, "")) : null, status: "onboarding" });
+    this.setState({ addOpen: false });
+    this.addToast(rec.first + " " + rec.last + " added — opening profile.", "#3ecf8e");
+    setTimeout(() => { location.href = "Employee.dc.html?id=" + encodeURIComponent(rec.id); }, 650);
+  }
+
+  renderVals() {
+    const u = this.state.user, ppl = this._ppl;
+    const inputStyle = "width:100%; height:38px; border:1px solid #dde2e8; border-radius:9px; background:#fff; padding:0 12px; font-size:13.5px; color:#28323f; outline:none;";
+    if (!u || !ppl) {
+      return { isHr: false, statTiles: [], deptChips: [], viewTabs: [], people: [], orgRows: [],
+        showGrid: true, showList: false, showOrg: false, isEmpty: false, query: "", addOpen: false,
+        toasts: [], noteTitle: "", noteSub: "", inputStyle,
+        form: this.blankForm(), deptOptions: [], levelOptions: [], modeOptions: [], managerOptions: [] };
+    }
+
+    const isHr = u.role === "hr";
+    const all = ppl.allEmployees();
+    const st = ppl.stats();
+
+    // ---- stat tiles ----
+    const statTiles = [
+      { label: "Headcount", value: st.headcount, sub: "across " + st.byDept.filter((d) => d.count > 0).length + " teams" },
+      { label: "Active", value: st.active, sub: "currently working" },
+      { label: "Onboarding", value: st.onboarding, sub: "ramping up" },
+      { label: "On leave", value: st.onLeave, sub: "away now" },
+      { label: "Avg tenure", value: (Math.round(st.avgTenure * 10) / 10) + " yr", sub: "company-wide" },
+    ];
+
+    // ---- dept chips ----
+    const deptChips = [{ id: "all", label: "All", count: st.headcount, showDot: false }]
+      .concat(st.byDept.map((d) => ({ id: d.id, label: d.id, count: d.count, showDot: true, dot: d.color })))
+      .map((c) => {
+        const on = this.state.dept === c.id;
+        return { label: c.label, count: c.count, showDot: c.showDot, dot: c.dot,
+          bg: on ? "#17457f" : "#fff", fg: on ? "#fff" : "#5a6472", border: on ? "#17457f" : "#dde2e8",
+          onClick: () => this.setState({ dept: c.id }) };
+      });
+
+    // ---- view tabs ----
+    const mkTab = (key, glyph, title) => {
+      const on = this.state.view === key;
+      return { icon: key, glyph, title, bg: on ? "#fff" : "transparent", fg: on ? "#17457f" : "#8894a3",
+        shadow: on ? "0 1px 2px rgba(20,30,50,0.1)" : "none", onClick: () => this.setState({ view: key }) };
+    };
+    const viewTabs = [mkTab("grid", "▦", "Grid"), mkTab("list", "☰", "List"), mkTab("org", "⛃", "Org chart")];
+
+    // ---- filtering ----
+    const q = this.state.query.trim().toLowerCase();
+    const matches = (e) => {
+      if (this.state.dept !== "all" && e.dept !== this.state.dept) return false;
+      if (!q) return true;
+      return (ppl.fullName(e) + " " + e.title + " " + e.email + " " + e.dept).toLowerCase().indexOf(q) >= 0;
+    };
+    const filtered = all.filter(matches).sort((a, b) => ppl.fullName(a).localeCompare(ppl.fullName(b)));
+
+    const mkPerson = (e) => {
+      const dm = ppl.deptMeta(e.dept); const sm = ppl.STATUS_META[e.status] || ppl.STATUS_META.active;
+      const mgr = ppl.managerOf(e.id);
+      return { name: ppl.fullName(e), title: e.title, initials: e.initials, avatarBg: e.avatarBg,
+        dept: e.dept, deptColor: dm.color, deptTint: dm.tint,
+        statusLabel: sm.label, statusBg: sm.pillBg, statusFg: sm.pillFg, statusDot: sm.dot,
+        location: e.location, tenure: ppl.tenureLabel(e.startDate),
+        managerName: mgr ? ppl.fullName(mgr) : "—",
+        href: "Employee.dc.html?id=" + encodeURIComponent(e.id) };
+    };
+    const people = filtered.map(mkPerson);
+
+    // ---- org rows (flattened tree, respects dept + search filter for highlight but always shows full tree) ----
+    const orgRows = [];
+    const walk = (e, depth) => {
+      const dm = ppl.deptMeta(e.dept);
+      const rc = ppl.directReports(e.id).length;
+      orgRows.push({ name: ppl.fullName(e), title: e.title, dept: e.dept, initials: e.initials, avatarBg: e.avatarBg,
+        deptColor: dm.color, deptTint: dm.tint, indent: depth * 26, rail: depth > 0 ? "2px solid #eef1f4" : "2px solid transparent",
+        hasReports: rc > 0, reportLabel: rc + " report" + (rc === 1 ? "" : "s"),
+        href: "Employee.dc.html?id=" + encodeURIComponent(e.id) });
+      ppl.directReports(e.id).sort((a, b) => ppl.fullName(a).localeCompare(ppl.fullName(b))).forEach((r) => walk(r, depth + 1));
+    };
+    ppl.orgRoots().forEach((r) => walk(r, 0));
+
+    const isEmpty = (this.state.view !== "org") && people.length === 0;
+
+    // ---- add form options ----
+    const form = this.state.form || this.blankForm();
+    const managers = all.filter((e) => e.accessRole === "manager" || e.accessRole === "hr")
+      .sort((a, b) => ppl.fullName(a).localeCompare(ppl.fullName(b)))
+      .map((m) => ({ id: m.id, label: ppl.fullName(m) + " · " + m.title }));
+    const canSave = !!(form.first.trim() && form.last.trim());
+
+    return {
+      isHr, statTiles, deptChips, viewTabs, people, orgRows,
+      showGrid: this.state.view === "grid", showList: this.state.view === "list", showOrg: this.state.view === "org",
+      isEmpty, query: this.state.query,
+      onSearch: (e) => this.setState({ query: e.target.value }),
+      onAdd: () => this.openAdd(), addOpen: this.state.addOpen,
+      onCloseAdd: () => this.closeAdd(), stop: (e) => e.stopPropagation(),
+      form, inputStyle,
+      deptOptions: ppl.getDepartments().map((d) => d.id), levelOptions: ppl.getLevels(),
+      modeOptions: ppl.WORK_MODES, managerOptions: managers,
+      onFormFirst: (e) => this.setForm("first", e.target.value),
+      onFormLast: (e) => this.setForm("last", e.target.value),
+      onFormTitle: (e) => this.setForm("title", e.target.value),
+      onFormDept: (e) => this.setForm("dept", e.target.value),
+      onFormLevel: (e) => this.setForm("level", e.target.value),
+      onFormManager: (e) => this.setForm("managerId", e.target.value),
+      onFormLocation: (e) => this.setForm("location", e.target.value),
+      onFormMode: (e) => this.setForm("workMode", e.target.value),
+      onFormStart: (e) => this.setForm("startDate", e.target.value),
+      onFormSalary: (e) => this.setForm("salary", e.target.value),
+      onSaveAdd: () => this.saveAdd(),
+      saveBg: canSave ? "#17457f" : "#b8c2ce", saveCursor: canSave ? "pointer" : "not-allowed",
+      toasts: this.state.toasts.map((t) => ({ ...t, onClose: () => this.closeToast(t.id) })),
+      noteTitle: st.headcount + " employees", noteSub: st.onboarding + " onboarding · " + st.onLeave + " on leave",
+    };
+  }
+}
+</script>
+</body>
+</html>

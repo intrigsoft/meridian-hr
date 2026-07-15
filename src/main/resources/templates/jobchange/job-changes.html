@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+<head>
+    <title layout:fragment="title">Job changes · Meridian HR</title>
+</head>
+<body>
+<div layout:fragment="content" style="max-width:900px;">
+
+    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:18px;">
+        <div>
+            <div style="font-size:12.5px; color:#8894a3; font-weight:500; margin-bottom:2px;">People Ops / Job changes</div>
+            <h1 style="margin:0; font-size:24px; font-weight:700; letter-spacing:-0.02em; color:#1a2331;">Promotions &amp; transfers</h1>
+        </div>
+        <a th:if="${allowed}" th:href="@{/job-changes(add='true')}" class="btn btn-primary">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+            New request
+        </a>
+    </div>
+
+    <div th:if="${restricted}" style="background:#f7f9fb; border:1px dashed #d9e0e8; border-radius:13px; padding:56px 20px; text-align:center;">
+        <div style="font-size:15px; font-weight:600; color:#5a6472;">Job changes are managed by managers &amp; HR</div>
+        <div style="font-size:12.5px; color:#9aa3ad; margin-top:4px;">Talk to your manager about a promotion or transfer.</div>
+    </div>
+
+    <th:block th:if="${allowed}">
+        <!-- Stat tiles -->
+        <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:18px;">
+            <div th:each="s : ${stats}" style="min-width:0; background:#fff; border:1px solid #e4e8ed; border-radius:12px; padding:15px 16px;">
+                <div style="font-size:11.5px; font-weight:600; color:#8894a3;" th:text="${s.label()}">Pending approval</div>
+                <div style="font-size:24px; font-weight:700; margin-top:4px;" th:styleappend="'; ' + ('color:' + ${s.color()})" th:text="${s.value()}">1</div>
+            </div>
+        </div>
+
+        <!-- Requests -->
+        <div style="display:flex; flex-direction:column; gap:13px;">
+            <div th:each="r : ${requests}" style="background:#fff; border:1px solid #e4e8ed; border-radius:13px; padding:17px 20px;">
+                <div style="display:flex; align-items:flex-start; gap:13px;">
+                    <div style="width:40px; height:40px; border-radius:50%; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:600; font-size:14px; flex-shrink:0;" th:styleappend="'; ' + ('background:' + ${r.avatarBg()})" th:text="${r.initials()}">SC</div>
+                    <div style="flex:1; min-width:0;">
+                        <div style="display:flex; align-items:center; gap:9px; flex-wrap:wrap;">
+                            <span style="font-size:14.5px; font-weight:700; color:#1a2331;" th:text="${r.name()}">Sarah Chen</span>
+                            <span style="font-size:11px; font-weight:600; padding:3px 10px; border-radius:20px;" th:styleappend="'; ' + ('background:' + ${r.typeBg()} + '; color:' + ${r.typeFg()})" th:text="${r.typeLabel()}">Promotion</span>
+                            <span style="font-size:11px; font-weight:600; padding:3px 10px; border-radius:20px;" th:styleappend="'; ' + ('background:' + ${r.statusBg()} + '; color:' + ${r.statusFg()})" th:text="${r.statusLabel()}">Pending approval</span>
+                        </div>
+                        <div style="font-size:12px; color:#8894a3; margin-top:3px;" th:text="'Effective ' + ${r.effLabel()} + ' · requested by ' + ${r.by()}">Effective — · requested by —</div>
+                    </div>
+                </div>
+
+                <!-- diff -->
+                <div style="display:flex; flex-direction:column; gap:6px; margin-top:13px; padding:12px 14px; background:#f8fafc; border:1px solid #eef1f4; border-radius:9px;">
+                    <div th:each="d : ${r.diffs()}" style="display:flex; align-items:center; gap:9px; font-size:12.5px;">
+                        <span style="width:120px; flex-shrink:0; color:#8894a3; font-weight:500;" th:text="${d.label()}">Level</span>
+                        <span style="color:#b23b2e; text-decoration:line-through;" th:text="${d.from()}">Mid</span>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9aa3ad" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                        <span style="color:#2f6f4f; font-weight:700;" th:text="${d.to()}">Senior</span>
+                    </div>
+                </div>
+
+                <div th:if="${r.hasReason()}" style="font-size:12px; color:#6b7480; margin-top:10px; line-height:1.5;" th:text="${r.reason()}">Reason</div>
+
+                <!-- Actions -->
+                <div th:if="${r.showActions()}" style="display:flex; align-items:center; justify-content:flex-end; gap:9px; margin-top:14px; padding-top:13px; border-top:1px solid #f4f6f8;">
+                    <form th:action="@{/job-changes/{id}/cancel(id=${r.id()})}" method="post" style="margin:0;">
+                        <button type="submit" style="height:34px; padding:0 13px; border:1px solid #dde2e8; border-radius:8px; background:#fff; color:#5a6472; font-family:inherit; font-size:12px; font-weight:600; cursor:pointer;">Withdraw</button>
+                    </form>
+                    <form th:if="${r.canDecide()}" th:action="@{/job-changes/{id}/reject(id=${r.id()})}" method="post" style="margin:0;">
+                        <button type="submit" style="height:34px; padding:0 14px; border:1px solid #f0dcd9; border-radius:8px; background:#fff; color:#b23b2e; font-family:inherit; font-size:12px; font-weight:600; cursor:pointer;">Reject</button>
+                    </form>
+                    <form th:if="${r.canDecide()}" th:action="@{/job-changes/{id}/approve(id=${r.id()})}" method="post" style="margin:0;">
+                        <button type="submit" style="height:34px; padding:0 15px; border:none; border-radius:8px; background:#2f6f4f; color:#fff; font-family:inherit; font-size:12px; font-weight:600; cursor:pointer;">Approve</button>
+                    </form>
+                </div>
+                <div th:if="${r.isScheduled()}" style="display:flex; align-items:center; gap:8px; margin-top:12px; padding-top:12px; border-top:1px solid #f4f6f8; font-size:12px; color:#3a5aa8;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/></svg>
+                    <span th:text="'Approved — will apply automatically on ' + ${r.effLabel()} + '.'">Approved — scheduled.</span>
+                </div>
+                <div th:if="${r.isApplied()}" style="display:flex; align-items:center; gap:8px; margin-top:12px; padding-top:12px; border-top:1px solid #f4f6f8; font-size:12px; font-weight:600; color:#2f6f4f;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6L9 17l-5-5"/></svg>
+                    <span th:text="|Applied to ${r.name()}'s record.|">Applied.</span>
+                </div>
+            </div>
+
+            <div th:if="${noRequests}" style="background:#fff; border:1px dashed #d5dbe2; border-radius:13px; padding:48px 20px; text-align:center;">
+                <div style="font-size:14px; font-weight:600; color:#5a6472;">No job-change requests</div>
+                <div style="font-size:12.5px; color:#9aa3ad; margin-top:4px;">Raise a promotion, transfer, or comp change with an effective date.</div>
+            </div>
+        </div>
+    </th:block>
+</div>
+
+<!-- New request modal + toast -->
+<th:block layout:fragment="content-after">
+    <div th:if="${modalOpen}" style="position:fixed; inset:0; background:rgba(20,30,50,0.42); z-index:300; display:flex; align-items:center; justify-content:center; padding:24px;">
+        <form method="get" action="/job-changes" style="width:560px; max-width:100%; max-height:90vh; overflow-y:auto; background:#fff; border-radius:16px; box-shadow:0 24px 64px rgba(20,30,50,0.32);">
+            <input type="hidden" name="add" value="true"/>
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:18px 22px; border-bottom:1px solid #eef1f4; position:sticky; top:0; background:#fff;">
+                <div style="font-size:16px; font-weight:700; color:#1a2331;">New job-change request</div>
+                <a th:href="@{/job-changes}" style="width:30px; height:30px; border:1px solid #dde2e8; border-radius:8px; background:#fff; color:#8894a3; font-size:18px; line-height:28px; text-align:center;">×</a>
+            </div>
+            <div style="padding:20px 22px; display:flex; flex-direction:column; gap:15px;">
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+                    <div>
+                        <div style="font-size:12px; font-weight:600; color:#5a6472; margin-bottom:5px;">Employee</div>
+                        <select name="emp" onchange="this.form.submit()" style="width:100%; height:38px; border:1px solid #dde2e8; border-radius:9px; background:#fff; padding:0 12px; font-size:13.5px; color:#28323f; outline:none;">
+                            <option value="">— Select —</option>
+                            <option th:each="eo : ${empOptions}" th:value="${eo.id()}" th:text="${eo.label()}" th:selected="${eo.id() == formEmp}">Sarah Chen · Product Designer</option>
+                        </select>
+                    </div>
+                    <div>
+                        <div style="font-size:12px; font-weight:600; color:#5a6472; margin-bottom:5px;">Change type</div>
+                        <select name="type" onchange="this.form.submit()" style="width:100%; height:38px; border:1px solid #dde2e8; border-radius:9px; background:#fff; padding:0 12px; font-size:13.5px; color:#28323f; outline:none;">
+                            <option th:each="ty : ${typeOptions}" th:value="${ty.id()}" th:text="${ty.label()}" th:selected="${ty.id() == formType}">Promotion</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div th:if="${hasEmp}" style="display:flex; flex-direction:column; gap:12px; padding:14px; background:#f8fafc; border:1px solid #eef1f4; border-radius:10px;">
+                    <div style="font-size:11.5px; font-weight:700; color:#9aa3ad; text-transform:uppercase; letter-spacing:0.05em;">Proposed changes</div>
+                    <div th:each="ef : ${editFields}" style="display:grid; grid-template-columns:120px 1fr; gap:12px; align-items:center;">
+                        <div style="font-size:12.5px; font-weight:600; color:#3a4453;" th:text="${ef.label()}">Job title</div>
+                        <select th:if="${ef.isSelect()}" th:name="${ef.name()}" style="width:100%; height:34px; border:1px solid #dde2e8; border-radius:8px; background:#fff; padding:0 10px; font-size:13px; color:#28323f; outline:none;">
+                            <option th:each="op : ${ef.options()}" th:value="${op.id()}" th:text="${op.label()}" th:selected="${op.id() == ef.value()}">Option</option>
+                        </select>
+                        <input th:unless="${ef.isSelect()}" th:name="${ef.name()}" th:value="${ef.value()}" th:placeholder="${ef.current()}" style="width:100%; height:34px; border:1px solid #dde2e8; border-radius:8px; background:#fff; padding:0 10px; font-size:13px; color:#28323f; outline:none; font-family:inherit;"/>
+                    </div>
+                </div>
+
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+                    <div>
+                        <div style="font-size:12px; font-weight:600; color:#5a6472; margin-bottom:5px;">Effective date</div>
+                        <input type="date" name="eff" th:value="${formEff}" onchange="this.form.submit()" style="width:100%; height:38px; border:1px solid #dde2e8; border-radius:9px; background:#fff; padding:0 12px; font-size:13.5px; color:#28323f; outline:none; font-family:inherit;"/>
+                    </div>
+                    <div style="display:flex; align-items:flex-end;"><div style="font-size:11.5px; color:#8894a3; line-height:1.4; padding-bottom:9px;" th:text="${effHint}">Scheduled — applies automatically on this date.</div></div>
+                </div>
+                <div>
+                    <div style="font-size:12px; font-weight:600; color:#5a6472; margin-bottom:5px;">Justification</div>
+                    <input name="reason" th:value="${formReason}" placeholder="Why this change?" style="width:100%; height:38px; border:1px solid #dde2e8; border-radius:9px; background:#fff; padding:0 12px; font-size:13.5px; color:#28323f; outline:none; font-family:inherit;"/>
+                </div>
+            </div>
+            <div style="display:flex; align-items:center; justify-content:flex-end; gap:10px; padding:16px 22px; border-top:1px solid #eef1f4; background:#fafbfc; position:sticky; bottom:0;">
+                <a th:href="@{/job-changes}" class="btn btn-ghost">Cancel</a>
+                <button type="submit" formmethod="post" formaction="/job-changes/new" class="btn btn-primary">Submit request</button>
+            </div>
+        </form>
+    </div>
+
+    <div th:if="${toast != null}" style="position:fixed; right:22px; bottom:22px; z-index:400; display:flex; align-items:center; gap:11px; background:#1a2331; color:#fff; padding:12px 14px; border-radius:10px; box-shadow:0 10px 28px rgba(20,30,50,0.28); min-width:280px; max-width:390px;">
+        <span style="width:8px; height:8px; border-radius:50%; flex-shrink:0;" th:styleappend="'; ' + ('background:' + (${toastDot} ?: '#3ecf8e'))"></span>
+        <span style="flex:1; font-size:12.5px; font-weight:500; line-height:1.4;" th:text="${toast}">Submitted.</span>
+    </div>
+</th:block>
+</body>
+</html>

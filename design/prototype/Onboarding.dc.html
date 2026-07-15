@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; }
+  body { font-family: 'Public Sans', system-ui, -apple-system, sans-serif; background: #eceff3; color: #1e2733; -webkit-font-smoothing: antialiased; }
+  a { text-decoration: none; color: inherit; }
+  select { font-family: inherit; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: #cdd4dc; border-radius: 6px; border: 2px solid #eceff3; }
+  @keyframes obFade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes obSlide { from { transform: translateX(28px); opacity: 0.4; } to { transform: translateX(0); opacity: 1; } }
+</style>
+</helmet>
+
+<dc-import name="AppShell" active="onboarding" note-title="{{ noteTitle }}" note-sub="{{ noteSub }}" hint-size="100%,100%">
+  <div style="max-width:1000px;">
+
+    <!-- Header -->
+    <div style="display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:18px;">
+      <div>
+        <div style="font-size:12.5px; color:#8894a3; font-weight:500; margin-bottom:2px;">People Ops / Onboarding</div>
+        <h1 style="margin:0; font-size:24px; font-weight:700; letter-spacing:-0.02em; color:#1a2331;">Onboarding</h1>
+      </div>
+      <sc-if value="{{ showStartBtn }}" hint-placeholder-val="">
+        <a href="New Onboarding.dc.html" style="display:flex; align-items:center; gap:8px; height:38px; padding:0 16px; background:#17457f; color:#fff; border-radius:8px; font-size:13.5px; font-weight:600; cursor:pointer;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+          Start onboarding
+        </a>
+      </sc-if>
+    </div>
+
+    <!-- In-page tabs (schemas is part of onboarding — no separate route) -->
+    <div style="display:flex; gap:4px; padding:4px; background:#e4e8ee; border-radius:9px; width:fit-content; margin-bottom:20px;">
+      <button onClick="{{ onTabActive }}" style="padding:7px 15px; border:none; border-radius:6px; background:{{ tabActiveBg }}; box-shadow:{{ tabActiveShadow }}; font-family:inherit; font-size:13px; font-weight:600; color:{{ tabActiveFg }}; cursor:pointer;">Active onboardings</button>
+      <sc-if value="{{ canConfigure }}" hint-placeholder-val="">
+        <button onClick="{{ onTabTemplates }}" style="padding:7px 15px; border:none; border-radius:6px; background:{{ tabTplBg }}; box-shadow:{{ tabTplShadow }}; font-family:inherit; font-size:13px; font-weight:600; color:{{ tabTplFg }}; cursor:pointer; display:flex; align-items:center; gap:6px;">
+          Templates <span style="font-size:11px; font-weight:700; color:#8894a3;">{{ tplCount }}</span>
+        </button>
+      </sc-if>
+    </div>
+
+    <!-- ===================== ACTIVE VIEW ===================== -->
+    <sc-if value="{{ showActive }}" hint-placeholder-val="{{ true }}">
+      <div>
+        <!-- ===== LIST VIEW ===== -->
+        <sc-if value="{{ showList }}" hint-placeholder-val="{{ true }}">
+          <div>
+            <!-- Toolbar: search + status filters -->
+            <div style="display:flex; align-items:center; gap:12px; margin-bottom:14px; flex-wrap:wrap;">
+              <div style="position:relative; flex:1; min-width:220px; max-width:320px;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9aa3ad" stroke-width="2" style="position:absolute; left:11px; top:50%; transform:translateY(-50%);"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+                <input value="{{ q }}" onChange="{{ onSearch }}" placeholder="Search hires, roles…" style="width:100%; height:36px; border:1px solid #dde2e8; border-radius:8px; background:#fff; padding:0 12px 0 32px; font-size:13px; color:#3a4453; outline:none;" />
+              </div>
+              <div style="display:flex; gap:5px; margin-left:auto;">
+                <sc-for list="{{ statusFilters }}" as="sf" hint-placeholder-count="4">
+                  <button onClick="{{ sf.onClick }}" style="height:36px; padding:0 12px; border:1px solid {{ sf.border }}; border-radius:8px; background:{{ sf.bg }}; font-family:inherit; font-size:12.5px; font-weight:600; color:{{ sf.fg }}; cursor:pointer; display:flex; align-items:center; gap:6px;">
+                    {{ sf.label }}
+                    <span style="font-size:11px; font-weight:700; color:{{ sf.countFg }}; background:{{ sf.countBg }}; min-width:17px; height:17px; border-radius:9px; display:inline-flex; align-items:center; justify-content:center; padding:0 4px;">{{ sf.count }}</span>
+                  </button>
+                </sc-for>
+              </div>
+            </div>
+
+            <!-- Table -->
+            <div style="background:#fff; border:1px solid #e4e8ed; border-radius:10px; overflow:hidden;">
+              <div style="display:grid; grid-template-columns:1.9fr 1fr 1.3fr 1.4fr 1fr 20px; gap:12px; padding:11px 18px; background:#f8fafc; border-bottom:1px solid #eef1f4;">
+                <span style="font-size:11px; font-weight:700; color:#9aa3ad; text-transform:uppercase; letter-spacing:0.04em;">Hire</span>
+                <span style="font-size:11px; font-weight:700; color:#9aa3ad; text-transform:uppercase; letter-spacing:0.04em;">Starts</span>
+                <span style="font-size:11px; font-weight:700; color:#9aa3ad; text-transform:uppercase; letter-spacing:0.04em;">Schema</span>
+                <span style="font-size:11px; font-weight:700; color:#9aa3ad; text-transform:uppercase; letter-spacing:0.04em;">Progress</span>
+                <span style="font-size:11px; font-weight:700; color:#9aa3ad; text-transform:uppercase; letter-spacing:0.04em;">Status</span>
+                <span></span>
+              </div>
+              <sc-for list="{{ queue }}" as="c" hint-placeholder-count="4">
+                <div onClick="{{ c.onOpen }}" style="display:grid; grid-template-columns:1.9fr 1fr 1.3fr 1.4fr 1fr 20px; gap:12px; padding:13px 18px; border-bottom:1px solid #f4f6f8; align-items:center; cursor:pointer;" style-hover="background:#fafbfc;">
+                  <div style="display:flex; align-items:center; gap:11px; min-width:0;">
+                    <div style="width:34px; height:34px; border-radius:50%; background:{{ c.avatarBg }}; color:#fff; font-size:12.5px; font-weight:600; display:flex; align-items:center; justify-content:center; flex-shrink:0;">{{ c.initials }}</div>
+                    <div style="min-width:0;">
+                      <div style="font-size:13.5px; font-weight:600; color:#1a2331; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ c.name }}</div>
+                      <div style="font-size:11.5px; color:#8894a3; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ c.role }}</div>
+                    </div>
+                  </div>
+                  <span style="font-size:12.5px; color:#5a6472;">{{ c.startFmt }}</span>
+                  <span style="font-size:12.5px; color:#5a6472; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ c.schema }}</span>
+                  <div style="display:flex; align-items:center; gap:9px;">
+                    <div style="height:5px; flex:1; border-radius:3px; background:#eef1f4; overflow:hidden;"><div style="height:100%; width:{{ c.pct }}%; background:{{ c.barColor }}; border-radius:3px;"></div></div>
+                    <span style="font-size:11px; font-weight:700; color:#8894a3; white-space:nowrap;">{{ c.pct }}%</span>
+                  </div>
+                  <span style="justify-self:start; font-size:11px; font-weight:600; padding:3px 10px; border-radius:20px; background:{{ c.pillBg }}; color:{{ c.pillFg }}; white-space:nowrap;">{{ c.statusLabel }}</span>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c3cad3" stroke-width="2" style="justify-self:end;"><path d="M9 18l6-6-6-6"/></svg>
+                </div>
+              </sc-for>
+              <sc-if value="{{ emptyQueue }}" hint-placeholder-val="">
+                <div style="padding:44px 20px; text-align:center;">
+                  <div style="font-size:13.5px; font-weight:600; color:#5a6472;">{{ emptyTitle }}</div>
+                  <div style="font-size:12.5px; color:#9aa3ad; margin-top:4px;">{{ emptySub }}</div>
+                </div>
+              </sc-if>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ===== STATUS VIEW ===== -->
+        <sc-if value="{{ showStatus }}" hint-placeholder-val="">
+          <button onClick="{{ onBackToList }}" style="display:inline-flex; align-items:center; gap:6px; margin-bottom:14px; border:none; background:transparent; font-family:inherit; font-size:12.5px; color:#8894a3; font-weight:600; cursor:pointer; padding:0;" style-hover="color:#5a6472;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+            All onboardings
+          </button>
+          <sc-if value="{{ hasActive }}" hint-placeholder-val="{{ true }}">
+          <div style="background:#fff; border:1px solid #e4e8ed; border-radius:10px; overflow:hidden;">
+            <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:14px; padding:16px 18px; border-bottom:1px solid #eef1f4;">
+              <div>
+                <div style="font-size:15px; font-weight:700; color:#1a2331;">{{ activeName }} · provisioning plan</div>
+                <div style="font-size:12px; color:#8894a3; margin-top:3px;">{{ activeMeta }}</div>
+              </div>
+              <span style="flex-shrink:0; font-size:11.5px; font-weight:600; padding:5px 12px; border-radius:20px; background:{{ healthBg }}; color:{{ healthFg }};">{{ healthLabel }}</span>
+            </div>
+
+            <sc-if value="{{ showConvert }}" hint-placeholder-val="">
+              <div style="display:flex; align-items:center; gap:11px; padding:12px 18px; background:#f2faf5; border-bottom:1px solid #dbeee2;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2f6f4f" stroke-width="2" style="flex-shrink:0;"><path d="M20 6L9 17l-5-5"/></svg>
+                <div style="flex:1; font-size:12px; color:#2f6f4f; line-height:1.45;">Onboarding complete. Add {{ activeName }} to the employee directory to activate their record.</div>
+                <button onClick="{{ onConvert }}" style="flex-shrink:0; height:34px; padding:0 15px; border:none; border-radius:8px; background:#2f6f4f; color:#fff; font-family:inherit; font-size:12.5px; font-weight:600; cursor:pointer;">Add to Directory</button>
+              </div>
+            </sc-if>
+            <sc-if value="{{ isConverted }}" hint-placeholder-val="">
+              <div style="display:flex; align-items:center; gap:9px; padding:11px 18px; background:#f8fafc; border-bottom:1px solid #eef1f4; font-size:12px; color:#6b7480;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2f6f4f" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+                Added to the employee directory · <a href="{{ convertHref }}" style="color:#2d6cb5; font-weight:600;">View profile</a>
+              </div>
+            </sc-if>
+
+            <div style="display:flex; align-items:center; gap:12px; padding:12px 18px; background:#f8fafc; border-bottom:1px solid #eef1f4;">
+              <div style="height:6px; flex:1; border-radius:4px; background:#e4e8ed; overflow:hidden;"><div style="height:100%; width:{{ activePct }}%; background:{{ healthFg }}; border-radius:4px; transition:width 0.3s ease;"></div></div>
+              <span style="font-size:12px; font-weight:600; color:#5a6472; white-space:nowrap;">{{ activeDone }} of {{ activeTotal }} done</span>
+            </div>
+
+            <div style="padding:4px 0;">
+              <sc-for list="{{ steps }}" as="t" hint-placeholder-count="6">
+                <div style="display:flex; gap:14px; padding:15px 18px; border-bottom:1px solid #f4f6f8;">
+                  <div style="display:flex; flex-direction:column; align-items:center; flex-shrink:0;">
+                    <div style="width:28px; height:28px; border-radius:50%; background:{{ t.dotBg }}; border:2px solid {{ t.dotBorder }}; display:flex; align-items:center; justify-content:center; color:{{ t.glyphColor }}; font-size:13px; font-weight:700;">{{ t.glyph }}</div>
+                    <sc-if value="{{ t.showRail }}" hint-placeholder-val="{{ true }}">
+                      <div style="width:2px; flex:1; min-height:16px; background:#e4e8ed; margin-top:4px;"></div>
+                    </sc-if>
+                  </div>
+                  <div style="flex:1; min-width:0;">
+                    <div style="display:flex; align-items:center; gap:9px; flex-wrap:wrap;">
+                      <span style="font-size:13.5px; font-weight:600; color:#28323f;">{{ t.title }}</span>
+                      <span style="font-size:10.5px; font-weight:600; color:{{ t.sysColor }}; background:{{ t.sysBg }}; padding:2px 8px; border-radius:5px; font-family:'IBM Plex Mono', monospace;">{{ t.sysLabel }}</span>
+                      <span style="font-size:11px; color:#a2abb5;">· {{ t.owner }}</span>
+                      <span style="margin-left:auto; font-size:11.5px; font-weight:600; color:{{ t.stColor }};">{{ t.statusLabel }}</span>
+                    </div>
+                    <div style="font-size:12px; color:#8894a3; margin-top:3px;">{{ t.detail }}</div>
+
+                    <sc-if value="{{ t.isBlocked }}" hint-placeholder-val="">
+                      <div style="display:flex; gap:10px; margin-top:9px; padding:9px 11px; background:#f7f4ec; border:1px solid #ece2c6; border-radius:8px; align-items:center;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9a6a1a" stroke-width="2" style="flex-shrink:0;"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                        <div style="flex:1; font-size:11.5px; line-height:1.5; color:#7c6428;"><strong>Blocked — waiting on {{ t.blockDoc }}.</strong> Dioschub is holding this write until the document clears; it will not force it out of order.</div>
+                        <sc-if value="{{ canManage }}" hint-placeholder-val="{{ true }}">
+                          <button onClick="{{ t.onUpload }}" style="flex-shrink:0; height:30px; padding:0 12px; border:none; border-radius:7px; background:#17457f; color:#fff; font-family:inherit; font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap;">Upload {{ t.blockDoc }}</button>
+                        </sc-if>
+                      </div>
+                    </sc-if>
+
+                    <sc-if value="{{ t.isProgress }}" hint-placeholder-val="">
+                      <sc-if value="{{ canManage }}" hint-placeholder-val="{{ true }}">
+                        <button onClick="{{ t.onDone }}" style="margin-top:9px; height:30px; padding:0 13px; border:1px solid #cfdbe9; border-radius:7px; background:#eef4fb; color:#17457f; font-family:inherit; font-size:12px; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6L9 17l-5-5"/></svg>
+                          {{ t.progressBtn }}
+                        </button>
+                      </sc-if>
+                    </sc-if>
+
+                    <sc-if value="{{ t.isDone }}" hint-placeholder-val="">
+                      <sc-if value="{{ canManage }}" hint-placeholder-val="">
+                        <button onClick="{{ t.onReopen }}" style="margin-top:7px; border:none; background:transparent; color:#a2abb5; font-family:inherit; font-size:11.5px; font-weight:600; cursor:pointer; padding:0; text-decoration:underline;">Reopen step</button>
+                      </sc-if>
+                    </sc-if>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          </sc-if>
+
+          <sc-if value="{{ noActive }}" hint-placeholder-val="">
+            <div style="background:#fff; border:1px dashed #d5dbe2; border-radius:10px; padding:48px 20px; text-align:center;">
+              <div style="font-size:14px; font-weight:600; color:#5a6472;">Hire not found</div>
+              <div style="font-size:12.5px; color:#9aa3ad; margin-top:4px;">This onboarding no longer exists — head back to the list.</div>
+            </div>
+          </sc-if>
+        </sc-if>
+      </div>
+    </sc-if>
+
+    <!-- ===================== TEMPLATES VIEW ===================== -->
+    <sc-if value="{{ showTemplates }}" hint-placeholder-val="">
+      <div style="display:grid; grid-template-columns:260px 1fr; gap:18px; align-items:start;">
+        <!-- Template list -->
+        <div style="background:#fff; border:1px solid #e4e8ed; border-radius:10px; overflow:hidden;">
+          <div style="padding:12px 14px; border-bottom:1px solid #eef1f4; font-size:11px; font-weight:700; color:#9aa3ad; text-transform:uppercase; letter-spacing:0.05em;">Role schemas</div>
+          <sc-for list="{{ templates }}" as="t" hint-placeholder-count="4">
+            <button onClick="{{ t.onSelect }}" style="display:block; width:100%; text-align:left; padding:12px 14px; border:none; border-bottom:1px solid #f4f6f8; border-left:3px solid {{ t.accent }}; background:{{ t.bg }}; cursor:pointer; font-family:inherit;">
+              <div style="font-size:13px; font-weight:600; color:#28323f;">{{ t.name }}</div>
+              <div style="font-size:11.5px; color:#8894a3; margin-top:2px;">{{ t.roleLabel }} · {{ t.stepCount }} steps</div>
+            </button>
+          </sc-for>
+          <button onClick="{{ onCreateTpl }}" style="display:flex; align-items:center; gap:7px; width:100%; padding:12px 14px; border:none; background:#fff; cursor:pointer; font-family:inherit; font-size:12.5px; font-weight:600; color:#17457f;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+            New template
+          </button>
+        </div>
+
+        <!-- Editor -->
+        <sc-if value="{{ hasDraft }}" hint-placeholder-val="{{ true }}">
+          <div>
+            <div style="background:#fff; border:1px solid #e4e8ed; border-radius:10px; padding:16px 18px; margin-bottom:14px;">
+              <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px;">
+                <input value="{{ dName }}" onChange="{{ onDName }}" style="flex:1; font-size:16px; font-weight:700; color:#1a2331; border:none; border-bottom:1.5px solid transparent; outline:none; padding:2px 0; font-family:inherit;" style-focus="border-bottom-color:#cfdbe9;" />
+                <button onClick="{{ onDeleteTpl }}" title="Delete template" style="flex-shrink:0; width:34px; height:34px; border:1px solid #f0cfc9; border-radius:8px; background:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; color:#b23b2e;">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+                </button>
+              </div>
+              <div style="display:flex; gap:14px;">
+                <div style="flex:1;">
+                  <label style="display:block; font-size:11.5px; font-weight:600; color:#8894a3; margin-bottom:5px;">Applies to role</label>
+                  <select value="{{ dRole }}" onChange="{{ onDRole }}" style="width:100%; height:38px; border:1px solid #dde2e8; border-radius:8px; padding:0 10px; font-size:13px; color:#28323f; background:#fff; outline:none;">
+                    <sc-for list="{{ roleOpts }}" as="r" hint-placeholder-count="4"><option value="{{ r.id }}">{{ r.label }}</option></sc-for>
+                  </select>
+                </div>
+                <div style="flex:2;">
+                  <label style="display:block; font-size:11.5px; font-weight:600; color:#8894a3; margin-bottom:5px;">Description</label>
+                  <input value="{{ dDesc }}" onChange="{{ onDDesc }}" placeholder="What this schema is for…" style="width:100%; height:38px; border:1px solid #dde2e8; border-radius:8px; padding:0 11px; font-size:13px; color:#28323f; outline:none; font-family:inherit;" />
+                </div>
+              </div>
+            </div>
+
+            <div style="display:flex; align-items:center; justify-content:space-between; margin:4px 2px 10px;">
+              <div style="font-size:13px; font-weight:700; color:#1a2331;">Provisioning steps <span style="color:#9aa3ad; font-weight:600;">· runs top to bottom</span></div>
+              <div style="font-size:11.5px; color:#9aa3ad; display:flex; align-items:center; gap:5px;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#4a9d7a" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+                Saved automatically
+              </div>
+            </div>
+
+            <sc-for list="{{ tplSteps }}" as="s" hint-placeholder-count="6">
+              <div style="background:#fff; border:1px solid #e4e8ed; border-radius:10px; padding:14px 15px; margin-bottom:10px;">
+                <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+                  <div style="width:24px; height:24px; border-radius:50%; background:#eef1f4; color:#6b7480; font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0;">{{ s.order }}</div>
+                  <input value="{{ s.title }}" onChange="{{ s.onTitle }}" style="flex:1; height:36px; border:1px solid #e4e8ed; border-radius:7px; padding:0 11px; font-size:13.5px; font-weight:600; color:#28323f; outline:none; font-family:inherit;" style-focus="border-color:#cfdbe9;" />
+                  <div style="display:flex; gap:4px; flex-shrink:0;">
+                    <button onClick="{{ s.onUp }}" disabled="{{ s.upDisabled }}" title="Move up" style="width:30px; height:30px; border:1px solid #e4e8ed; border-radius:7px; background:#fff; display:flex; align-items:center; justify-content:center; cursor:{{ s.upCursor }}; color:{{ s.upColor }};"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 15l-6-6-6 6"/></svg></button>
+                    <button onClick="{{ s.onDown }}" disabled="{{ s.downDisabled }}" title="Move down" style="width:30px; height:30px; border:1px solid #e4e8ed; border-radius:7px; background:#fff; display:flex; align-items:center; justify-content:center; cursor:{{ s.downCursor }}; color:{{ s.downColor }};"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
+                    <button onClick="{{ s.onDelete }}" title="Delete step" style="width:30px; height:30px; border:1px solid #f0cfc9; border-radius:7px; background:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; color:#b23b2e;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
+                  </div>
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:10px;">
+                  <div>
+                    <label style="display:block; font-size:11px; font-weight:600; color:#9aa3ad; margin-bottom:4px;">Target system</label>
+                    <select value="{{ s.system }}" onChange="{{ s.onSystem }}" style="width:100%; height:34px; border:1px solid #dde2e8; border-radius:7px; padding:0 8px; font-size:12.5px; color:#28323f; background:#fff; outline:none;">
+                      <sc-for list="{{ systemOpts }}" as="o" hint-placeholder-count="6"><option value="{{ o.id }}">{{ o.label }}</option></sc-for>
+                    </select>
+                  </div>
+                  <div>
+                    <label style="display:block; font-size:11px; font-weight:600; color:#9aa3ad; margin-bottom:4px;">Owner</label>
+                    <select value="{{ s.owner }}" onChange="{{ s.onOwner }}" style="width:100%; height:34px; border:1px solid #dde2e8; border-radius:7px; padding:0 8px; font-size:12.5px; color:#28323f; background:#fff; outline:none;">
+                      <sc-for list="{{ ownerOpts }}" as="o" hint-placeholder-count="6"><option value="{{ o }}">{{ o }}</option></sc-for>
+                    </select>
+                  </div>
+                  <div>
+                    <label style="display:block; font-size:11px; font-weight:600; color:#9aa3ad; margin-bottom:4px;">Due (days from start)</label>
+                    <input type="number" value="{{ s.dueOffset }}" onChange="{{ s.onDue }}" style="width:100%; height:34px; border:1px solid #dde2e8; border-radius:7px; padding:0 9px; font-size:12.5px; color:#28323f; outline:none; font-family:inherit;" />
+                  </div>
+                </div>
+                <div style="display:flex; align-items:flex-end; gap:14px; flex-wrap:wrap;">
+                  <div style="flex:1; min-width:180px;">
+                    <label style="display:block; font-size:11px; font-weight:600; color:#9aa3ad; margin-bottom:4px;">Depends on</label>
+                    <select value="{{ s.dependsOn }}" onChange="{{ s.onDepends }}" style="width:100%; height:34px; border:1px solid #dde2e8; border-radius:7px; padding:0 8px; font-size:12.5px; color:#28323f; background:#fff; outline:none;">
+                      <option value="">Nothing (runs immediately)</option>
+                      <sc-for list="{{ s.depOpts }}" as="d" hint-placeholder-count="0"><option value="{{ d.id }}">{{ d.title }}</option></sc-for>
+                    </select>
+                  </div>
+                  <button onClick="{{ s.onToggleAuto }}" style="display:flex; align-items:center; gap:7px; height:34px; padding:0 11px; border:1px solid {{ s.autoBorder }}; border-radius:7px; background:{{ s.autoBg }}; cursor:pointer; font-family:inherit; font-size:12px; font-weight:600; color:{{ s.autoFg }};">
+                    <span style="width:26px; height:15px; border-radius:8px; background:{{ s.autoTrack }}; position:relative; flex-shrink:0;"><span style="position:absolute; top:2px; left:{{ s.autoKnob }}; width:11px; height:11px; border-radius:50%; background:#fff; transition:left 0.15s;"></span></span>
+                    Auto-run
+                  </button>
+                  <button onClick="{{ s.onToggleDoc }}" style="display:flex; align-items:center; gap:7px; height:34px; padding:0 11px; border:1px solid {{ s.docBorder }}; border-radius:7px; background:{{ s.docBg }}; cursor:pointer; font-family:inherit; font-size:12px; font-weight:600; color:{{ s.docFg }};">
+                    <span style="width:26px; height:15px; border-radius:8px; background:{{ s.docTrack }}; position:relative; flex-shrink:0;"><span style="position:absolute; top:2px; left:{{ s.docKnob }}; width:11px; height:11px; border-radius:50%; background:#fff; transition:left 0.15s;"></span></span>
+                    Requires document
+                  </button>
+                  <sc-if value="{{ s.docOn }}" hint-placeholder-val="">
+                    <input value="{{ s.docName }}" onChange="{{ s.onDocName }}" placeholder="Document name" style="flex:1; min-width:150px; height:34px; border:1px solid #dde2e8; border-radius:7px; padding:0 10px; font-size:12.5px; color:#28323f; outline:none; font-family:inherit;" />
+                  </sc-if>
+                </div>
+              </div>
+            </sc-for>
+
+            <button onClick="{{ onAddStep }}" style="display:flex; align-items:center; justify-content:center; gap:8px; width:100%; height:44px; border:1.5px dashed #cbd3dc; border-radius:10px; background:#fff; cursor:pointer; font-family:inherit; font-size:13px; font-weight:600; color:#5a6472;" style-hover="border-color:#17457f; color:#17457f;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+              Add step
+            </button>
+          </div>
+        </sc-if>
+      </div>
+    </sc-if>
+  </div>
+
+  <!-- Toasts -->
+  <div style="position:fixed; right:22px; bottom:22px; display:flex; flex-direction:column; gap:10px; z-index:200;">
+    <sc-for list="{{ toasts }}" as="t" hint-placeholder-count="0">
+      <div style="display:flex; align-items:center; gap:11px; background:#1a2331; color:#fff; padding:12px 14px; border-radius:10px; box-shadow:0 10px 28px rgba(20,30,50,0.28); min-width:280px; max-width:380px;">
+        <span style="width:8px; height:8px; border-radius:50%; background:{{ t.dot }}; flex-shrink:0;"></span>
+        <span style="flex:1; font-size:12.5px; font-weight:500; line-height:1.4;">{{ t.msg }}</span>
+        <button onClick="{{ t.onClose }}" style="border:none; background:transparent; color:#8894a3; font-size:16px; line-height:1; cursor:pointer; padding:0;">×</button>
+      </div>
+    </sc-for>
+  </div>
+</dc-import>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:&quot;100%&quot;,&quot;height&quot;:&quot;100%&quot;}}">
+class Component extends DCLogic {
+  state = {
+    user: null, view: "active",
+    activeMode: "list", q: "", statusFilter: "all",
+    activeId: null, startOpen: false, toasts: [],
+    form: { name: "", title: "", role: "design", start: "2026-07-20", manager: "" },
+    // template editor
+    selTplId: null, draft: null,
+  };
+  _tid = 0;
+
+  componentDidMount() {
+    Promise.all([import("./session.js"), import("./onboarding-store.js"), import("./people-store.js")]).then(([s, ob, ppl]) => {
+      this._s = s; this._ob = ob; this._ppl = ppl;
+      const user = s.requireSession();
+      if (!user) return;
+      const cases = ob.allCases();
+      const firstActive = cases.find((c) => ob.caseSummary(c).health !== "complete") || cases[0];
+      const tpls = ob.allTemplates();
+      const firstTpl = tpls[0];
+      // Deep-link: ?case=<id> lands directly on that hire's status view.
+      const caseParam = new URLSearchParams(location.search).get("case");
+      const valid = caseParam && ob.getCase(caseParam);
+      this.setState({
+        user,
+        activeMode: valid ? "status" : "list",
+        activeId: valid ? caseParam : (firstActive ? firstActive.id : null),
+        selTplId: firstTpl ? firstTpl.id : null,
+        draft: firstTpl ? this.clone(firstTpl) : null,
+      });
+    });
+  }
+
+  clone(o) { return JSON.parse(JSON.stringify(o)); }
+
+  addToast(msg, dot, dur) {
+    const id = ++this._tid;
+    this.setState((st) => ({ toasts: [...st.toasts, { id, msg, dot: dot || "#3ecf8e" }] }));
+    setTimeout(() => this.setState((st) => ({ toasts: st.toasts.filter((t) => t.id !== id) })), dur || 4600);
+  }
+  closeToast(id) { this.setState((st) => ({ toasts: st.toasts.filter((t) => t.id !== id) })); }
+
+  actorName() {
+    const u = this.state.user;
+    if (!u) return "You";
+    return u.role === "hr" ? "P. Nair (HR)" : u.name;
+  }
+  releasedBy(before, after) {
+    const wasWaiting = new Set(before.filter((p) => p.status === "waiting").map((p) => p.def.id));
+    return after.filter((p) => wasWaiting.has(p.def.id) && p.status !== "waiting").length;
+  }
+
+  // ---- Board actions ----
+  markDone(stepId, title) {
+    const before = this._ob.resolvePlan(this._ob.getCase(this.state.activeId));
+    this._ob.completeStep(this.state.activeId, stepId, this.actorName());
+    const after = this._ob.resolvePlan(this._ob.getCase(this.state.activeId));
+    const rel = this.releasedBy(before, after);
+    this.addToast(rel > 0
+      ? '"' + title + '" done — Dioschub released ' + rel + ' dependent step' + (rel > 1 ? "s" : "") + "."
+      : '"' + title + '" marked done.', "#3ecf8e");
+    this.forceUpdate();
+  }
+  upload(stepId, doc) {
+    this._ob.uploadDoc(this.state.activeId, stepId);
+    this.addToast(doc + " verified — Dioschub released the held write.", "#3ecf8e");
+    this.forceUpdate();
+  }
+  reopen(stepId, title) {
+    this._ob.reopenStep(this.state.activeId, stepId);
+    this.addToast('"' + title + '" reopened.', "#8894a3");
+    this.forceUpdate();
+  }
+  submitStart() {
+    const f = this.state.form;
+    if (!f.name.trim()) return;
+    const roleDef = this._ob.ROLES.find((r) => r.id === f.role);
+    const c = this._ob.startOnboarding({
+      hireName: f.name.trim(), role: f.role,
+      roleLabel: f.title.trim() || (roleDef ? roleDef.label : ""),
+      startDate: f.start, manager: f.manager.trim(),
+    });
+    this.setState({ startOpen: false, activeId: c.id, view: "active",
+      form: { name: "", title: "", role: "design", start: "2026-07-20", manager: "" } });
+    this.addToast("Onboarding started for " + c.hireName + " — Dioschub is provisioning.", "#3ecf8e");
+    this.forceUpdate();
+  }
+
+  // ---- Template editor actions ----
+  selectTpl(id) { const t = this._ob.getTemplate(id); this.setState({ selTplId: id, draft: t ? this.clone(t) : null }); }
+  persistTpl(draft) { this._ob.saveTemplate(this.clone(draft)); this.setState({ draft }); }
+  patchMeta(patch) { this.persistTpl({ ...this.state.draft, ...patch }); }
+  patchStep(idx, patch) { const d = this.clone(this.state.draft); d.steps[idx] = { ...d.steps[idx], ...patch }; this.persistTpl(d); }
+  addStep() { const d = this.clone(this.state.draft); d.steps.push(this._ob.newStepDef()); this.persistTpl(d); }
+  deleteStep(idx) {
+    const d = this.clone(this.state.draft);
+    const removed = d.steps[idx];
+    d.steps.forEach((s) => { if (s.dependsOn === removed.id) s.dependsOn = null; });
+    d.steps.splice(idx, 1);
+    this.persistTpl(d);
+    this.addToast("Step removed", "#8894a3", 2400);
+  }
+  moveStep(idx, dir) {
+    const j = idx + dir; const d = this.clone(this.state.draft);
+    if (j < 0 || j >= d.steps.length) return;
+    const tmp = d.steps[idx]; d.steps[idx] = d.steps[j]; d.steps[j] = tmp;
+    this.persistTpl(d);
+  }
+  createTpl() {
+    const t = this._ob.createTemplate("New template", "general");
+    this.setState({ selTplId: t.id, draft: this.clone(t) });
+    this.addToast("Template created", "#4a9d7a", 2400);
+  }
+  deleteTpl() {
+    this._ob.deleteTemplate(this.state.selTplId);
+    const list = this._ob.allTemplates(); const first = list[0];
+    this.setState({ selTplId: first ? first.id : null, draft: first ? this.clone(first) : null });
+    this.addToast("Template deleted", "#8894a3", 2400);
+  }
+
+  convert() {
+    const c = this._ob.getCase(this.state.activeId);
+    if (!c || !this._ppl) return;
+    this._ppl.convertOnboardingCase(c);
+    this.setState({ tick: (this.state.tick || 0) + 1 });
+  }
+
+  renderVals() {
+    const u = this.state.user;
+    const ob = this._ob;
+    if (!u || !ob) {
+      return { showActive: true, showTemplates: false, cases: [], steps: [], hasActive: false, noActive: false,
+        toasts: [], startOpen: false, canConfigure: false, canManage: false, showStartBtn: false, tplCount: 0,
+        roleOptions: [], noteTitle: "", noteSub: "", templates: [], tplSteps: [], hasDraft: false,
+        tabActiveBg: "#fff", tabTplBg: "transparent" };
+    }
+
+    const canManage = u.role === "manager" || u.role === "hr";
+    const canConfigure = u.role === "hr";
+    const view = (this.state.view === "templates" && canConfigure) ? "templates" : "active";
+
+    // ---- tab styling ----
+    const tabActiveBg = view === "active" ? "#fff" : "transparent";
+    const tabTplBg = view === "templates" ? "#fff" : "transparent";
+
+    const STATUS = {
+      done:        { label: "Done",        stColor: "#2f6f4f", dotBg: "#4a9d7a", dotBorder: "#4a9d7a", glyph: "✓", glyphColor: "#fff" },
+      in_progress: { label: "In progress", stColor: "#2f6aa8", dotBg: "#eaf1fa", dotBorder: "#3f7cc4", glyph: "•", glyphColor: "#3f7cc4" },
+      blocked:     { label: "Blocked",     stColor: "#9a6a1a", dotBg: "#fbf1de", dotBorder: "#c68a2a", glyph: "!", glyphColor: "#9a6a1a" },
+      waiting:     { label: "Waiting",     stColor: "#9aa3ad", dotBg: "#f1f4f7", dotBorder: "#cdd4dc", glyph: "", glyphColor: "#cdd4dc" },
+    };
+
+    const activeMode = this.state.activeMode === "status" ? "status" : "list";
+    const showList = view === "active" && activeMode === "list";
+    const showStatus = view === "active" && activeMode === "status";
+
+    // ---- queue (list view): search + status filter ----
+    const casesRaw = ob.allCases();
+    const withSummary = casesRaw.map((c) => ({ c, sum: ob.caseSummary(c) }));
+    const counts = { all: withSummary.length, on_track: 0, blocked: 0, complete: 0 };
+    withSummary.forEach(({ sum }) => { counts[sum.health] = (counts[sum.health] || 0) + 1; });
+
+    const q = this.state.q.trim().toLowerCase();
+    const sf = this.state.statusFilter;
+    let filtered = withSummary;
+    if (sf !== "all") filtered = filtered.filter(({ sum }) => sum.health === sf);
+    if (q) filtered = filtered.filter(({ c }) => (c.hireName + " " + c.roleLabel + " " + c.dept).toLowerCase().indexOf(q) >= 0);
+
+    const queue = filtered.map(({ c, sum }) => {
+      const health = sum.health;
+      const barColor = health === "complete" ? "#4a9d7a" : health === "blocked" ? "#c68a2a" : "#3f7cc4";
+      const pill = health === "complete" ? { bg: "#e6f3ec", fg: "#2f6f4f", label: "Complete" }
+        : health === "blocked" ? { bg: "#fbf1de", fg: "#9a6a1a", label: sum.blocked + " blocked" }
+        : { bg: "#e8eefb", fg: "#3a5aa8", label: "On track" };
+      const startFmt = new Date(c.startDate + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+      const tpl = ob.getTemplate(c.templateId);
+      return { name: c.hireName, role: c.roleLabel, initials: c.initials, avatarBg: c.avatarBg,
+        startFmt, schema: tpl ? tpl.name : "—", pct: sum.pct, barColor,
+        pillBg: pill.bg, pillFg: pill.fg, statusLabel: pill.label,
+        onOpen: () => this.setState({ activeId: c.id, activeMode: "status" }) };
+    });
+
+    const sfDefs = [["all", "All"], ["on_track", "On track"], ["blocked", "Blocked"], ["complete", "Complete"]];
+    const statusFilters = sfDefs.map(([id, label]) => {
+      const on = sf === id;
+      return { label, count: counts[id] || 0,
+        bg: on ? "#eaf1fa" : "#fff", border: on ? "#bcd0ea" : "#dde2e8", fg: on ? "#17457f" : "#5a6472",
+        countBg: on ? "#d3e3f6" : "#eef1f4", countFg: on ? "#17457f" : "#8894a3",
+        onClick: () => this.setState({ statusFilter: id }) };
+    });
+
+    const emptyQueue = queue.length === 0;
+    const anyCases = casesRaw.length > 0;
+    const emptyTitle = anyCases ? "No matches" : "No active onboardings";
+    const emptySub = anyCases ? "Try a different search or status filter." : "Start an onboarding to provision a new hire.";
+
+    // ---- active board ----
+    const active = ob.getCase(this.state.activeId);
+    let steps = [], activeName = "", activeMeta = "", healthLabel = "", healthBg = "#e6f3ec", healthFg = "#2f6f4f";
+    let activePct = 0, activeDone = 0, activeTotal = 0;
+    let showConvert = false, isConverted = false, convertHref = "#";
+    if (active) {
+      const plan = ob.resolvePlan(active);
+      const sum = ob.caseSummary(active);
+      const tpl = ob.getTemplate(active.templateId);
+      activeName = active.hireName;
+      const startFmt = new Date(active.startDate + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+      activeMeta = active.roleLabel + " · starts " + startFmt + " · " + (tpl ? tpl.name : "no schema") + " · manager " + active.manager;
+      activePct = sum.pct; activeDone = sum.done; activeTotal = sum.total;
+      const doneCase = sum.pct === 100;
+      isConverted = this._ppl ? this._ppl.isOnboardingConverted(active.id) : false;
+      showConvert = doneCase && !isConverted;
+      const cid = this._ppl ? this._ppl.onboardingConvertedId(active.id) : null;
+      convertHref = cid ? ("Employee.dc.html?id=" + encodeURIComponent(cid)) : "Directory.dc.html";
+      healthLabel = sum.health === "complete" ? "Complete" : sum.health === "blocked" ? (sum.blocked + " blocked") : "On track";
+      healthBg = sum.health === "complete" ? "#e6f3ec" : sum.health === "blocked" ? "#fbf1de" : "#e8eefb";
+      healthFg = sum.health === "complete" ? "#2f6f4f" : sum.health === "blocked" ? "#9a6a1a" : "#3a5aa8";
+      const dueStr = (offset) => { const d = new Date(active.startDate + "T00:00:00"); d.setDate(d.getDate() + offset); return d.toLocaleDateString("en-US", { month: "short", day: "numeric" }); };
+      const rel = (ts) => { if (!ts) return ""; const days = Math.round((Date.now() - ts) / 86400000); if (days <= 0) return "today"; if (days === 1) return "yesterday"; return days + " days ago"; };
+      steps = plan.map((p, i, arr) => {
+        const sm = STATUS[p.status];
+        const sys = ob.SYSTEMS[p.def.system] || ob.SYSTEMS.manual;
+        let detail = "";
+        if (p.status === "done") detail = "Completed " + rel(p.state.completedAt) + " · " + (p.state.completedBy || "Dioschub");
+        else if (p.status === "waiting") { const dep = arr.find((x) => x.def.id === p.def.dependsOn); detail = "Waiting on: " + (dep ? dep.def.title : "a prior step"); }
+        else if (p.status === "blocked") detail = "Due " + dueStr(p.def.dueOffset) + " · owner " + p.def.owner;
+        else detail = (p.def.autoAssign ? "Dioschub executes this automatically in " + sys.label : "Ready · owner " + p.def.owner) + " · due " + dueStr(p.def.dueOffset);
+        return { title: p.def.title, sysLabel: sys.label, sysColor: sys.color, sysBg: sys.bg, owner: p.def.owner,
+          statusLabel: sm.label, stColor: sm.stColor, dotBg: sm.dotBg, dotBorder: sm.dotBorder, glyph: sm.glyph, glyphColor: sm.glyphColor,
+          showRail: i < arr.length - 1, detail,
+          isBlocked: p.status === "blocked", isProgress: p.status === "in_progress", isDone: p.status === "done", isWaiting: p.status === "waiting",
+          blockDoc: p.def.requiresDoc || "document",
+          progressBtn: p.def.autoAssign ? "Complete (simulate run)" : "Mark done",
+          onDone: () => this.markDone(p.def.id, p.def.title),
+          onUpload: () => this.upload(p.def.id, p.def.requiresDoc || "document"),
+          onReopen: () => this.reopen(p.def.id, p.def.title) };
+      });
+    }
+
+    // ---- start drawer ----
+    const f = this.state.form;
+    const roleOptions = ob.ROLES.map((r) => {
+      const tpl = ob.templateForRole(r.id); const on = f.role === r.id;
+      return { label: r.label, tplName: tpl ? tpl.name : "—", stepCount: tpl ? tpl.steps.length : 0,
+        border: on ? "#17457f" : "#e4e8ed", bg: on ? "#f2f7fc" : "#fff",
+        dot: on ? "#17457f" : "#c7cdd6", inner: on ? "#17457f" : "transparent",
+        onPick: () => this.setState({ form: { ...this.state.form, role: r.id } }) };
+    });
+    const startTpl = ob.templateForRole(f.role);
+    const startCount = startTpl ? startTpl.steps.length : 0;
+    const nameOk = f.name.trim().length > 0;
+
+    // ---- template editor ----
+    const list = ob.allTemplates();
+    const templates = list.map((t) => {
+      const on = this.state.selTplId === t.id;
+      return { name: t.name, roleLabel: (ob.ROLES.find((r) => r.id === t.role) || {}).label || t.role, stepCount: t.steps.length,
+        accent: on ? "#17457f" : "transparent", bg: on ? "#f2f7fc" : "#fff", onSelect: () => this.selectTpl(t.id) };
+    });
+    const d = this.state.draft;
+    const systemOpts = Object.keys(ob.SYSTEMS).map((k) => ({ id: k, label: ob.SYSTEMS[k].label }));
+    const ownerOpts = ob.OWNERS;
+    const roleOpts = ob.ROLES.map((r) => ({ id: r.id, label: r.label }));
+    let tplSteps = [];
+    if (d) {
+      tplSteps = d.steps.map((s, i) => {
+        const depOpts = d.steps.filter((x, xi) => xi !== i).map((x, xi2) => ({ id: x.id, title: x.title }));
+        const autoOn = !!s.autoAssign, docOn = !!s.requiresDoc;
+        return { order: i + 1, title: s.title, system: s.system, owner: s.owner, dueOffset: s.dueOffset,
+          dependsOn: s.dependsOn || "", depOpts,
+          upDisabled: i === 0, downDisabled: i === d.steps.length - 1,
+          upCursor: i === 0 ? "not-allowed" : "pointer", downCursor: i === d.steps.length - 1 ? "not-allowed" : "pointer",
+          upColor: i === 0 ? "#cdd4dc" : "#5a6472", downColor: i === d.steps.length - 1 ? "#cdd4dc" : "#5a6472",
+          autoOn, autoBg: autoOn ? "#eef4fb" : "#fff", autoBorder: autoOn ? "#cfdbe9" : "#e4e8ed", autoFg: autoOn ? "#17457f" : "#8894a3",
+          autoTrack: autoOn ? "#17457f" : "#cdd4dc", autoKnob: autoOn ? "13px" : "2px",
+          docOn, docName: s.requiresDoc || "", docBg: docOn ? "#f7f4ec" : "#fff", docBorder: docOn ? "#ece2c6" : "#e4e8ed", docFg: docOn ? "#9a6a1a" : "#8894a3",
+          docTrack: docOn ? "#c68a2a" : "#cdd4dc", docKnob: docOn ? "13px" : "2px",
+          onTitle: (e) => this.patchStep(i, { title: e.target.value }),
+          onSystem: (e) => this.patchStep(i, { system: e.target.value }),
+          onOwner: (e) => this.patchStep(i, { owner: e.target.value }),
+          onDue: (e) => this.patchStep(i, { dueOffset: parseInt(e.target.value || "0", 10) }),
+          onDepends: (e) => this.patchStep(i, { dependsOn: e.target.value || null }),
+          onToggleAuto: () => this.patchStep(i, { autoAssign: !autoOn }),
+          onToggleDoc: () => this.patchStep(i, { requiresDoc: docOn ? null : "Signed document" }),
+          onDocName: (e) => this.patchStep(i, { requiresDoc: e.target.value }),
+          onUp: () => this.moveStep(i, -1), onDown: () => this.moveStep(i, 1), onDelete: () => this.deleteStep(i) };
+      });
+    }
+
+    const asum = ob.activeSummary();
+
+    return {
+      canManage, canConfigure, showStartBtn: canConfigure && view === "active",
+      tplCount: list.length,
+      showActive: view === "active", showTemplates: view === "templates",
+      onTabActive: () => this.setState({ view: "active" }),
+      onTabTemplates: () => this.setState({ view: "templates" }),
+      tabActiveBg, tabActiveFg: view === "active" ? "#17457f" : "#5a6472", tabActiveShadow: view === "active" ? "0 1px 2px rgba(20,30,50,0.08)" : "none",
+      tabTplBg, tabTplFg: view === "templates" ? "#17457f" : "#5a6472", tabTplShadow: view === "templates" ? "0 1px 2px rgba(20,30,50,0.08)" : "none",
+
+      showList, showStatus,
+      queue, statusFilters, emptyQueue, emptyTitle, emptySub,
+      q: this.state.q,
+      onSearch: (e) => this.setState({ q: e.target.value }),
+      onBackToList: () => this.setState({ activeMode: "list" }),
+      hasActive: !!active, noActive: showStatus && !active,
+      steps, activeName, activeMeta, healthLabel, healthBg, healthFg, activePct, activeDone, activeTotal,
+      showConvert, isConverted, convertHref, onConvert: () => this.convert(),
+      noteTitle: "Open onboardings", noteSub: asum.active + " active · " + asum.blocked + " blocked",
+
+      startOpen: this.state.startOpen,
+      onOpenStart: () => this.setState({ startOpen: true }),
+      onCloseStart: () => this.setState({ startOpen: false }),
+      roleOptions, fName: f.name, fTitle: f.title, fStart: f.start, fManager: f.manager,
+      onName: (e) => this.setState({ form: { ...this.state.form, name: e.target.value } }),
+      onTitle: (e) => this.setState({ form: { ...this.state.form, title: e.target.value } }),
+      onStart: (e) => this.setState({ form: { ...this.state.form, start: e.target.value } }),
+      onManager: (e) => this.setState({ form: { ...this.state.form, manager: e.target.value } }),
+      startCount, startDisabled: !nameOk,
+      startBtnBg: nameOk ? "#17457f" : "#e4e8ed", startBtnFg: nameOk ? "#fff" : "#9aa3ad", startBtnCursor: nameOk ? "pointer" : "not-allowed",
+      onSubmitStart: () => this.submitStart(),
+
+      // template editor values
+      templates, onCreateTpl: () => this.createTpl(),
+      hasDraft: !!d,
+      dName: d ? d.name : "", dRole: d ? d.role : "general", dDesc: d ? (d.description || "") : "",
+      onDName: (e) => this.patchMeta({ name: e.target.value }),
+      onDRole: (e) => this.patchMeta({ role: e.target.value }),
+      onDDesc: (e) => this.patchMeta({ description: e.target.value }),
+      onDeleteTpl: () => this.deleteTpl(),
+      systemOpts, ownerOpts, roleOpts, tplSteps, onAddStep: () => this.addStep(),
+
+      toasts: this.state.toasts.map((t) => ({ ...t, onClose: () => this.closeToast(t.id) })),
+    };
+  }
+}
+</script>
+</body>
+</html>
+

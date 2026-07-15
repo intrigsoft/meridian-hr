@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+<head>
+    <title layout:fragment="title">My Time · Meridian HR</title>
+</head>
+<body>
+<div layout:fragment="content" style="max-width:1000px;">
+
+    <div style="margin-bottom:20px;">
+        <div style="font-size:12.5px; color:#8894a3; font-weight:500; margin-bottom:2px;">Workspace / Time</div>
+        <h1 style="margin:0; font-size:24px; font-weight:700; letter-spacing:-0.02em; color:#1a2331;">My time</h1>
+    </div>
+
+    <!-- Approvals strip (manager/HR) -->
+    <div th:if="${!pending.isEmpty()}" style="background:#fff; border:1px solid #e4e8ed; border-left:3px solid #e0a13a; border-radius:12px; padding:16px 18px; margin-bottom:16px;">
+        <div style="font-size:13.5px; font-weight:700; color:#1a2331; margin-bottom:12px;" th:text="${pending.size()} + ' timesheets awaiting your approval'">2 timesheets awaiting your approval</div>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+            <div th:each="p : ${pending}" style="display:flex; align-items:center; gap:12px; padding:10px 12px; background:#f8fafc; border:1px solid #eef1f4; border-radius:9px;">
+                <div style="width:32px; height:32px; border-radius:50%; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:600; font-size:12.5px; flex-shrink:0;" th:styleappend="'; ' + ('background:' + ${p.avatarBg()})" th:text="${p.initials()}">MR</div>
+                <div style="flex:1; min-width:0;">
+                    <div style="font-size:12.5px; font-weight:600; color:#28323f;" th:text="${p.name()}">Marcus Reid</div>
+                    <div style="font-size:11px; color:#9aa3ad;" th:text="${p.week()} + ' · ' + ${p.total()} + 'h logged'">week · 41h logged</div>
+                </div>
+                <form th:action="@{/time/approve}" method="post" style="margin:0;">
+                    <input type="hidden" name="empId" th:value="${p.empId()}"/>
+                    <input type="hidden" name="week" th:value="${p.weekStart()}"/>
+                    <input type="hidden" name="back" th:value="${weekStart}"/>
+                    <button type="submit" style="height:32px; padding:0 14px; border:none; border-radius:8px; background:#2f6f4f; color:#fff; font-family:inherit; font-size:12px; font-weight:600; cursor:pointer;">Approve</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 300px; gap:16px; align-items:start;">
+        <!-- Left: clock + timesheet -->
+        <div style="min-width:0; display:flex; flex-direction:column; gap:16px;">
+
+            <!-- Clock card -->
+            <div th:with="on=${clocked}" style="border-radius:14px; padding:20px 22px;"
+                 th:styleappend="'; ' + ('border-radius:14px; padding:20px 22px; background:' + (${on} ? '#12152a' : '#fff') + '; border:1px solid ' + (${on} ? '#12152a' : '#e4e8ed') + '; color:' + (${on} ? '#fff' : '#1a2331'))">
+                <div style="display:flex; align-items:center; justify-content:space-between;">
+                    <div>
+                        <div style="font-size:12px; font-weight:600; opacity:0.7;" th:text="${on} ? 'Clocked in' : 'Time clock'">Time clock</div>
+                        <div style="font-size:34px; font-weight:700; letter-spacing:-0.01em; margin-top:4px; font-family:var(--mono);" th:text="${clockElapsed}">0:00</div>
+                        <div style="font-size:12px; opacity:0.7; margin-top:3px;" th:text="${clockSince}">Not clocked in</div>
+                    </div>
+                    <form th:action="@{/time/clock}" method="post" style="margin:0;">
+                        <input type="hidden" name="week" th:value="${weekStart}"/>
+                        <button type="submit" style="display:flex; align-items:center; gap:8px; height:44px; padding:0 22px; border:none; border-radius:10px; color:#fff; font-family:inherit; font-size:14px; font-weight:700; cursor:pointer;"
+                                th:styleappend="'; ' + ('display:flex; align-items:center; gap:8px; height:44px; padding:0 22px; border:none; border-radius:10px; color:#fff; font-family:inherit; font-size:14px; font-weight:700; cursor:pointer; background:' + (${on} ? '#e0483a' : '#17457f'))">
+                            <span style="width:9px; height:9px; border-radius:50%;" th:styleappend="'; ' + ('background:' + (${on} ? '#ffd7d1' : '#8fb4e6'))"></span>
+                            <span th:text="${on} ? 'Clock out' : 'Clock in'">Clock in</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Timesheet -->
+            <form th:action="@{/time/save}" method="post" style="background:#fff; border:1px solid #e4e8ed; border-radius:14px; padding:20px;">
+                <input type="hidden" name="week" th:value="${weekStart}"/>
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <a th:href="@{/time(week=${prevWeek})}" style="width:30px; height:30px; border:1px solid #dde2e8; border-radius:8px; background:#fff; color:#5a6472; font-size:15px; line-height:28px; text-align:center;">‹</a>
+                        <div style="font-size:14px; font-weight:700; color:#1a2331; min-width:170px; text-align:center;" th:text="${weekLabel}">Jul 7 – Jul 13, 2026</div>
+                        <a th:href="@{/time(week=${nextWeek})}" style="width:30px; height:30px; border:1px solid #dde2e8; border-radius:8px; background:#fff; color:#5a6472; font-size:15px; line-height:28px; text-align:center;">›</a>
+                    </div>
+                    <span style="font-size:11.5px; font-weight:600; padding:3px 10px; border-radius:20px;" th:styleappend="'; ' + ('background:' + ${statusMeta.bg()} + '; color:' + ${statusMeta.fg()})" th:text="${statusMeta.label()}">Open</span>
+                </div>
+                <div style="font-size:11.5px; color:#9aa3ad; margin-bottom:16px;">Log hours per day · holidays and approved leave fill automatically</div>
+
+                <div style="display:grid; grid-template-columns:repeat(7,1fr); gap:8px;">
+                    <div th:each="c : ${cells}" style="min-width:0; border-radius:10px; padding:10px 8px; text-align:center;" th:styleappend="'; ' + ('border:1px solid ' + ${c.border} + '; border-radius:10px; padding:10px 8px; text-align:center; background:' + ${c.bg})">
+                        <div style="font-size:11px; font-weight:700;" th:styleappend="'; ' + ('color:' + ${c.dayColor})" th:text="${c.day}">Mon</div>
+                        <div style="font-size:10px; color:#9aa3ad; margin-bottom:8px;" th:text="${c.dateLabel}">Jul 7</div>
+                        <input th:if="${c.editable}" th:name="${c.dayId}" th:value="${c.hours}" inputmode="decimal"
+                               style="width:100%; height:34px; border:1px solid #dde2e8; border-radius:7px; background:#f8fafc; text-align:center; font-family:var(--mono); font-size:14px; font-weight:600; color:#28323f; outline:none;"/>
+                        <div th:unless="${c.editable}" style="height:34px; display:flex; align-items:center; justify-content:center; font-size:10.5px; font-weight:600; line-height:1.15;" th:styleappend="'; ' + ('height:34px; display:flex; align-items:center; justify-content:center; font-size:10.5px; font-weight:600; color:' + ${c.tagColor})" th:text="${c.tagLabel}">—</div>
+                    </div>
+                </div>
+
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-top:18px; padding-top:16px; border-top:1px solid #eef1f4;">
+                    <div style="display:flex; align-items:baseline; gap:10px;">
+                        <span style="font-size:12.5px; color:#8894a3;">Week total</span>
+                        <span style="font-size:22px; font-weight:700;" th:styleappend="'; ' + ('color:' + ${totalColor})" th:text="${weekTotal} + 'h'">40h</span>
+                        <span style="font-size:12px; color:#9aa3ad;" th:text="'/ ' + ${target} + 'h target'">/ 40h target</span>
+                    </div>
+                    <div th:if="${isApproved}" style="display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:600; color:#2f6f4f;">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6L9 17l-5-5"/></svg>
+                        <span th:text="'Approved by ' + ${approverName}">Approved by Nadia</span>
+                    </div>
+                    <div th:if="${canSubmit}" style="display:flex; gap:9px;">
+                        <button type="submit" class="btn btn-ghost" style="height:38px;">Save</button>
+                        <button type="submit" formaction="/time/submit" style="height:38px; padding:0 18px; border:none; border-radius:9px; background:#17457f; color:#fff; font-family:inherit; font-size:13.5px; font-weight:600; cursor:pointer;" th:text="${submitLabel}">Submit week</button>
+                    </div>
+                </div>
+            </form>
+
+            <!-- Recent weeks -->
+            <div style="background:#fff; border:1px solid #e4e8ed; border-radius:14px; padding:20px;">
+                <div style="font-size:14px; font-weight:700; color:#1a2331; margin-bottom:14px;">Recent weeks</div>
+                <div th:if="${!history.isEmpty()}" style="display:flex; flex-direction:column;">
+                    <a th:each="h : ${history}" th:href="@{/time(week=${h.weekStart()})}" style="display:flex; align-items:center; gap:12px; padding:11px 4px; border-bottom:1px solid #f4f6f8;">
+                        <span style="flex:1; font-size:12.5px; font-weight:600; color:#28323f;" th:text="${h.label()}">Jun 30 – Jul 6</span>
+                        <span style="font-size:12.5px; color:#5a6472; font-family:var(--mono);" th:text="${h.total()} + 'h'">39.5h</span>
+                        <span style="font-size:11px; font-weight:600; padding:3px 9px; border-radius:20px; width:82px; text-align:center;" th:styleappend="'; ' + ('background:' + ${h.statusBg()} + '; color:' + ${h.statusFg()})" th:text="${h.statusLabel()}">Approved</span>
+                    </a>
+                </div>
+                <div th:if="${history.isEmpty()}" style="padding:14px; text-align:center; font-size:12.5px; color:#9aa3ad;">No submitted weeks yet.</div>
+            </div>
+        </div>
+
+        <!-- Right: holidays -->
+        <div style="min-width:0; background:#fff; border:1px solid #e4e8ed; border-radius:14px; padding:20px;">
+            <div style="font-size:14px; font-weight:700; color:#1a2331; margin-bottom:14px;">Upcoming holidays</div>
+            <div style="display:flex; flex-direction:column; gap:11px;">
+                <div th:each="h : ${holidays}" style="display:flex; align-items:center; gap:12px;">
+                    <div style="width:44px; flex-shrink:0; text-align:center; background:#eef4fb; border:1px solid #dbe6f3; border-radius:9px; padding:5px 0;">
+                        <div style="font-size:9.5px; font-weight:700; color:#3a5aa8; text-transform:uppercase;" th:text="${h.mon()}">Jul</div>
+                        <div style="font-size:16px; font-weight:700; color:#17457f; line-height:1;" th:text="${h.day()}">3</div>
+                    </div>
+                    <div style="min-width:0;">
+                        <div style="font-size:12.5px; font-weight:600; color:#28323f;" th:text="${h.name()}">Independence Day</div>
+                        <div style="font-size:11px; color:#9aa3ad;" th:text="${h.weekday()}">Friday</div>
+                    </div>
+                </div>
+                <div th:if="${holidays.isEmpty()}" style="font-size:12px; color:#9aa3ad;">No upcoming holidays.</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<th:block layout:fragment="content-after">
+    <th:block th:replace="~{fragments/request-drawer :: toast}"></th:block>
+</th:block>
+</body>
+</html>

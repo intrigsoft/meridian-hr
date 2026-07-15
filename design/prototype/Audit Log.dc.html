@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; }
+  body { font-family: 'Public Sans', system-ui, -apple-system, sans-serif; background: #eceff3; color: #1e2733; -webkit-font-smoothing: antialiased; }
+  a { text-decoration: none; color: inherit; }
+  a:hover { color: #17457f; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: #cdd4dc; border-radius: 6px; border: 2px solid #eceff3; }
+</style>
+</helmet>
+
+<dc-import name="AppShell" active="audit" note-title="{{ noteTitle }}" note-sub="{{ noteSub }}" hint-size="100%,100%">
+  <div style="max-width:940px;">
+
+    <sc-if value="{{ ready }}" hint-placeholder-val="{{ true }}">
+    <div>
+      <div style="margin-bottom:6px; font-size:12.5px; color:#8894a3; font-weight:500;">Admin / Audit log</div>
+      <div style="font-size:24px; font-weight:700; letter-spacing:-0.02em; color:#1a2331; margin-bottom:4px;">Activity trail</div>
+      <div style="font-size:13px; color:#6b7480; margin-bottom:20px; line-height:1.5; max-width:600px;">One immutable record of who changed what across the org — profile &amp; org edits, compensation, access levels, status, leave decisions, and job-change requests. Every entry is drawn live from the underlying records.</div>
+
+      <!-- Filter bar -->
+      <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:16px;">
+        <sc-for list="{{ filters }}" as="f" hint-placeholder-count="7">
+          <button onClick="{{ f.onClick }}" style="display:flex; align-items:center; gap:7px; height:32px; padding:0 13px; border:1px solid {{ f.border }}; border-radius:20px; background:{{ f.bg }}; color:{{ f.fg }}; font-family:inherit; font-size:12.5px; font-weight:600; cursor:pointer;">
+            {{ f.label }}<span style="font-size:11px; font-weight:700; opacity:0.6;">{{ f.count }}</span>
+          </button>
+        </sc-for>
+      </div>
+
+      <!-- Feed -->
+      <div style="background:#fff; border:1px solid #e4e8ed; border-radius:13px; padding:8px 4px;">
+        <sc-for list="{{ rows }}" as="r" hint-placeholder-count="12">
+          <div style="display:flex; gap:14px; padding:14px 16px; border-bottom:1px solid {{ r.divider }};">
+            <div style="width:36px; height:36px; border-radius:50%; background:{{ r.actorBg }}; color:#fff; font-size:12px; font-weight:600; display:flex; align-items:center; justify-content:center; flex-shrink:0;">{{ r.actorInitials }}</div>
+            <div style="flex:1; min-width:0;">
+              <div style="display:flex; align-items:baseline; gap:8px; flex-wrap:wrap;">
+                <span style="font-size:13px; font-weight:600; color:#28323f;">{{ r.actor }}</span>
+                <span style="font-size:13px; color:#5a6472;">{{ r.action }}</span>
+                <a href="{{ r.targetHref }}" style="font-size:13px; font-weight:600; color:#17457f;">{{ r.target }}</a>
+              </div>
+              <sc-if value="{{ r.hasDetail }}" hint-placeholder-val="">
+                <div style="font-size:12px; color:#8894a3; margin-top:3px; font-family:'IBM Plex Mono', monospace;">{{ r.detail }}</div>
+              </sc-if>
+            </div>
+            <div style="display:flex; flex-direction:column; align-items:flex-end; gap:6px; flex-shrink:0;">
+              <span style="font-size:11px; font-weight:600; padding:3px 9px; border-radius:6px; background:{{ r.catBg }}; color:{{ r.catFg }};">{{ r.catLabel }}</span>
+              <span title="{{ r.absTime }}" style="font-size:11px; color:#9aa3ad; white-space:nowrap;">{{ r.relTime }}</span>
+            </div>
+          </div>
+        </sc-for>
+        <sc-if value="{{ noRows }}" hint-placeholder-val="">
+          <div style="padding:40px 20px; text-align:center; font-size:12.5px; color:#9aa3ad;">No activity in this category yet.</div>
+        </sc-if>
+      </div>
+    </div>
+    </sc-if>
+
+    <sc-if value="{{ denied }}" hint-placeholder-val="">
+      <div style="background:#fff; border:1px dashed #d5dbe2; border-radius:12px; padding:48px 20px; text-align:center;">
+        <div style="font-size:14px; font-weight:600; color:#5a6472;">Admins only</div>
+        <div style="font-size:12.5px; color:#9aa3ad; margin-top:4px;">The audit log is limited to HR executives.</div>
+      </div>
+    </sc-if>
+  </div>
+</dc-import>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:&quot;100%&quot;,&quot;height&quot;:&quot;100%&quot;}}">
+class Component extends DCLogic {
+  state = { user: null, filter: "all", tick: 0 };
+
+  componentDidMount() {
+    Promise.all([
+      import("./session.js"), import("./people-store.js"),
+      import("./leave-store.js"), import("./jobchange-store.js"),
+    ]).then(([s, ppl, leave, jc]) => {
+      this._s = s; this._ppl = ppl; this._leave = leave; this._jc = jc;
+      const user = s.requireSession();
+      if (!user) return;
+      this.setState({ user });
+    });
+  }
+
+  initials(name) {
+    if (!name) return "?";
+    if (name === "System") return "SY";
+    const parts = name.trim().split(/\s+/);
+    return ((parts[0] || "")[0] || "" + (parts[1] ? parts[1][0] : "")).toUpperCase().slice(0, 1) + (parts[1] ? parts[1][0].toUpperCase() : (parts[0][1] || "").toUpperCase());
+  }
+  bgFor(name) {
+    const palette = ["#6b7db5", "#5a8fb5", "#7a6bb5", "#4a9d9d", "#c07f4f", "#3f7cc4", "#6ba58f", "#b56b8f", "#9a6ab5"];
+    let h = 0; for (let i = 0; i < (name || "").length; i++) h = (h * 31 + name.charCodeAt(i)) % palette.length;
+    return name === "System" ? "#b6bdc6" : palette[h];
+  }
+  relTime(at) {
+    const diff = Date.now() - at;
+    const m = Math.round(diff / 60000), h = Math.round(diff / 3600000), d = Math.round(diff / 86400000);
+    if (diff < 60000) return "just now";
+    if (m < 60) return m + "m ago";
+    if (h < 24) return h + "h ago";
+    if (d < 30) return d + "d ago";
+    return new Date(at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  }
+  absTime(at) { return new Date(at).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }); }
+
+  renderVals() {
+    const ppl = this._ppl, leave = this._leave, jc = this._jc, u = this.state.user;
+    if (!ppl || !u) return { ready: false, denied: false, filters: [], rows: [] };
+    if (u.role !== "hr") return { ready: false, denied: true, filters: [], rows: [], noteTitle: "Audit log", noteSub: "" };
+
+    // Category display metadata.
+    const CAT = {
+      profile: { label: "Profile & org", bg: "#eef1f4", fg: "#5a6472" },
+      comp:    { label: "Compensation",  bg: "#f7f1e0", fg: "#9a6a1a" },
+      access:  { label: "Access",        bg: "#e6eefb", fg: "#17457f" },
+      status:  { label: "Status",        bg: "#f0ecf8", fg: "#6a4a9a" },
+      leave:   { label: "Leave",         bg: "#e9f4ef", fg: "#2f6f4f" },
+      request: { label: "Job change",    bg: "#e8eefb", fg: "#3a5aa8" },
+    };
+    // map a people-history type → audit category
+    const TYPE_CAT = { job: "profile", promotion: "profile", transfer: "profile", comp: "comp", status: "status", access: "access" };
+
+    const events = [];
+    const empById = {};
+    ppl.allEmployees().forEach((e) => { empById[e.id] = e; });
+    const targetHref = (id) => "Employee.dc.html?id=" + encodeURIComponent(id);
+
+    // 1) Profile / org / comp / access / status changes (people-store history)
+    ppl.allEmployees().forEach((e) => {
+      (ppl.getHistory(e.id) || []).forEach((h) => {
+        events.push({ at: h.at, actor: h.by || "HR", action: h.label.replace(/ changed$/, "").toLowerCase() + " updated for",
+          target: ppl.fullName(e), targetId: e.id, detail: h.detail || "", cat: TYPE_CAT[h.type] || "profile" });
+      });
+    });
+
+    // 2) Leave decisions & submissions (leave-store events)
+    if (leave) {
+      leave.allRequests().forEach((r) => {
+        const tm = leave.TYPE_META[r.type] || {};
+        const range = leave.formatRange(r.startDate, r.endDate);
+        (r.events || []).forEach((ev) => {
+          const em = leave.EVENT_META[ev.kind] || { label: ev.kind };
+          events.push({ at: ev.at, actor: ev.actorName || "System",
+            action: em.label.toLowerCase() + " " + (tm.short || r.type).toLowerCase() + " leave for",
+            target: r.empName, targetId: r.empId,
+            detail: range + " · " + (r.days || 0) + "d" + (ev.note ? " — " + ev.note : ""), cat: "leave" });
+        });
+      });
+    }
+
+    // 3) Job-change request lifecycle (jobchange-store)
+    if (jc) {
+      const labelFields = (r) => Object.keys(r.changes || {}).map((k) => jc.FIELD_LABELS[k] || k).join(", ");
+      jc.allRequests().forEach((r) => {
+        const t = jc.changeType(r.type);
+        events.push({ at: r.createdAt, actor: r.requestedByName || "HR",
+          action: "raised a " + t.label.toLowerCase() + " request for",
+          target: r.empName, targetId: r.empId, detail: labelFields(r), cat: "request" });
+        if (r.decidedAt) {
+          const decided = r.status === "rejected" ? "rejected" : (r.status === "scheduled" ? "scheduled" : "approved");
+          events.push({ at: r.decidedAt, actor: r.decidedByName || "HR",
+            action: decided + " the " + t.label.toLowerCase() + " for",
+            target: r.empName, targetId: r.empId, detail: "", cat: "request" });
+        }
+      });
+    }
+
+    events.sort((a, b) => b.at - a.at);
+
+    // Filters
+    const counts = { all: events.length };
+    events.forEach((e) => { counts[e.cat] = (counts[e.cat] || 0) + 1; });
+    const filterDefs = [
+      { id: "all", label: "All" },
+      { id: "profile", label: "Profile & org" },
+      { id: "comp", label: "Compensation" },
+      { id: "access", label: "Access" },
+      { id: "status", label: "Status" },
+      { id: "leave", label: "Leave" },
+      { id: "request", label: "Job changes" },
+    ];
+    const filters = filterDefs.map((f) => {
+      const on = this.state.filter === f.id;
+      return { label: f.label, count: counts[f.id] || 0, onClick: () => this.setState({ filter: f.id }),
+        border: on ? "#bcd0ea" : "#dde2e8", bg: on ? "#eef4fb" : "#fff", fg: on ? "#17457f" : "#5a6472" };
+    });
+
+    const shown = events.filter((e) => this.state.filter === "all" || e.cat === this.state.filter).slice(0, 120);
+    const rows = shown.map((e, i) => {
+      const cat = CAT[e.cat] || CAT.profile;
+      return { actor: e.actor, actorInitials: this.initials(e.actor), actorBg: this.bgFor(e.actor),
+        action: e.action, target: e.target, targetHref: targetHref(e.targetId),
+        detail: e.detail, hasDetail: !!e.detail,
+        catLabel: cat.label, catBg: cat.bg, catFg: cat.fg,
+        relTime: this.relTime(e.at), absTime: this.absTime(e.at),
+        divider: i === shown.length - 1 ? "transparent" : "#f4f6f8" };
+    });
+
+    return {
+      ready: true, denied: false, filters, rows, noRows: rows.length === 0,
+      noteTitle: "Audit log", noteSub: events.length + " events recorded",
+    };
+  }
+}
+</script>
+</body>
+</html>

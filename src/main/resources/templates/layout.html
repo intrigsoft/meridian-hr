@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title layout:fragment="title">Meridian HR</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap"
+          rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+    <th:block layout:fragment="head"></th:block>
+</head>
+<body>
+
+<!-- Reusable nav-section renderer (self-referenced below); active passed in explicitly -->
+<th:block th:fragment="navList(items, active)">
+    <th:block th:each="item : ${items}">
+        <a th:if="${item.built()}" th:href="@{${item.href()}}" class="nav-item"
+           th:classappend="${#strings.equals(item.key(), active)} ? ' active' : ''">
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor"
+                 stroke-width="1.9" th:utext="${item.icon()}"></svg>
+            <span th:text="${item.label()}">Item</span>
+            <span th:if="${item.badge() != null}" class="nav-badge" th:text="${item.badge()}">0</span>
+        </a>
+        <div th:unless="${item.built()}" class="nav-item disabled" th:title="'Coming soon'">
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor"
+                 stroke-width="1.9" th:utext="${item.icon()}"></svg>
+            <span th:text="${item.label()}">Item</span>
+            <span class="soon">soon</span>
+        </div>
+    </th:block>
+</th:block>
+
+<div class="shell">
+
+    <!-- ===== Topbar ===== -->
+    <header class="topbar">
+        <a class="brand" th:href="@{/dashboard}">
+            <div class="brand-mark">M</div>
+            <div class="brand-name">Meridian<span> HR</span></div>
+        </a>
+        <div class="topbar-spacer"></div>
+        <div class="search">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9aa3ad" stroke-width="2">
+                <circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+            <input placeholder="Search people, requests…"/>
+        </div>
+        <button class="iconbtn" title="Notifications" type="button">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#5a6472" stroke-width="1.8">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+            <span class="badge" th:if="${unreadCount != null and unreadCount > 0}" th:text="${unreadCount}">0</span>
+        </button>
+        <div class="topbar-sep"></div>
+        <div class="userchip">
+            <div class="avatar sm" th:if="${currentUser != null}" th:text="${currentUser.initials}"
+                 th:styleappend="'; ' + ('background:' + ${currentUser.avatarBg})">SC</div>
+            <div class="who" th:if="${currentUser != null}">
+                <div class="name" th:text="${currentUser.fullName()}">Sarah Chen</div>
+                <div class="sub" th:text="${roleLabel} + ' · ' + ${currentUser.dept}">Employee · Design</div>
+            </div>
+            <form method="post" action="/logout">
+                <button class="iconbtn" title="Sign out" type="submit" style="margin-left:6px;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#5a6472" stroke-width="1.8">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>
+                </button>
+            </form>
+        </div>
+    </header>
+
+    <div class="body">
+
+        <!-- ===== Left nav ===== -->
+        <nav class="nav">
+            <div class="nav-head">Workspace</div>
+            <th:block th:replace="~{ :: navList(${navWorkspace}, ${active})}"></th:block>
+
+            <div class="nav-head mt">People Ops</div>
+            <th:block th:replace="~{ :: navList(${navPeopleOps}, ${active})}"></th:block>
+
+            <th:block th:if="${navAdmin != null}">
+                <div class="nav-head mt">Admin</div>
+                <th:block th:replace="~{ :: navList(${navAdmin}, ${active})}"></th:block>
+            </th:block>
+        </nav>
+
+        <!-- ===== Main content ===== -->
+        <main class="main">
+            <div layout:fragment="content">
+                <p>Page content.</p>
+            </div>
+        </main>
+
+        <!-- ===== Assistant rail (reserved kit mount) ===== -->
+        <th:block th:replace="~{fragments/assistant-rail :: rail}"></th:block>
+    </div>
+</div>
+
+<!-- Overlays (modals, toasts) rendered above the shell -->
+<th:block layout:fragment="content-after"></th:block>
+</body>
+</html>
