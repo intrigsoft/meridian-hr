@@ -1,5 +1,57 @@
 # Meridian HR — Front-Door MCP Adapter · Build Progress
 
+## ✅ FINAL SUMMARY — build complete (2026-07-15)
+
+**28 MCP tools (18 reads · 10 writes) across 11 domains**, every one verified end-to-end against live
+staging (`https://meridian-hr-staging.up.railway.app`) via `scripts/verify.ts`. Branch for review:
+**`feat/mcp-front-door-adapter`** (foundation `66a658e` → admin `1a31bb3`, one commit per domain).
+
+The adapter drives Meridian's server-rendered UI as a legacy app with **no REST API** — logs in as a
+persona, GETs pages, scopes + sanitizes to text (fuzzy, for the model), lifts exact write handles from
+attributes, and POSTs the same forms the browser would. Meridian's own RBAC gates every action.
+
+### Tools by domain
+| Domain | Reads | Writes |
+|--------|-------|--------|
+| leave | list_pending_approvals | approve_leave, reject_leave |
+| time | list_time_approvals | approve_timesheet |
+| jobchange | list_job_changes | approve_job_change, reject_job_change |
+| recruitment | list_requisition_approvals | approve_requisition |
+| directory | search_directory, get_employee | — |
+| onboarding | list_onboarding_cases, list_onboarding_steps | complete_onboarding_step |
+| offboarding | list_offboarding, list_offboarding_tasks | toggle_offboarding_task |
+| profile | list_profile_change_approvals | submit_legal_name_change, approve_profile_change |
+| performance | list_cycles, list_reviews | — |
+| analytics | get_analytics | — |
+| admin | get_admin_settings, get_org_structure, get_roles_and_access, get_audit_log | — |
+
+### Engine capabilities built
+- **Generic config-driven engine** (`src/engine.ts`): session/cookie-jar (credential-blind) → GET + scope
+  + sanitize-to-text read → deterministic form-POST write → post-write verify → fail-loud on empty scope.
+- **Reads**: `${arg}` path/query interpolation (URL-encoded); composite multi-field handles (several regexes
+  on one attribute); a `text` field-extractor (element text, not just attributes); empty detection via
+  page-loaded sanity markers vs restricted-panel text (always grep the real `.html` first).
+- **Writes**: path-id + form-param bodies; **verify-by-absence** (re-run a read tool *with the write's args*,
+  assert the handle is gone); or no-verify + a **state-change assertion** in verify.ts (offboarding progress).
+- **Cross-persona flows** in one cookie-isolated workspace (per-device model): profile submit → HR approve.
+- **RBAC-for-free** throughout: a write handle only exists in the HTML when the session may act; restricted
+  panels resolve to empty reads, never data leaks — both directions asserted in verify.ts.
+
+### Deferred (not blocked)
+- **recruitment candidate pipeline**: `list_candidates` + `advance_candidate` — pipeline is a per-req page
+  (unblocked now by read-args) and advance moves a candidate between stages (needs a non-absence verify).
+- **Multi-field create / designer / start forms** across domains: jobchange `/job-changes/new` (GET-recompute
+  modal), onboarding start + template editor, offboarding start + complete-case (all-tasks-done precondition),
+  recruitment req-create + candidate-add + full offer flow, performance self/manager/commit + cycle launch/close,
+  directory add/edit/status, profile non-sensitive edits + list editors. Stateful multi-field forms — out of
+  scope for a clean single-call tool surface.
+
+### Run it
+`npm install && npm run build && npm start` (stdio MCP) · `npm run verify` (end-to-end against staging).
+Persona via `MERIDIAN_PERSONA` (default `priya.nair`), base via `MERIDIAN_BASE_URL`.
+
+---
+
 > Working doc for the overnight loop. Every iteration updates this file.
 > Target for verification: **staging** (`https://meridian-hr-staging.up.railway.app`).
 > The adapter starts with an empty cookie jar → its own isolated per-device workspace,

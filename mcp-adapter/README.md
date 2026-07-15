@@ -48,5 +48,21 @@ Env: `MERIDIAN_PERSONA` (default `priya.nair`), `MERIDIAN_BASE_URL` (default sta
 
 ## Tools
 
-The catalog lives in `src/config.ts` — adding a domain is adding data, not code.
-See `PROGRESS.md` for coverage.
+**28 tools (18 reads · 10 writes) across 11 domains**, all verified end-to-end against staging
+(`npm run verify`). The catalog lives in `src/config.ts` — adding a domain is adding data, not code.
+
+| Domain | Reads | Writes |
+|--------|-------|--------|
+| leave | `list_pending_approvals` | `approve_leave`, `reject_leave` |
+| time | `list_time_approvals` | `approve_timesheet` |
+| jobchange | `list_job_changes` | `approve_job_change`, `reject_job_change` |
+| recruitment | `list_requisition_approvals` | `approve_requisition` |
+| directory | `search_directory`, `get_employee` | — |
+| onboarding | `list_onboarding_cases`, `list_onboarding_steps` | `complete_onboarding_step` |
+| offboarding | `list_offboarding`, `list_offboarding_tasks` | `toggle_offboarding_task` |
+| profile | `list_profile_change_approvals` | `submit_legal_name_change`, `approve_profile_change` |
+| performance | `list_cycles`, `list_reviews` | — |
+| analytics | `get_analytics` | — |
+| admin | `get_admin_settings`, `get_org_structure`, `get_roles_and_access`, `get_audit_log` | — |
+
+Deferred (stateful multi-field forms and the recruitment candidate pipeline) are listed in `PROGRESS.md`.
