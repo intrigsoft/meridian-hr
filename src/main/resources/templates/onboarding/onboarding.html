@@ -23,6 +23,12 @@
         </a>
     </div>
 
+    <div th:if="${restricted}" style="background:#f7f9fb; border:1px dashed #d9e0e8; border-radius:13px; padding:56px 20px; text-align:center;">
+        <div style="font-size:15px; font-weight:600; color:#5a6472;">Onboarding is managed by managers &amp; HR</div>
+        <div style="font-size:12.5px; color:#9aa3ad; margin-top:4px;">Case status and checklists are available to your HR team.</div>
+    </div>
+
+    <th:block th:if="${allowed}">
     <!-- Tabs -->
     <div style="display:flex; gap:4px; padding:4px; background:#e4e8ee; border-radius:9px; width:fit-content; margin-bottom:20px;">
         <a th:href="@{/onboarding}"
@@ -136,6 +142,7 @@
             </div>
         </div>
     </div>
+    </th:block>
 </div>
 
 <th:block layout:fragment="content-after">

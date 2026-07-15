@@ -2,6 +2,8 @@ package com.meridian.hr.onboarding;
 
 import com.meridian.hr.domain.OnboardingCase;
 import com.meridian.hr.domain.OnboardingTemplate;
+import com.meridian.hr.security.AccessPolicy;
+import com.meridian.hr.security.Permission;
 import com.meridian.hr.session.Actor;
 import com.meridian.hr.session.SessionContext;
 import org.springframework.stereotype.Controller;
@@ -31,10 +33,12 @@ public class OnboardingController {
 
     private final OnboardingService onboarding;
     private final SessionContext session;
+    private final AccessPolicy policy;
 
-    public OnboardingController(OnboardingService onboarding, SessionContext session) {
+    public OnboardingController(OnboardingService onboarding, SessionContext session, AccessPolicy policy) {
         this.onboarding = onboarding;
         this.session = session;
+        this.policy = policy;
     }
 
     private static final DateTimeFormatter LONG_DATE = DateTimeFormatter.ofPattern("MMM d, yyyy", Locale.ENGLISH);
@@ -48,11 +52,18 @@ public class OnboardingController {
                         @RequestParam(defaultValue = "all") String status,
                         Model model) {
         Actor actor = session.actor();
-        boolean hr = actor != null && actor.isHr();
-        boolean canManage = actor != null && actor.isApprover();
+        boolean allowed = policy.can(Permission.ONBOARDING_VIEW);
+        model.addAttribute("active", "onboarding");
+        model.addAttribute("allowed", allowed);
+        model.addAttribute("restricted", !allowed);
+        if (!allowed) {
+            return "onboarding/onboarding";
+        }
+
+        boolean hr = policy.can(Permission.ONBOARDING_ADMIN);
+        boolean canManage = policy.can(Permission.ONBOARDING_MANAGE);
         boolean templatesTab = "templates".equals(tab) && hr;
 
-        model.addAttribute("active", "onboarding");
         model.addAttribute("canManage", canManage);
         model.addAttribute("isHr", hr);
         model.addAttribute("showStartBtn", hr && !templatesTab);
@@ -179,8 +190,7 @@ public class OnboardingController {
 
     @GetMapping("/onboarding/templates/{tplId}")
     public String templatesTab(@PathVariable String tplId, Model model) {
-        Actor actor = session.actor();
-        boolean hr = actor != null && actor.isHr();
+        boolean hr = policy.can(Permission.ONBOARDING_ADMIN);
         if (!hr) return "redirect:/onboarding";
         model.addAttribute("active", "onboarding");
         model.addAttribute("canManage", true);
@@ -199,9 +209,8 @@ public class OnboardingController {
 
     @GetMapping("/onboarding/case/{caseId}")
     public String status(@PathVariable String caseId, Model model) {
-        Actor actor = session.actor();
-        boolean hr = actor != null && actor.isHr();
-        boolean canManage = actor != null && actor.isApprover();
+        boolean hr = policy.can(Permission.ONBOARDING_ADMIN);
+        boolean canManage = policy.can(Permission.ONBOARDING_MANAGE);
 
         model.addAttribute("active", "onboarding");
         model.addAttribute("canManage", canManage);
@@ -297,8 +306,7 @@ public class OnboardingController {
                           @RequestParam(required = false) String manager,
                           @RequestParam(required = false) String email,
                           Model model) {
-        Actor actor = session.actor();
-        boolean hr = actor != null && actor.isHr();
+        boolean hr = policy.can(Permission.ONBOARDING_ADMIN);
         model.addAttribute("active", "onboarding");
 
         if (!hr) {
@@ -354,8 +362,7 @@ public class OnboardingController {
                         @RequestParam(required = false) String manager,
                         @RequestParam(required = false) String email,
                         RedirectAttributes ra) {
-        Actor actor = session.actor();
-        if (actor == null || !actor.isHr()) return "redirect:/onboarding";
+        if (!policy.can(Permission.ONBOARDING_ADMIN)) return "redirect:/onboarding";
         if (name == null || name.isBlank()) {
             return "redirect:/onboarding/new?role=" + role;
         }
@@ -370,9 +377,8 @@ public class OnboardingController {
     @PostMapping("/onboarding/case/{caseId}/step/{stepId}/complete")
     public String complete(@PathVariable String caseId, @PathVariable String stepId,
                            @RequestParam String title, RedirectAttributes ra) {
-        Actor actor = session.actor();
-        if (actor == null || !actor.isApprover()) return "redirect:/onboarding/case/" + caseId;
-        int released = onboarding.completeStep(caseId, stepId, actorName(actor));
+        if (!policy.can(Permission.ONBOARDING_MANAGE)) return "redirect:/onboarding/case/" + caseId;
+        int released = onboarding.completeStep(caseId, stepId, actorName());
         ra.addFlashAttribute("toast", released > 0
                 ? "\"" + title + "\" done — Dioschub released " + released + " dependent step"
                     + (released > 1 ? "s" : "") + "."
@@ -384,8 +390,7 @@ public class OnboardingController {
     @PostMapping("/onboarding/case/{caseId}/step/{stepId}/upload")
     public String upload(@PathVariable String caseId, @PathVariable String stepId,
                          @RequestParam String doc, RedirectAttributes ra) {
-        Actor actor = session.actor();
-        if (actor == null || !actor.isApprover()) return "redirect:/onboarding/case/" + caseId;
+        if (!policy.can(Permission.ONBOARDING_MANAGE)) return "redirect:/onboarding/case/" + caseId;
         onboarding.uploadDoc(caseId, stepId);
         ra.addFlashAttribute("toast", doc + " verified — Dioschub released the held write.");
         ra.addFlashAttribute("toastDot", "#3ecf8e");
@@ -395,8 +400,7 @@ public class OnboardingController {
     @PostMapping("/onboarding/case/{caseId}/step/{stepId}/reopen")
     public String reopen(@PathVariable String caseId, @PathVariable String stepId,
                          @RequestParam String title, RedirectAttributes ra) {
-        Actor actor = session.actor();
-        if (actor == null || !actor.isApprover()) return "redirect:/onboarding/case/" + caseId;
+        if (!policy.can(Permission.ONBOARDING_MANAGE)) return "redirect:/onboarding/case/" + caseId;
         onboarding.reopenStep(caseId, stepId);
         ra.addFlashAttribute("toast", "\"" + title + "\" reopened.");
         ra.addFlashAttribute("toastDot", "#8894a3");
@@ -405,8 +409,7 @@ public class OnboardingController {
 
     @PostMapping("/onboarding/case/{caseId}/convert")
     public String convert(@PathVariable String caseId, RedirectAttributes ra) {
-        Actor actor = session.actor();
-        if (actor == null || !actor.isHr()) return "redirect:/onboarding/case/" + caseId;
+        if (!policy.can(Permission.ONBOARDING_ADMIN)) return "redirect:/onboarding/case/" + caseId;
         String empId = onboarding.convert(caseId);
         OnboardingCase c = onboarding.getCase(caseId);
         ra.addFlashAttribute("toast", empId != null && c != null
@@ -418,8 +421,8 @@ public class OnboardingController {
 
     // ===================== helpers =====================
 
-    private static String actorName(Actor actor) {
-        return actor.isHr() ? "P. Nair (HR)" : "You";
+    private String actorName() {
+        return policy.can(Permission.ONBOARDING_ADMIN) ? "P. Nair (HR)" : "You";
     }
 
     private static String derivedEmail(String name) {

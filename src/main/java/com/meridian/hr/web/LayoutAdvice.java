@@ -3,6 +3,8 @@ package com.meridian.hr.web;
 import com.meridian.hr.diosc.DioscProperties;
 import com.meridian.hr.domain.Employee;
 import com.meridian.hr.leave.LeaveService;
+import com.meridian.hr.security.AccessPolicy;
+import com.meridian.hr.security.Permission;
 import com.meridian.hr.session.Actor;
 import com.meridian.hr.session.SessionContext;
 import org.springframework.ui.Model;
@@ -34,11 +36,13 @@ public class LayoutAdvice {
     private final SessionContext session;
     private final DioscProperties diosc;
     private final LeaveService leave;
+    private final AccessPolicy policy;
 
-    public LayoutAdvice(SessionContext session, DioscProperties diosc, LeaveService leave) {
+    public LayoutAdvice(SessionContext session, DioscProperties diosc, LeaveService leave, AccessPolicy policy) {
         this.session = session;
         this.diosc = diosc;
         this.leave = leave;
+        this.policy = policy;
     }
 
     @ModelAttribute
@@ -61,34 +65,42 @@ public class LayoutAdvice {
         model.addAttribute("unreadCount", leave.unreadCountFor(actor));
         int approvalCount = leave.pendingCountFor(actor);
 
+        // Nav is derived from the RBAC catalog: an item appears only when the role holds the
+        // permission that page requires — so nobody sees a link to a "not available" panel.
         List<NavItem> workspace = new ArrayList<>();
-        workspace.add(item("dashboard", "Dashboard", "/dashboard", null));
-        workspace.add(item("leave", "My Leave", "/leave", null));
-        workspace.add(item("time", "My Time", "/time", null));
-        workspace.add(item("profile", "My Profile", "/profile", null));
-        if (approver) {
-            workspace.add(item("approvals", "Approvals", "/approvals", approvalCount > 0 ? approvalCount : null));
-        }
+        workspace.add(item("dashboard", "Dashboard", "/dashboard", null)); // every signed-in user
+        addIf(workspace, Permission.LEAVE_REQUEST, "leave", "My Leave", "/leave", null);
+        addIf(workspace, Permission.TIME_TRACK, "time", "My Time", "/time", null);
+        addIf(workspace, Permission.PROFILE_EDIT_OWN, "profile", "My Profile", "/profile", null);
+        addIf(workspace, Permission.LEAVE_APPROVE, "approvals", "Approvals", "/approvals",
+                approvalCount > 0 ? approvalCount : null);
 
         List<NavItem> peopleOps = new ArrayList<>();
-        peopleOps.add(item("directory", "Directory", "/directory", null));
-        peopleOps.add(item("analytics", "Analytics", "/analytics", null));
-        peopleOps.add(item("onboarding", "Onboarding", "/onboarding", null));
-        peopleOps.add(item("offboarding", "Offboarding", "/offboarding", null));
-        peopleOps.add(item("jobchanges", "Job changes", "/job-changes", null));
-        peopleOps.add(item("performance", "Performance", "/performance", null));
-        peopleOps.add(item("recruitment", "Recruitment", "/recruitment", null));
+        addIf(peopleOps, Permission.DIRECTORY_VIEW, "directory", "Directory", "/directory", null);
+        addIf(peopleOps, Permission.ANALYTICS_VIEW, "analytics", "Analytics", "/analytics", null);
+        addIf(peopleOps, Permission.ONBOARDING_VIEW, "onboarding", "Onboarding", "/onboarding", null);
+        addIf(peopleOps, Permission.OFFBOARDING_VIEW, "offboarding", "Offboarding", "/offboarding", null);
+        addIf(peopleOps, Permission.JOBCHANGE_VIEW, "jobchanges", "Job changes", "/job-changes", null);
+        addIf(peopleOps, Permission.PERF_REVIEW_VIEW, "performance", "Performance", "/performance", null);
+        addIf(peopleOps, Permission.RECRUIT_VIEW, "recruitment", "Recruitment", "/recruitment", null);
 
         model.addAttribute("navWorkspace", workspace);
         model.addAttribute("navPeopleOps", peopleOps);
 
-        if (hr) {
-            List<NavItem> admin = new ArrayList<>();
-            admin.add(item("settings", "Settings", "/settings", null));
-            admin.add(item("org", "Org structure", "/org", null));
-            admin.add(item("roles", "Roles & access", "/roles", null));
-            admin.add(item("audit", "Audit log", "/audit", null));
+        List<NavItem> admin = new ArrayList<>();
+        addIf(admin, Permission.ADMIN_SETTINGS, "settings", "Settings", "/settings", null);
+        addIf(admin, Permission.ADMIN_ORG, "org", "Org structure", "/org", null);
+        addIf(admin, Permission.ADMIN_ROLES, "roles", "Roles & access", "/roles", null);
+        addIf(admin, Permission.AUDIT_VIEW, "audit", "Audit log", "/audit", null);
+        if (!admin.isEmpty()) {
             model.addAttribute("navAdmin", admin);
+        }
+    }
+
+    /** Append a nav item only when the current role holds {@code perm}. */
+    private void addIf(List<NavItem> into, Permission perm, String key, String label, String href, Integer badge) {
+        if (policy.can(perm)) {
+            into.add(item(key, label, href, badge));
         }
     }
 

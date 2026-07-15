@@ -4,6 +4,8 @@ import com.meridian.hr.domain.Employee;
 import com.meridian.hr.domain.PolicyConfig;
 import com.meridian.hr.domain.Timesheet;
 import com.meridian.hr.people.PeopleService;
+import com.meridian.hr.security.AccessPolicy;
+import com.meridian.hr.security.Permission;
 import com.meridian.hr.session.Actor;
 import com.meridian.hr.session.SessionContext;
 import org.springframework.stereotype.Controller;
@@ -25,11 +27,13 @@ public class TimeController {
     private final TimeService time;
     private final PeopleService people;
     private final SessionContext session;
+    private final AccessPolicy policy;
 
-    public TimeController(TimeService time, PeopleService people, SessionContext session) {
+    public TimeController(TimeService time, PeopleService people, SessionContext session, AccessPolicy policy) {
         this.time = time;
         this.people = people;
         this.session = session;
+        this.policy = policy;
     }
 
     @GetMapping("/time")
@@ -120,7 +124,7 @@ public class TimeController {
 
         // approvals strip (manager: reports; HR: everyone)
         List<PendingRow> pending = new ArrayList<>();
-        if (actor != null && actor.isApprover()) {
+        if (policy.can(Permission.TIME_APPROVE)) {
             boolean isHr = actor.isHr();
             List<String> reports = new ArrayList<>();
             for (Employee r : people.directReports(me.id)) reports.add(r.id);
@@ -159,7 +163,7 @@ public class TimeController {
     public String approve(@RequestParam String empId, @RequestParam String week,
                           @RequestParam(required = false) String back, RedirectAttributes ra) {
         Actor actor = session.actor();
-        if (actor != null && actor.isApprover()) {
+        if (policy.can(Permission.TIME_APPROVE)) {
             time.approveWeek(empId, week, actor.userId());
             Employee e = people.get(empId);
             ra.addFlashAttribute("toast", (e == null ? empId : e.first) + "'s timesheet approved.");

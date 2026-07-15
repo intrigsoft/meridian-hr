@@ -3,6 +3,8 @@ package com.meridian.hr.offboarding;
 import com.meridian.hr.domain.Employee;
 import com.meridian.hr.domain.OffboardingCase;
 import com.meridian.hr.people.PeopleService;
+import com.meridian.hr.security.AccessPolicy;
+import com.meridian.hr.security.Permission;
 import com.meridian.hr.session.Actor;
 import com.meridian.hr.session.SessionContext;
 import org.springframework.stereotype.Controller;
@@ -27,11 +29,13 @@ public class OffboardingController {
     private final OffboardingService offboarding;
     private final PeopleService people;
     private final SessionContext session;
+    private final AccessPolicy policy;
 
-    public OffboardingController(OffboardingService offboarding, PeopleService people, SessionContext session) {
+    public OffboardingController(OffboardingService offboarding, PeopleService people, SessionContext session, AccessPolicy policy) {
         this.offboarding = offboarding;
         this.people = people;
         this.session = session;
+        this.policy = policy;
     }
 
     @GetMapping("/offboarding")
@@ -39,7 +43,7 @@ public class OffboardingController {
                         @RequestParam(required = false) String emp,
                         Model model) {
         Actor actor = session.actor();
-        boolean allowed = actor != null && actor.isApprover();
+        boolean allowed = policy.can(Permission.OFFBOARDING_VIEW);
 
         model.addAttribute("active", "offboarding");
         model.addAttribute("allowed", allowed);
@@ -84,7 +88,7 @@ public class OffboardingController {
                         @RequestParam(required = false) String reason,
                         RedirectAttributes ra) {
         Actor actor = session.actor();
-        if (actor == null || !actor.isApprover()) return "redirect:/offboarding";
+        if (!policy.can(Permission.OFFBOARDING_MANAGE)) return "redirect:/offboarding";
         if (empId == null || empId.isBlank() || lastDay == null || lastDay.isBlank()) {
             ra.addFlashAttribute("toast", "Pick an employee and a last working day.");
             ra.addFlashAttribute("toastDot", "#c98a2a");
@@ -98,15 +102,14 @@ public class OffboardingController {
 
     @PostMapping("/offboarding/{caseId}/task/{taskId}")
     public String toggle(@PathVariable String caseId, @PathVariable String taskId) {
-        Actor actor = session.actor();
-        if (actor != null && actor.isApprover()) offboarding.toggleTask(caseId, taskId);
+        if (policy.can(Permission.OFFBOARDING_MANAGE)) offboarding.toggleTask(caseId, taskId);
         return "redirect:/offboarding";
     }
 
     @PostMapping("/offboarding/{caseId}/complete")
     public String complete(@PathVariable String caseId, RedirectAttributes ra) {
         Actor actor = session.actor();
-        if (actor == null || !actor.isApprover()) return "redirect:/offboarding";
+        if (!policy.can(Permission.OFFBOARDING_MANAGE)) return "redirect:/offboarding";
         OffboardingCase c = offboarding.getCase(caseId);
         boolean ok = offboarding.complete(caseId, actorName(actor));
         if (ok && c != null) {
@@ -118,8 +121,7 @@ public class OffboardingController {
 
     @PostMapping("/offboarding/{caseId}/cancel")
     public String cancel(@PathVariable String caseId, RedirectAttributes ra) {
-        Actor actor = session.actor();
-        if (actor == null || !actor.isApprover()) return "redirect:/offboarding";
+        if (!policy.can(Permission.OFFBOARDING_MANAGE)) return "redirect:/offboarding";
         offboarding.cancel(caseId);
         ra.addFlashAttribute("toast", "Offboarding cancelled.");
         ra.addFlashAttribute("toastDot", "#8894a3");

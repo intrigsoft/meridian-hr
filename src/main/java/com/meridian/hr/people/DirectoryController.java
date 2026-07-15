@@ -2,6 +2,8 @@ package com.meridian.hr.people;
 
 import com.meridian.hr.domain.Employee;
 import com.meridian.hr.domain.EmployeeStatus;
+import com.meridian.hr.security.AccessPolicy;
+import com.meridian.hr.security.Permission;
 import com.meridian.hr.session.Actor;
 import com.meridian.hr.session.SessionContext;
 import org.springframework.stereotype.Controller;
@@ -26,10 +28,12 @@ public class DirectoryController {
 
     private final PeopleService people;
     private final SessionContext session;
+    private final AccessPolicy policy;
 
-    public DirectoryController(PeopleService people, SessionContext session) {
+    public DirectoryController(PeopleService people, SessionContext session, AccessPolicy policy) {
         this.people = people;
         this.session = session;
+        this.policy = policy;
     }
 
     // ---------------- directory list ----------------
@@ -40,7 +44,7 @@ public class DirectoryController {
                             @RequestParam(required = false, defaultValue = "grid") String view,
                             @RequestParam(required = false) String add,
                             Model model) {
-        boolean isHr = session.actor() != null && session.actor().isHr();
+        boolean isHr = policy.can(Permission.DIRECTORY_MANAGE);
         String query = q == null ? "" : q.trim();
         String needle = query.toLowerCase();
 
@@ -88,7 +92,7 @@ public class DirectoryController {
                               @RequestParam(required = false) String startDate,
                               @RequestParam(required = false) String salary,
                               RedirectAttributes ra) {
-        if (session.actor() == null || !session.actor().isHr()) {
+        if (!policy.can(Permission.DIRECTORY_MANAGE)) {
             return "redirect:/directory";
         }
         if (first == null || first.isBlank() || last == null || last.isBlank()) {
@@ -118,7 +122,7 @@ public class DirectoryController {
             return "employee";
         }
         Actor actor = session.actor();
-        boolean isHr = actor != null && actor.isHr();
+        boolean isHr = policy.can(Permission.DIRECTORY_MANAGE);
         boolean editing = isHr && edit != null;
         boolean canComp = people.canViewComp(actor, e.id);
 
@@ -162,7 +166,7 @@ public class DirectoryController {
     @PostMapping("/directory/{id}/change/{cid}/approve")
     public String approveChange(@PathVariable String id, @PathVariable String cid, RedirectAttributes ra) {
         Actor actor = session.actor();
-        if (actor != null && actor.isHr()) {
+        if (policy.can(Permission.PROFILE_APPROVE)) {
             people.approveChange(cid, actor.userId());
             ra.addFlashAttribute("toast", "Change approved and applied.");
             ra.addFlashAttribute("toastDot", "#3ecf8e");
@@ -173,7 +177,7 @@ public class DirectoryController {
     @PostMapping("/directory/{id}/change/{cid}/reject")
     public String rejectChange(@PathVariable String id, @PathVariable String cid, RedirectAttributes ra) {
         Actor actor = session.actor();
-        if (actor != null && actor.isHr()) {
+        if (policy.can(Permission.PROFILE_APPROVE)) {
             people.rejectChange(cid, actor.userId());
             ra.addFlashAttribute("toast", "Change rejected.");
             ra.addFlashAttribute("toastDot", "#8894a3");
@@ -188,8 +192,7 @@ public class DirectoryController {
                                @RequestParam String workMode, @RequestParam String location,
                                @RequestParam(required = false) String salary,
                                RedirectAttributes ra) {
-        Actor actor = session.actor();
-        if (actor == null || !actor.isHr()) {
+        if (!policy.can(Permission.DIRECTORY_MANAGE)) {
             return "redirect:/directory/" + id;
         }
         Integer sal = parseSalary(salary);
@@ -202,8 +205,7 @@ public class DirectoryController {
 
     @PostMapping("/directory/{id}/status")
     public String changeStatus(@PathVariable String id, @RequestParam String status, RedirectAttributes ra) {
-        Actor actor = session.actor();
-        if (actor == null || !actor.isHr()) {
+        if (!policy.can(Permission.DIRECTORY_MANAGE)) {
             return "redirect:/directory/" + id;
         }
         EmployeeStatus s = EmployeeStatus.fromKey(status);

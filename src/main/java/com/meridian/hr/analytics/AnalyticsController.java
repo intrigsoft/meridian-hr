@@ -5,7 +5,8 @@ import com.meridian.hr.domain.EmployeeStatus;
 import com.meridian.hr.people.PeopleService;
 import com.meridian.hr.performance.PerformanceService;
 import com.meridian.hr.recruitment.RecruitmentService;
-import com.meridian.hr.session.Actor;
+import com.meridian.hr.security.AccessPolicy;
+import com.meridian.hr.security.Permission;
 import com.meridian.hr.session.SessionContext;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -28,19 +29,21 @@ public class AnalyticsController {
     private final RecruitmentService recruitment;
     private final PerformanceService performance;
     private final SessionContext session;
+    private final AccessPolicy policy;
 
     public AnalyticsController(PeopleService people, RecruitmentService recruitment,
-                               PerformanceService performance, SessionContext session) {
+                               PerformanceService performance, SessionContext session,
+                               AccessPolicy policy) {
         this.people = people;
         this.recruitment = recruitment;
         this.performance = performance;
         this.session = session;
+        this.policy = policy;
     }
 
     @GetMapping("/analytics")
     public String index(Model model) {
-        Actor actor = session.actor();
-        boolean allowed = actor != null && actor.isApprover();
+        boolean allowed = policy.can(Permission.ANALYTICS_VIEW);
         model.addAttribute("active", "analytics");
         model.addAttribute("allowed", allowed);
         model.addAttribute("restricted", !allowed);

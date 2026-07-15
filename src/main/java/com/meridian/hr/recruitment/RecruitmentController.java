@@ -2,6 +2,8 @@ package com.meridian.hr.recruitment;
 
 import com.meridian.hr.domain.Candidate;
 import com.meridian.hr.domain.Requisition;
+import com.meridian.hr.security.AccessPolicy;
+import com.meridian.hr.security.Permission;
 import com.meridian.hr.session.Actor;
 import com.meridian.hr.session.SessionContext;
 import org.springframework.stereotype.Controller;
@@ -26,10 +28,12 @@ public class RecruitmentController {
 
     private final RecruitmentService rec;
     private final SessionContext session;
+    private final AccessPolicy policy;
 
-    public RecruitmentController(RecruitmentService rec, SessionContext session) {
+    public RecruitmentController(RecruitmentService rec, SessionContext session, AccessPolicy policy) {
         this.rec = rec;
         this.session = session;
+        this.policy = policy;
     }
 
     // ===================== requisitions + reports =====================
@@ -37,8 +41,8 @@ public class RecruitmentController {
     @GetMapping("/recruitment")
     public String index(@RequestParam(required = false) String tab, Model model) {
         Actor actor = session.actor();
-        boolean allowed = actor != null && actor.isApprover();
-        boolean isHr = actor != null && actor.isHr();
+        boolean allowed = policy.can(Permission.RECRUIT_VIEW);
+        boolean isHr = policy.can(Permission.RECRUIT_ADMIN);
 
         model.addAttribute("active", "recruitment");
         model.addAttribute("allowed", allowed);
@@ -104,7 +108,7 @@ public class RecruitmentController {
     @PostMapping("/recruitment/req/new")
     public String newReq() {
         Actor actor = session.actor();
-        if (actor == null || !actor.isHr()) return "redirect:/recruitment";
+        if (!policy.can(Permission.RECRUIT_ADMIN)) return "redirect:/recruitment";
         Requisition r = rec.createReq();
         return "redirect:/recruitment/req/" + r.id;
     }
@@ -120,7 +124,7 @@ public class RecruitmentController {
     @PostMapping("/recruitment/req/{id}/approve")
     public String approve(@PathVariable String id, RedirectAttributes ra) {
         Actor actor = session.actor();
-        if (actor != null && actor.isHr()) {
+        if (policy.can(Permission.RECRUIT_ADMIN)) {
             rec.approveReq(id);
             ra.addFlashAttribute("toast", "Requisition approved — the role is now open.");
             ra.addFlashAttribute("toastDot", "#3ecf8e");
@@ -140,13 +144,13 @@ public class RecruitmentController {
     public String reqDetail(@PathVariable String id, Model model) {
         Actor actor = session.actor();
         Requisition r = rec.getReq(id);
-        if (actor == null || !actor.isApprover() || r == null) return "redirect:/recruitment";
+        if (!policy.can(Permission.RECRUIT_VIEW) || r == null) return "redirect:/recruitment";
         model.addAttribute("active", "recruitment");
         model.addAttribute("req", r);
         model.addAttribute("statusMeta", RecruitmentMeta.reqStatus(r.status));
         model.addAttribute("ownerName", rec.personName(r.ownerId));
         model.addAttribute("recruiterName", rec.personName(r.recruiterId));
-        model.addAttribute("isHr", actor.isHr());
+        model.addAttribute("isHr", policy.can(Permission.RECRUIT_ADMIN));
         model.addAttribute("isDraft", "draft".equals(r.status));
         model.addAttribute("isPending", "pending_approval".equals(r.status));
         model.addAttribute("isOpen", "open".equals(r.status));
@@ -170,7 +174,7 @@ public class RecruitmentController {
     public String pipeline(@PathVariable String id, Model model) {
         Actor actor = session.actor();
         Requisition r = rec.getReq(id);
-        if (actor == null || !actor.isApprover() || r == null) return "redirect:/recruitment";
+        if (!policy.can(Permission.RECRUIT_VIEW) || r == null) return "redirect:/recruitment";
         model.addAttribute("active", "recruitment");
         model.addAttribute("req", r);
         model.addAttribute("ownerName", rec.personName(r.ownerId));
@@ -213,12 +217,12 @@ public class RecruitmentController {
     public String candidate(@PathVariable String id, Model model) {
         Actor actor = session.actor();
         Candidate c = rec.getCandidate(id);
-        if (actor == null || !actor.isApprover() || c == null) return "redirect:/recruitment";
+        if (!policy.can(Permission.RECRUIT_VIEW) || c == null) return "redirect:/recruitment";
         Requisition r = rec.getReq(c.reqId);
         model.addAttribute("active", "recruitment");
         model.addAttribute("cand", c);
         model.addAttribute("req", r);
-        model.addAttribute("isHr", actor.isHr());
+        model.addAttribute("isHr", policy.can(Permission.RECRUIT_ADMIN));
         RecruitmentMeta.Stage sm = RecruitmentMeta.stage(c.stage);
         model.addAttribute("stageLabel", sm.label());
         model.addAttribute("stageBg", sm.bg());
@@ -293,7 +297,7 @@ public class RecruitmentController {
     @PostMapping("/recruitment/candidate/{id}/offer/approve")
     public String approveOffer(@PathVariable String id, RedirectAttributes ra) {
         Actor a = session.actor();
-        if (a != null && a.isHr()) rec.approveOffer(id);
+        if (policy.can(Permission.RECRUIT_ADMIN)) rec.approveOffer(id);
         return back(id);
     }
 
@@ -322,8 +326,7 @@ public class RecruitmentController {
     }
 
     private boolean approver() {
-        Actor a = session.actor();
-        return a != null && a.isApprover();
+        return policy.can(Permission.RECRUIT_MANAGE);
     }
 
     private String back(String candId) {

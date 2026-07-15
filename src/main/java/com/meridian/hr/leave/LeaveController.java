@@ -3,6 +3,8 @@ package com.meridian.hr.leave;
 import com.meridian.hr.domain.Employee;
 import com.meridian.hr.domain.LeaveRequest;
 import com.meridian.hr.domain.PolicyConfig;
+import com.meridian.hr.security.AccessPolicy;
+import com.meridian.hr.security.Permission;
 import com.meridian.hr.session.Actor;
 import com.meridian.hr.session.SessionContext;
 import org.springframework.stereotype.Controller;
@@ -27,10 +29,12 @@ public class LeaveController {
 
     private final LeaveService leave;
     private final SessionContext session;
+    private final AccessPolicy policy;
 
-    public LeaveController(LeaveService leave, SessionContext session) {
+    public LeaveController(LeaveService leave, SessionContext session, AccessPolicy policy) {
         this.leave = leave;
         this.session = session;
+        this.policy = policy;
     }
 
     // ============ My Leave ============
@@ -128,7 +132,7 @@ public class LeaveController {
                             @RequestParam(required = false, defaultValue = "view") String mode,
                             Model model) {
         Actor actor = session.actor();
-        boolean isApprover = actor != null && actor.isApprover();
+        boolean isApprover = policy.can(Permission.LEAVE_APPROVE);
         model.addAttribute("isApprover", isApprover);
         model.addAttribute("active", "approvals");
         model.addAttribute("noteTitle", "Leave approvals");
@@ -199,9 +203,8 @@ public class LeaveController {
 
     @PostMapping("/leave/{id}/undo")
     public String undo(@PathVariable String id, @RequestParam(defaultValue = "approvals") String back, RedirectAttributes ra) {
-        Actor actor = session.actor();
         LeaveRequest r = leave.get(id);
-        if (actor != null && actor.isApprover() && r != null) {
+        if (policy.can(Permission.LEAVE_APPROVE) && r != null) {
             leave.revert(id);
             ra.addFlashAttribute("toast", "Decision reverted");
             ra.addFlashAttribute("toastDot", "#8894a3");
@@ -284,7 +287,7 @@ public class LeaveController {
     // ============ helpers ============
 
     private boolean canDecide(Actor actor, LeaveRequest r) {
-        if (actor == null || r == null || !actor.isApprover()) return false;
+        if (actor == null || r == null || !policy.can(Permission.LEAVE_APPROVE)) return false;
         boolean isMyQueue = (actor.role() == com.meridian.hr.domain.Role.MANAGER && actor.userId().equals(r.approverId) && !r.overCeiling)
                 || (actor.role() == com.meridian.hr.domain.Role.HR && actor.userId().equals(r.approverId));
         return isMyQueue && ("pending".equals(r.status) || "escalated".equals(r.status));

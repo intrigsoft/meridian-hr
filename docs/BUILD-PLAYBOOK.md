@@ -297,6 +297,30 @@ and the **AI/assistant-kit integration**, both intentionally deferred per the or
 - Employee edit is a focused edit-card sub-view (`?edit`), not the fixture's inline-in-place edit —
   a deliberate simplification to keep `<form>` boundaries sane server-side.
 
+## RBAC layer (added 2026-07-15, before the REST API)
+Centralized role-based access control lives in `com.meridian.hr.security` and is the single
+source of truth the nav, controllers, and (next) the REST/MCP API all read:
+- `Permission` — the capability catalog (28 perms; each has `group()`+`label()` for the matrix).
+- `RolePermissions` — `Role → EnumSet<Permission>` grants, additive: EMPLOYEE ⊂ MANAGER ⊂ HR.
+- `AccessPolicy` (`@Component @RequestScope`) — inject this instead of poking `actor.isHr()`.
+  `can(p)` / `canAny(...)` to gate rendering; `require(p)` to hard-stop (throws `AccessDeniedException`).
+- `AccessDeniedAdvice` (`@RestControllerAdvice`) — maps that exception to **403 JSON** for the API.
+  Harmless to MVC views (they gate with `can()` and render a "restricted" panel, they don't throw).
+
+Rules of the road:
+- **Nav is permission-derived** (`LayoutAdvice`): a nav item appears iff the role holds the page's
+  permission — never hand-code `if (approver)` in the nav again. Nav↔page integrity: link shown ⇔ page full.
+- **Coarse gate = RBAC** (`policy.can(PERM)`); **per-record scope = ABAC**, and ABAC stays in the
+  services — leave-queue ownership, `PeopleService.canViewComp` (manager downstream), the performance
+  review-state matrix, timesheet see-all-vs-reports. Do NOT fold those into permissions.
+- Whole-page access and its nav link MUST read the same permission (that's the integrity guarantee).
+- Onboarding view is approver-only (employees get a restricted panel) — the one deliberate tightening.
+- `/roles` renders the Role×Permission matrix from the catalog.
+- Verify per role with curl: sarah.chen (EMPLOYEE) / david.okonkwo (MANAGER) / priya.nair (HR).
+
+The REST `/api/v1` controllers (planned, not built) call `policy.require(perm)` at each endpoint and
+lean on `AccessDeniedAdvice` for the 403. Reads → free MCP tools; writes → consensus-gated tools.
+
 ## Sample-repo norms to finish before ship (later)
 - Java MCP module (`mcp/`, own Dockerfile.mcp, port 5174) that forwards to app REST `/api/v1/*`
   with the BYOA bearer; app mints/verifies HMAC artifact; `POST /api/diosc/bind` → hub `/api/auth/bind`.

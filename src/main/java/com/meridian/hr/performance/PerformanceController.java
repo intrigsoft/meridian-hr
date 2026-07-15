@@ -4,6 +4,8 @@ import com.meridian.hr.domain.Employee;
 import com.meridian.hr.domain.Review;
 import com.meridian.hr.domain.ReviewCycle;
 import com.meridian.hr.people.PeopleService;
+import com.meridian.hr.security.AccessPolicy;
+import com.meridian.hr.security.Permission;
 import com.meridian.hr.session.Actor;
 import com.meridian.hr.session.SessionContext;
 import org.springframework.http.HttpHeaders;
@@ -38,11 +40,14 @@ public class PerformanceController {
     private final PerformanceService perf;
     private final PeopleService people;
     private final SessionContext session;
+    private final AccessPolicy policy;
 
-    public PerformanceController(PerformanceService perf, PeopleService people, SessionContext session) {
+    public PerformanceController(PerformanceService perf, PeopleService people, SessionContext session,
+                                 AccessPolicy policy) {
         this.perf = perf;
         this.people = people;
         this.session = session;
+        this.policy = policy;
     }
 
     private static final DateTimeFormatter SHORT = DateTimeFormatter.ofPattern("MMM d", Locale.ENGLISH);
@@ -56,7 +61,7 @@ public class PerformanceController {
                         @RequestParam(defaultValue = "all") String status,
                         Model model) {
         Actor actor = session.actor();
-        boolean isHr = actor != null && actor.isHr();
+        boolean isHr = policy.can(Permission.PERF_CYCLE_ADMIN);
         boolean isManager = actor != null && actor.role() == com.meridian.hr.domain.Role.MANAGER;
 
         String view = tab != null ? tab : (isHr ? "cycles" : "reviews");
@@ -239,16 +244,14 @@ public class PerformanceController {
 
     @PostMapping("/performance/cycle/new")
     public String newCycle(RedirectAttributes ra) {
-        Actor actor = session.actor();
-        if (actor == null || !actor.isHr()) return "redirect:/performance";
+        if (!policy.can(Permission.PERF_CYCLE_ADMIN)) return "redirect:/performance";
         ReviewCycle c = perf.createCycle("New review cycle");
         return "redirect:/performance/designer?cycle=" + c.id;
     }
 
     @PostMapping("/performance/cycle/{id}/launch")
     public String launch(@org.springframework.web.bind.annotation.PathVariable String id, RedirectAttributes ra) {
-        Actor actor = session.actor();
-        if (actor == null || !actor.isHr()) return "redirect:/performance";
+        if (!policy.can(Permission.PERF_CYCLE_ADMIN)) return "redirect:/performance";
         ReviewCycle c = perf.getCycle(id);
         perf.launchCycle(id);
         if (c != null) {
@@ -260,8 +263,7 @@ public class PerformanceController {
 
     @PostMapping("/performance/cycle/{id}/close")
     public String close(@org.springframework.web.bind.annotation.PathVariable String id, RedirectAttributes ra) {
-        Actor actor = session.actor();
-        if (actor == null || !actor.isHr()) return "redirect:/performance";
+        if (!policy.can(Permission.PERF_CYCLE_ADMIN)) return "redirect:/performance";
         perf.closeCycle(id);
         ra.addFlashAttribute("toast", "Cycle closed.");
         ra.addFlashAttribute("toastDot", "#8894a3");
@@ -270,8 +272,7 @@ public class PerformanceController {
 
     @GetMapping("/performance/designer")
     public String designer(@RequestParam String cycle, Model model) {
-        Actor actor = session.actor();
-        if (actor == null || !actor.isHr()) return "redirect:/performance";
+        if (!policy.can(Permission.PERF_CYCLE_ADMIN)) return "redirect:/performance";
         ReviewCycle c = perf.getCycle(cycle);
         if (c == null) return "redirect:/performance";
         model.addAttribute("active", "performance");
@@ -304,7 +305,7 @@ public class PerformanceController {
         Employee e = people.get(emp);
         if (actor == null || cy == null || r == null || e == null) return "redirect:/performance";
 
-        boolean isHr = actor.isHr();
+        boolean isHr = policy.can(Permission.PERF_CYCLE_ADMIN);
         boolean isReviewer = actor.userId().equals(r.reviewerId);
         boolean isSelf = actor.userId().equals(emp);
         // Visibility: HR, the reviewer, or the employee themselves.
@@ -359,7 +360,7 @@ public class PerformanceController {
         Actor actor = session.actor();
         Review r = perf.getReview(cycle, emp);
         if (actor == null || r == null) return "redirect:/performance";
-        if (!(actor.userId().equals(emp) || actor.isHr())) return backToReview(cycle, emp);
+        if (!(actor.userId().equals(emp) || policy.can(Permission.PERF_CYCLE_ADMIN))) return backToReview(cycle, emp);
         perf.submitSelf(cycle, emp, readScores(cycle, all), narrative);
         ra.addFlashAttribute("toast", "Self-assessment submitted.");
         ra.addFlashAttribute("toastDot", "#3ecf8e");
@@ -373,7 +374,7 @@ public class PerformanceController {
         Actor actor = session.actor();
         Review r = perf.getReview(cycle, emp);
         if (actor == null || r == null) return "redirect:/performance";
-        if (!(actor.userId().equals(r.reviewerId) || actor.isHr())) return backToReview(cycle, emp);
+        if (!(actor.userId().equals(r.reviewerId) || policy.can(Permission.PERF_CYCLE_ADMIN))) return backToReview(cycle, emp);
         perf.submitManager(cycle, emp, readScores(cycle, all), narrative);
         ra.addFlashAttribute("toast", "Manager assessment submitted — calibration open.");
         ra.addFlashAttribute("toastDot", "#3ecf8e");
@@ -386,7 +387,7 @@ public class PerformanceController {
         Actor actor = session.actor();
         Review r = perf.getReview(cycle, emp);
         if (actor == null || r == null) return "redirect:/performance";
-        boolean allowed = actor.isHr() || actor.userId().equals(r.reviewerId);
+        boolean allowed = policy.can(Permission.PERF_CYCLE_ADMIN) || actor.userId().equals(r.reviewerId);
         if (!allowed) return backToReview(cycle, emp);
         for (Map.Entry<String, Integer> en : readScores(cycle, all).entrySet()) {
             perf.setCalibrated(cycle, emp, en.getKey(), en.getValue());
@@ -399,8 +400,7 @@ public class PerformanceController {
 
     @PostMapping("/performance/review/reopen")
     public String reopen(@RequestParam String cycle, @RequestParam String emp, RedirectAttributes ra) {
-        Actor actor = session.actor();
-        if (actor == null || !actor.isHr()) return backToReview(cycle, emp);
+        if (!policy.can(Permission.PERF_CYCLE_ADMIN)) return backToReview(cycle, emp);
         perf.reopen(cycle, emp);
         ra.addFlashAttribute("toast", "Calibration reopened.");
         ra.addFlashAttribute("toastDot", "#8894a3");
@@ -432,8 +432,7 @@ public class PerformanceController {
     @GetMapping("/performance/export")
     @ResponseBody
     public ResponseEntity<byte[]> export(@RequestParam String cycle) {
-        Actor actor = session.actor();
-        if (actor == null || !actor.isHr()) {
+        if (!policy.can(Permission.PERF_CYCLE_ADMIN)) {
             return ResponseEntity.status(403).build();
         }
         ReviewCycle cy = perf.getCycle(cycle);

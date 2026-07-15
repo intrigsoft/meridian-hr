@@ -11,7 +11,9 @@ import com.meridian.hr.domain.Role;
 import com.meridian.hr.jobchange.JobChangeMeta;
 import com.meridian.hr.people.PeopleService;
 import com.meridian.hr.performance.PerformanceMeta;
-import com.meridian.hr.session.Actor;
+import com.meridian.hr.security.AccessPolicy;
+import com.meridian.hr.security.Permission;
+import com.meridian.hr.security.RolePermissions;
 import com.meridian.hr.session.SessionContext;
 import com.meridian.hr.workspace.Workspace;
 import org.springframework.stereotype.Controller;
@@ -23,8 +25,10 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 /**
  * Admin surfaces (HR only, read-only in the sample): Settings (policy config), Org Structure
@@ -36,18 +40,25 @@ public class AdminController {
 
     private final PeopleService people;
     private final SessionContext session;
+    private final AccessPolicy policy;
 
-    public AdminController(PeopleService people, SessionContext session) {
+    public AdminController(PeopleService people, SessionContext session, AccessPolicy policy) {
         this.people = people;
         this.session = session;
+        this.policy = policy;
     }
 
     private static final DateTimeFormatter STAMP =
             DateTimeFormatter.ofPattern("MMM d, yyyy · HH:mm", Locale.ENGLISH).withZone(ZoneId.systemDefault());
 
     private boolean guard(Model model, String active) {
-        Actor actor = session.actor();
-        boolean hr = actor != null && actor.isHr();
+        Permission required = switch (active) {
+            case "org" -> Permission.ADMIN_ORG;
+            case "roles" -> Permission.ADMIN_ROLES;
+            case "audit" -> Permission.AUDIT_VIEW;
+            default -> Permission.ADMIN_SETTINGS;
+        };
+        boolean hr = policy.can(required);
         model.addAttribute("active", active);
         model.addAttribute("isHr", hr);
         return hr;
@@ -106,7 +117,24 @@ public class AdminController {
             groups.add(new RoleGroup(r.label, roleBlurb(r), users.size(), users));
         }
         model.addAttribute("roleGroups", groups);
+        model.addAttribute("permGroups", permissionMatrix());
+        model.addAttribute("roleCols", List.of(Role.EMPLOYEE.label, Role.MANAGER.label, Role.HR.label));
         return "admin/roles";
+    }
+
+    /** The RBAC catalog as a matrix: permissions grouped by area, each showing which roles hold it. */
+    private static List<PermGroup> permissionMatrix() {
+        Map<String, List<PermRow>> byGroup = new LinkedHashMap<>();
+        for (Permission p : Permission.values()) {
+            byGroup.computeIfAbsent(p.group(), k -> new ArrayList<>()).add(new PermRow(
+                    p.label(),
+                    RolePermissions.has(Role.EMPLOYEE, p),
+                    RolePermissions.has(Role.MANAGER, p),
+                    RolePermissions.has(Role.HR, p)));
+        }
+        List<PermGroup> out = new ArrayList<>();
+        byGroup.forEach((group, rows) -> out.add(new PermGroup(group, rows)));
+        return out;
     }
 
     private static String roleBlurb(Role r) {
@@ -205,6 +233,12 @@ public class AdminController {
     }
 
     public record RoleGroup(String label, String blurb, int count, List<UserRow> users) {
+    }
+
+    public record PermGroup(String group, List<PermRow> rows) {
+    }
+
+    public record PermRow(String label, boolean employee, boolean manager, boolean hr) {
     }
 
     public record UserRow(String id, String name, String initials, String avatarBg, String title, String dept) {

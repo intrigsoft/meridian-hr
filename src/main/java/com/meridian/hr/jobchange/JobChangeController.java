@@ -4,6 +4,8 @@ import com.meridian.hr.domain.Employee;
 import com.meridian.hr.domain.JobChange;
 import com.meridian.hr.domain.OrgConfig;
 import com.meridian.hr.people.PeopleService;
+import com.meridian.hr.security.AccessPolicy;
+import com.meridian.hr.security.Permission;
 import com.meridian.hr.session.Actor;
 import com.meridian.hr.session.SessionContext;
 import org.springframework.stereotype.Controller;
@@ -32,11 +34,13 @@ public class JobChangeController {
     private final JobChangeService jobChanges;
     private final PeopleService people;
     private final SessionContext session;
+    private final AccessPolicy policy;
 
-    public JobChangeController(JobChangeService jobChanges, PeopleService people, SessionContext session) {
+    public JobChangeController(JobChangeService jobChanges, PeopleService people, SessionContext session, AccessPolicy policy) {
         this.jobChanges = jobChanges;
         this.people = people;
         this.session = session;
+        this.policy = policy;
     }
 
     @GetMapping("/job-changes")
@@ -50,8 +54,8 @@ public class JobChangeController {
         jobChanges.applyDueChanges(); // apply any now-due scheduled changes
 
         Actor actor = session.actor();
-        boolean allowed = actor != null && actor.isApprover();
-        boolean hr = actor != null && actor.isHr();
+        boolean allowed = policy.can(Permission.JOBCHANGE_VIEW);
+        boolean hr = policy.can(Permission.JOBCHANGE_APPROVE);
 
         model.addAttribute("active", "jobchanges");
         model.addAttribute("allowed", allowed);
@@ -112,7 +116,7 @@ public class JobChangeController {
                          @RequestParam Map<String, String> all,
                          RedirectAttributes ra) {
         Actor actor = session.actor();
-        if (actor == null || !actor.isApprover()) return "redirect:/job-changes";
+        if (!policy.can(Permission.JOBCHANGE_REQUEST)) return "redirect:/job-changes";
         String empId = emp;
         Employee target = people.get(empId);
         if (target == null || eff == null || eff.isBlank()) {
@@ -148,7 +152,7 @@ public class JobChangeController {
     @PostMapping("/job-changes/{id}/approve")
     public String approve(@PathVariable String id, RedirectAttributes ra) {
         Actor actor = session.actor();
-        if (actor == null || !actor.isHr()) return "redirect:/job-changes";
+        if (!policy.can(Permission.JOBCHANGE_APPROVE)) return "redirect:/job-changes";
         JobChange r = jobChanges.approve(id, actor.userId());
         if (r != null) {
             ra.addFlashAttribute("toast", ("applied".equals(r.status) ? "Approved & applied " : "Approved (scheduled) ")
@@ -161,7 +165,7 @@ public class JobChangeController {
     @PostMapping("/job-changes/{id}/reject")
     public String reject(@PathVariable String id, RedirectAttributes ra) {
         Actor actor = session.actor();
-        if (actor == null || !actor.isHr()) return "redirect:/job-changes";
+        if (!policy.can(Permission.JOBCHANGE_APPROVE)) return "redirect:/job-changes";
         JobChange r = jobChanges.get(id);
         jobChanges.reject(id, actor.userId());
         if (r != null) {
@@ -174,7 +178,7 @@ public class JobChangeController {
     @PostMapping("/job-changes/{id}/cancel")
     public String cancel(@PathVariable String id, RedirectAttributes ra) {
         Actor actor = session.actor();
-        if (actor == null || !actor.isApprover()) return "redirect:/job-changes";
+        if (!policy.can(Permission.JOBCHANGE_REQUEST)) return "redirect:/job-changes";
         jobChanges.cancel(id);
         ra.addFlashAttribute("toast", "Request withdrawn.");
         ra.addFlashAttribute("toastDot", "#8894a3");
