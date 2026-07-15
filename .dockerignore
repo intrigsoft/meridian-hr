@@ -1,0 +1,12 @@
+.git
+.gitignore
+.idea
+build
+.gradle
+*.log
+bootrun.log
+design
+docs
+.astro
+logs
+*.md

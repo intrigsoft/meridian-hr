@@ -29,3 +29,9 @@ dependencies {
 tasks.withType<Test> {
     useJUnitPlatform()
 }
+
+// Only the executable bootJar ships — suppress the extra `-plain.jar` so the
+// Docker image can COPY a single build/libs/*.jar unambiguously.
+tasks.named<Jar>("jar") {
+    enabled = false
+}
