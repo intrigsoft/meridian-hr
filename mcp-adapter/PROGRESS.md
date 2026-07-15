@@ -37,8 +37,8 @@ Stop the loop when the backlog is clear or a blocker repeats across iterations; 
 |---|--------|-----------|---------------|--------|
 | 0 | leave | `leave/LeaveController` | list_pending_approvals, approve_leave, reject_leave | ✅ done + verified |
 | 1 | time | `time/TimeController` | list_time_approvals, approve_timesheet | ✅ done + verified |
-| 2 | jobchange | `jobchange/JobChangeController` | list_job_changes, approve_job_change, reject_job_change | ⬜ next |
-| 3 | recruitment | `recruitment/RecruitmentController` | list_requisitions, list_candidates, advance_candidate | ⬜ |
+| 2 | jobchange | `jobchange/JobChangeController` | list_job_changes, approve_job_change, reject_job_change | ✅ done + verified |
+| 3 | recruitment | `recruitment/RecruitmentController` | list_requisitions, list_candidates, advance_candidate | ⬜ next |
 | 4 | directory | `people/DirectoryController` | search_directory, get_employee | ⬜ |
 | 5 | onboarding | `onboarding/OnboardingController` | list_onboarding_cases, complete_onboarding_step | ⬜ |
 | 6 | offboarding | `offboarding/OffboardingController` | list_offboarding, complete_offboarding_step | ⬜ |
@@ -60,6 +60,12 @@ Stop the loop when the backlog is clear or a blocker repeats across iterations; 
   re-runs the read and asserts the handle is gone (replacing the leave-only string-includes check).
   Leave migrated to the same shape. Verified on staging: HR read 2 pending timesheets, approve 2→1,
   employee empty. Empty-detection uses "Recent weeks" as the page-loaded sanity marker.
+- **2026-07-15** — jobchange: list_job_changes + approve_job_change + reject_job_change (both HR-only,
+  path-id, mirror leave). Skipped the create route (`/job-changes/new` is a GET-recompute multi-field
+  modal — out of scope for a tool) and cancel/withdraw. Rich diff summary flows through as text
+  (title/level/salary/band before→after). Sanity marker = the "Pending approval" stats-card label so a
+  loaded-but-no-pending page reads empty, not fail-loud; "managed by managers" covers non-approvers.
+  Verified on staging: HR read 1 pending, approve 1→0, reject (fresh workspace) gone, employee restricted.
 
 ## Blockers
 

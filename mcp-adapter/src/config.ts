@@ -110,6 +110,28 @@ export const config: AdapterConfig = {
       },
       emptyMarkers: ["Recent weeks"],
     },
+
+    // ---- job changes ----
+    {
+      name: "list_job_changes",
+      description:
+        "List job-change requests (promotion / transfer / comp) awaiting the signed-in approver's " +
+        "decision. Each item has an `id` (pass to approve_job_change / reject_job_change) and a " +
+        "human-readable `summary` including the proposed diffs. Empty when nothing is pending or the " +
+        "caller may not approve.",
+      path: "/job-changes",
+      row: {
+        anchor: "form[action*='/job-changes/'][action*='/approve']",
+        container: "div[style*='padding:17px 20px']",
+      },
+      fields: {
+        handle: { id: { attr: "action", extract: "/job-changes/(.+)/approve" } },
+        summary: { text: true },
+      },
+      // "Pending approval" (a stats-card label) = the page loaded for an approver → empty if no rows.
+      // "managed by managers" = the restricted panel shown to non-approvers.
+      emptyMarkers: ["Pending approval", "managed by managers"],
+    },
   ],
 
   writeTools: [
@@ -152,6 +174,32 @@ export const config: AdapterConfig = {
       handle: ["empId", "week"],
       csrf: null,
       verify: { via: "list_time_approvals" },
+    },
+
+    // ---- job changes ----
+    {
+      name: "approve_job_change",
+      description:
+        "Approve one pending job-change request by id (from list_job_changes). Applies immediately or " +
+        "schedules to its effective date, per the request.",
+      path: "/job-changes/${id}/approve",
+      form: {},
+      args: {
+        id: { required: true, inPath: true, description: "Job-change request id, e.g. jc-seed-sarah.chen-promotion" },
+      },
+      handle: ["id"],
+      csrf: null,
+      verify: { via: "list_job_changes" },
+    },
+    {
+      name: "reject_job_change",
+      description: "Reject one pending job-change request by id (from list_job_changes).",
+      path: "/job-changes/${id}/reject",
+      form: {},
+      args: { id: { required: true, inPath: true, description: "Job-change request id" } },
+      handle: ["id"],
+      csrf: null,
+      verify: { via: "list_job_changes" },
     },
   ],
 };

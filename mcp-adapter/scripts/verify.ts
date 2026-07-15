@@ -81,6 +81,45 @@ async function main(): Promise<void> {
   assert(empTimeQueue.length === 0, "employee is not an approver — timesheet queue must be empty");
 
   console.log("\n✅ time slice verified end-to-end against staging");
+
+  // --- Job changes: approve + reject (path-id, HR-only) ---
+  const jcList = config.readTools.find((t) => t.name === "list_job_changes")!;
+  const jcApprove = config.writeTools.find((t) => t.name === "approve_job_change")!;
+  const jcReject = config.writeTools.find((t) => t.name === "reject_job_change")!;
+
+  const jc = new FrontDoor(config);
+  await jc.bootstrap("priya.nair");
+  const jcBefore = await jc.read(jcList);
+  console.log(`\n[HR] pending job changes: ${jcBefore.length}`);
+  for (const r of jcBefore) console.log(`   ${r.id}  ·  ${r.summary}`);
+  assert(jcBefore.length > 0, "expected a pending job change on a fresh workspace");
+  assert(jcBefore.every((r) => r.id && r.summary), "each job-change row needs id + summary");
+
+  const jcTarget = jcBefore[0];
+  console.log(`\n[write] approve_job_change(id=${jcTarget.id})`);
+  console.log(`   → ${JSON.stringify(await jc.write(jcApprove, { id: jcTarget.id }))}`);
+  const jcAfter = await jc.read(jcList);
+  console.log(`[HR] pending job changes after approve: ${jcAfter.length} (was ${jcBefore.length})`);
+  assert(!jcAfter.some((r) => r.id === jcTarget.id), "approved job change should leave the pending list");
+
+  // reject in a fresh workspace (proves the second write route)
+  const jc2 = new FrontDoor(config);
+  await jc2.bootstrap("priya.nair");
+  const jc2Before = await jc2.read(jcList);
+  const rTarget = jc2Before[0];
+  console.log(`\n[write] reject_job_change(id=${rTarget.id})`);
+  console.log(`   → ${JSON.stringify(await jc2.write(jcReject, { id: rTarget.id }))}`);
+  const jc2After = await jc2.read(jcList);
+  assert(!jc2After.some((r) => r.id === rTarget.id), "rejected job change should leave the pending list");
+
+  // employee: restricted panel → empty
+  const jcEmp = new FrontDoor(config);
+  await jcEmp.bootstrap("sarah.chen");
+  const jcEmpQueue = await jcEmp.read(jcList);
+  console.log(`\n[EMPLOYEE sarah.chen] pending job changes: ${jcEmpQueue.length} (expect 0)`);
+  assert(jcEmpQueue.length === 0, "employee may not view/approve job changes");
+
+  console.log("\n✅ jobchange slice verified end-to-end against staging");
 }
 
 main().catch((e) => {
