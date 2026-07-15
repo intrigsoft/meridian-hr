@@ -12,10 +12,12 @@
 export interface FieldExtract {
   /** Descendant selector under the row anchor; omit to read the anchor element itself. */
   selector?: string;
-  /** Attribute to read (e.g. a form's `action`, or a hidden input's `value`). */
-  attr: string;
+  /** Attribute to read (e.g. a form's `action`, or a hidden input's `value`). Ignored when `text`. */
+  attr?: string;
   /** Regex with one capture group to pull the id out of the attribute; omit for the whole value. */
   extract?: string;
+  /** Read the element's visible text instead of an attribute (for labels that live in markup, not attrs). */
+  text?: boolean;
 }
 
 export interface ReadTool {
@@ -226,6 +228,41 @@ export const config: AdapterConfig = {
       // A valid status page always shows one of these health labels → empty (no actionable step), not fail-loud.
       emptyMarkers: ["On track", "Complete", "blocked"],
     },
+
+    // ---- offboarding (all cases render on one page; no detail route) ----
+    {
+      name: "list_offboarding",
+      description:
+        "List offboarding (exit) cases. Each has an `id` and a `summary` (employee, exit type, status, " +
+        "last day, task progress like '3/7 tasks'). Manager sees their reports; HR sees all.",
+      path: "/offboarding",
+      row: {
+        anchor: "form[action*='/offboarding/'][action*='/complete']",
+        container: "div[style*='padding:18px 20px']",
+      },
+      fields: {
+        handle: { id: { attr: "action", extract: "/offboarding/(.+)/complete" } },
+        summary: { text: true },
+      },
+      emptyMarkers: ["No offboarding in progress", "available to managers"],
+    },
+    {
+      name: "list_offboarding_tasks",
+      description:
+        "List the checklist tasks across offboarding cases. Each has `caseId`, `taskId`, and `label` — " +
+        "pass caseId + taskId to toggle_offboarding_task to check/uncheck it.",
+      path: "/offboarding",
+      row: { anchor: "form[action*='/offboarding/'][action*='/task/']" },
+      fields: {
+        handle: {
+          caseId: { attr: "action", extract: "/offboarding/([^/]+)/task/" },
+          taskId: { attr: "action", extract: "/task/([^/]+)$" },
+          label: { selector: "div[style*='min-width:0']", text: true },
+        },
+        summary: { text: true },
+      },
+      emptyMarkers: ["Active exits", "available to managers"],
+    },
   ],
 
   writeTools: [
@@ -325,6 +362,24 @@ export const config: AdapterConfig = {
       handle: ["caseId", "stepId"],
       csrf: null,
       verify: { via: "list_onboarding_steps" },
+    },
+
+    // ---- offboarding ----
+    {
+      name: "toggle_offboarding_task",
+      description:
+        "Check or uncheck one offboarding checklist task (from list_offboarding_tasks). Toggling flips " +
+        "its done state and moves the case's progress.",
+      path: "/offboarding/${caseId}/task/${taskId}",
+      form: {},
+      args: {
+        caseId: { required: true, inPath: true, description: "Offboarding case id, e.g. off-seed-ken" },
+        taskId: { required: true, inPath: true, description: "Checklist task id, e.g. access" },
+      },
+      handle: ["caseId", "taskId"],
+      csrf: null,
+      // No verify-by-absence: a toggled task stays in the list (flips in place). Proven by the case's
+      // progress summary changing — asserted in verify.ts.
     },
   ],
 };

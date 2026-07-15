@@ -220,6 +220,44 @@ async function main(): Promise<void> {
   assert(obEmpCases.length === 0, "employee may not view onboarding");
 
   console.log("\n✅ onboarding slice verified end-to-end against staging");
+
+  // --- Offboarding: toggle a checklist task, proven by the case's progress changing ---
+  const offList = config.readTools.find((t) => t.name === "list_offboarding")!;
+  const offTasks = config.readTools.find((t) => t.name === "list_offboarding_tasks")!;
+  const offToggle = config.writeTools.find((t) => t.name === "toggle_offboarding_task")!;
+
+  const off = new FrontDoor(config);
+  await off.bootstrap("priya.nair");
+  const offBefore = await off.read(offList);
+  console.log(`\n[HR] offboarding cases: ${offBefore.length}`);
+  for (const c of offBefore) console.log(`   ${c.id}  ·  ${c.summary}`);
+  assert(offBefore.length > 0, "expected a seeded offboarding case");
+  assert(offBefore.every((c) => c.id && c.summary), "each case needs id + summary");
+
+  const tasks = await off.read(offTasks);
+  console.log(`\n[HR] offboarding tasks: ${tasks.length}`);
+  for (const t of tasks.slice(0, 3)) console.log(`   ${t.caseId}/${t.taskId}  ·  ${t.label}`);
+  assert(tasks.length > 0, "expected checklist tasks");
+  assert(tasks.every((t) => t.caseId && t.taskId), "each task needs caseId + taskId");
+
+  const task = tasks[0];
+  const caseBefore = offBefore.find((c) => c.id === task.caseId)!;
+  console.log(`\n[write] toggle_offboarding_task(${task.caseId}/${task.taskId})`);
+  console.log(`   → ${JSON.stringify(await off.write(offToggle, { caseId: task.caseId, taskId: task.taskId }))}`);
+  const offAfter = await off.read(offList);
+  const caseAfter = offAfter.find((c) => c.id === task.caseId)!;
+  const prog = (s: string) => s.match(/\d+\/\d+ tasks/)?.[0] ?? "?";
+  console.log(`   progress ${prog(caseBefore.summary)} → ${prog(caseAfter.summary)}`);
+  assert(caseBefore.summary !== caseAfter.summary, "toggling a task must change the case's progress summary");
+
+  // employee restricted
+  const offEmp = new FrontDoor(config);
+  await offEmp.bootstrap("sarah.chen");
+  const offEmpCases = await offEmp.read(offList);
+  console.log(`\n[EMPLOYEE] offboarding cases: ${offEmpCases.length} (expect 0 — restricted)`);
+  assert(offEmpCases.length === 0, "employee may not view offboarding");
+
+  console.log("\n✅ offboarding slice verified end-to-end against staging");
 }
 
 main().catch((e) => {

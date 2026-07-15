@@ -41,8 +41,8 @@ Stop the loop when the backlog is clear or a blocker repeats across iterations; 
 | 3 | recruitment | `recruitment/RecruitmentController` | list_requisition_approvals, approve_requisition (candidate-pipeline deferred) | 🟡 partial + verified |
 | 4 | directory | `people/DirectoryController` | search_directory, get_employee | ✅ done + verified |
 | 5 | onboarding | `onboarding/OnboardingController` | list_onboarding_cases, list_onboarding_steps, complete_onboarding_step | ✅ done + verified |
-| 6 | offboarding | `offboarding/OffboardingController` | list_offboarding, complete_offboarding_step | ⬜ next |
-| 7 | profile | `profile/ProfileController` | get_my_profile, submit_profile_change, approve_profile_change | ⬜ |
+| 6 | offboarding | `offboarding/OffboardingController` | list_offboarding, list_offboarding_tasks, toggle_offboarding_task | ✅ done + verified |
+| 7 | profile | `profile/ProfileController` | get_my_profile, submit_profile_change, approve_profile_change | ⬜ next |
 | 8 | performance | `performance/PerformanceController` | list_reviews, list_cycles | ⬜ |
 | 9 | analytics | `analytics/AnalyticsController` | get_analytics (read-only) | ⬜ |
 | 10 | admin | `admin/AdminController` | get_admin_settings, get_audit_log (read-only) | ⬜ |
@@ -91,6 +91,15 @@ Stop the loop when the backlog is clear or a blocker repeats across iterations; 
   with a path arg (caseId) can be used as a verify target. Verified on staging: HR read 3 cases, complete
   onb-anna/payroll (2→1 actionable), employee restricted. Templates tab + start-onboarding (multi-field
   new-hire form) not exposed — out of scope for a tool.
+- **2026-07-15** — offboarding: list_offboarding + list_offboarding_tasks + toggle_offboarding_task
+  (all cases render on one page; no detail route). Added a small reusable engine capability: a `text`
+  field-extractor (read an element's visible text, not an attribute) — needed because the task label
+  lives inside the (stripped) button. toggle flips a task in place, so no verify-by-absence; proven by
+  the case's progress summary moving (3/7→2/7). complete-case/cancel/start not exposed (complete needs an
+  all-tasks-done precondition; start is a multi-field form). **Evidence-before-fix catch**: first run
+  failed on the EMPLOYEE restricted read — the marker was "available to managers and HR", not the
+  "managed by…" I assumed; curl'd the real page, fixed the marker. Verified: HR read 1 case + 7 tasks,
+  toggle moved progress, employee restricted.
 
 ## Deferred (need an engine generalization, not blocked)
 

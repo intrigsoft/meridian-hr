@@ -66,12 +66,11 @@ export class FrontDoor {
       const row: Row = { summary: textOf(node) };
       for (const [key, f] of Object.entries(tool.fields.handle ?? {})) {
         const el = f.selector ? $a.find(f.selector).first() : $a;
-        const raw = el.attr(f.attr) ?? "";
-        if (f.extract) {
-          const m = raw.match(new RegExp(f.extract));
-          row[key] = m ? m[1] : "";
+        if (f.text) {
+          row[key] = el.text().replace(/\s+/g, " ").trim();
         } else {
-          row[key] = raw.trim();
+          const raw = el.attr(f.attr ?? "") ?? "";
+          row[key] = f.extract ? (raw.match(new RegExp(f.extract))?.[1] ?? "") : raw.trim();
         }
       }
       return row;
