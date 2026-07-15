@@ -1,0 +1,23 @@
+{
+  "name": "meridian-hr-mcp-adapter",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "HTML front-door MCP adapter for the Meridian HR sample — drives the server-rendered UI as a legacy app with no REST API (DioscHub integration demo).",
+  "license": "MIT",
+  "bin": { "meridian-hr-mcp": "dist/server.js" },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/server.js",
+    "verify": "tsx scripts/verify.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "cheerio": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.16.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
+  }
+}
