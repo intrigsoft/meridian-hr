@@ -120,6 +120,33 @@ async function main(): Promise<void> {
   assert(jcEmpQueue.length === 0, "employee may not view/approve job changes");
 
   console.log("\n✅ jobchange slice verified end-to-end against staging");
+
+  // --- Recruitment: approve a requisition pending approval (HR-only, path-id) ---
+  const reqList = config.readTools.find((t) => t.name === "list_requisition_approvals")!;
+  const reqApprove = config.writeTools.find((t) => t.name === "approve_requisition")!;
+
+  const rc = new FrontDoor(config);
+  await rc.bootstrap("priya.nair");
+  const rcBefore = await rc.read(reqList);
+  console.log(`\n[HR] requisitions awaiting approval: ${rcBefore.length}`);
+  for (const r of rcBefore) console.log(`   ${r.id}  ·  ${r.summary}`);
+  assert(rcBefore.length > 0, "expected a requisition pending approval on a fresh workspace");
+  assert(rcBefore.every((r) => r.id && r.summary), "each requisition row needs id + summary");
+
+  const rcTarget = rcBefore[0];
+  console.log(`\n[write] approve_requisition(id=${rcTarget.id})`);
+  console.log(`   → ${JSON.stringify(await rc.write(reqApprove, { id: rcTarget.id }))}`);
+  const rcAfter = await rc.read(reqList);
+  console.log(`[HR] awaiting approval after: ${rcAfter.length} (was ${rcBefore.length})`);
+  assert(!rcAfter.some((r) => r.id === rcTarget.id), "approved requisition should leave the pending list");
+
+  const rcEmp = new FrontDoor(config);
+  await rcEmp.bootstrap("sarah.chen");
+  const rcEmpQueue = await rcEmp.read(reqList);
+  console.log(`\n[EMPLOYEE sarah.chen] requisition approvals: ${rcEmpQueue.length} (expect 0)`);
+  assert(rcEmpQueue.length === 0, "employee may not view/approve requisitions");
+
+  console.log("\n✅ recruitment (requisition approval) slice verified end-to-end against staging");
 }
 
 main().catch((e) => {

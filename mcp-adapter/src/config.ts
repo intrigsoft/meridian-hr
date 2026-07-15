@@ -132,6 +132,25 @@ export const config: AdapterConfig = {
       // "managed by managers" = the restricted panel shown to non-approvers.
       emptyMarkers: ["Pending approval", "managed by managers"],
     },
+
+    // ---- recruitment ----
+    {
+      name: "list_requisition_approvals",
+      description:
+        "List job requisitions awaiting the signed-in HR approver's decision (before the role opens). " +
+        "Each item has an `id` (pass to approve_requisition) and a human-readable `summary`. Empty when " +
+        "nothing is pending approval or the caller may not approve requisitions.",
+      path: "/recruitment",
+      row: {
+        anchor: "form[action*='/recruitment/req/'][action*='/approve']",
+        container: "div[style*='padding:18px 20px']",
+      },
+      fields: {
+        handle: { id: { attr: "action", extract: "/recruitment/req/(.+)/approve" } },
+        summary: { text: true },
+      },
+      emptyMarkers: ["Requisitions", "managed by hiring managers"],
+    },
   ],
 
   writeTools: [
@@ -200,6 +219,19 @@ export const config: AdapterConfig = {
       handle: ["id"],
       csrf: null,
       verify: { via: "list_job_changes" },
+    },
+
+    // ---- recruitment ----
+    {
+      name: "approve_requisition",
+      description:
+        "Approve one requisition pending approval by id (from list_requisition_approvals). Opens the role.",
+      path: "/recruitment/req/${id}/approve",
+      form: {},
+      args: { id: { required: true, inPath: true, description: "Requisition id, e.g. REQ-2052" } },
+      handle: ["id"],
+      csrf: null,
+      verify: { via: "list_requisition_approvals" },
     },
   ],
 };

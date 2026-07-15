@@ -38,8 +38,8 @@ Stop the loop when the backlog is clear or a blocker repeats across iterations; 
 | 0 | leave | `leave/LeaveController` | list_pending_approvals, approve_leave, reject_leave | ✅ done + verified |
 | 1 | time | `time/TimeController` | list_time_approvals, approve_timesheet | ✅ done + verified |
 | 2 | jobchange | `jobchange/JobChangeController` | list_job_changes, approve_job_change, reject_job_change | ✅ done + verified |
-| 3 | recruitment | `recruitment/RecruitmentController` | list_requisitions, list_candidates, advance_candidate | ⬜ next |
-| 4 | directory | `people/DirectoryController` | search_directory, get_employee | ⬜ |
+| 3 | recruitment | `recruitment/RecruitmentController` | list_requisition_approvals, approve_requisition (candidate-pipeline deferred) | 🟡 partial + verified |
+| 4 | directory | `people/DirectoryController` | search_directory, get_employee | ⬜ next |
 | 5 | onboarding | `onboarding/OnboardingController` | list_onboarding_cases, complete_onboarding_step | ⬜ |
 | 6 | offboarding | `offboarding/OffboardingController` | list_offboarding, complete_offboarding_step | ⬜ |
 | 7 | profile | `profile/ProfileController` | get_my_profile, submit_profile_change, approve_profile_change | ⬜ |
@@ -66,6 +66,20 @@ Stop the loop when the backlog is clear or a blocker repeats across iterations; 
   (title/level/salary/band before→after). Sanity marker = the "Pending approval" stats-card label so a
   loaded-but-no-pending page reads empty, not fail-loud; "managed by managers" covers non-approvers.
   Verified on staging: HR read 1 pending, approve 1→0, reject (fresh workspace) gone, employee restricted.
+- **2026-07-15** — recruitment (partial): list_requisition_approvals + approve_requisition — the clean
+  approval-queue slice (HR-only, path-id, verify-by-absence). Verified on staging: HR read 1 pending
+  (REQ-2052), approve 1→0, employee restricted. **Deferred: list_candidates + advance_candidate** — the
+  candidate pipeline lives at `/recruitment/req/{id}/pipeline` and candidate detail at
+  `/recruitment/candidate/{id}`, so those reads need **path-args on read tools** (engine reads are
+  currently fixed-path), and `advance_candidate` moves a candidate between stages rather than removing it,
+  so it needs a **non-absence verify** (assert stage changed). Both are a separate engine generalization
+  — logged under Deferred, not half-built.
+
+## Deferred (need an engine generalization, not blocked)
+
+- **recruitment candidate pipeline** (list_candidates, advance_candidate) — needs read-path-args
+  (`/recruitment/req/{id}/pipeline`, `/recruitment/candidate/{id}`) + a non-absence verify
+  (advance moves a candidate between stages). Do as a dedicated iteration after the fixed-path domains.
 
 ## Blockers
 
