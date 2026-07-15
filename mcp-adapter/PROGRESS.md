@@ -45,7 +45,7 @@ Stop the loop when the backlog is clear or a blocker repeats across iterations; 
 | 7 | profile | `profile/ProfileController` | submit_legal_name_change, list_profile_change_approvals, approve_profile_change | ✅ done + verified |
 | 8 | performance | `performance/PerformanceController` | list_cycles, list_reviews | ✅ done + verified |
 | 9 | analytics | `analytics/AnalyticsController` | get_analytics (read-only) | ✅ done + verified |
-| 10 | admin | `admin/AdminController` | get_admin_settings, get_audit_log (read-only) | ⬜ next (last) |
+| 10 | admin | `admin/AdminController` | get_admin_settings, get_org_structure, get_roles_and_access, get_audit_log | ✅ done + verified |
 
 ## Log
 
@@ -119,6 +119,11 @@ Stop the loop when the backlog is clear or a blocker repeats across iterations; 
   region (anchor on the `max-width:1040px` content wrapper, no handle — like get_employee). Verified on
   staging: HR gets the KPI dashboard ("Headcount 15 · 5 teams · Active 12 · Open roles 3 …"); EMPLOYEE
   gets only the restricted message ("Analytics are available to managers & HR") — RBAC-for-free, no data.
+- **2026-07-15** — admin (read-only, 4 detail reads): get_admin_settings (/settings), get_org_structure
+  (/org), get_roles_and_access (/roles), get_audit_log (/audit). Each anchors on the content-fragment
+  wrapper (900px for settings/org/roles, 940px for audit). Verified on staging: HR gets policy settings,
+  org, roles+matrix, and the 44-event unified audit trail; EMPLOYEE blocked on every one ("HR access
+  required"). Editing these admin surfaces is deferred in the app itself, so reads are the full surface.
 
 ## Deferred (need an engine generalization, not blocked)
 

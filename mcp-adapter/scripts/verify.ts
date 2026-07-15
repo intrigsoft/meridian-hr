@@ -332,6 +332,37 @@ async function main(): Promise<void> {
   );
 
   console.log("\n✅ analytics slice verified end-to-end against staging");
+
+  // --- Admin (read-only): settings / org / roles / audit, HR-gated ---
+  const getSettings = config.readTools.find((t) => t.name === "get_admin_settings")!;
+  const getOrg = config.readTools.find((t) => t.name === "get_org_structure")!;
+  const getRoles = config.readTools.find((t) => t.name === "get_roles_and_access")!;
+  const getAudit = config.readTools.find((t) => t.name === "get_audit_log")!;
+
+  const adm = new FrontDoor(config);
+  await adm.bootstrap("priya.nair");
+  const settings = await adm.read(getSettings);
+  assert(settings.length >= 1 && settings[0].summary.length > 50, "HR settings should return content");
+  console.log(`\n[HR] settings(head): ${settings[0].summary.slice(0, 120)}…`);
+  const org = await adm.read(getOrg);
+  assert(org[0].summary.length > 20, "org structure should return content");
+  const roles = await adm.read(getRoles);
+  assert(
+    roles.some((r) => r.summary.includes("Manager") || r.summary.includes("Employee")),
+    "roles page should list access roles",
+  );
+  const audit = await adm.read(getAudit);
+  assert(audit[0].summary.length > 50, "audit log should return synthesized events");
+  console.log(`[HR] audit(head): ${audit[0].summary.slice(0, 120)}…`);
+
+  // employee: blocked from every admin surface
+  const admEmp = new FrontDoor(config);
+  await admEmp.bootstrap("sarah.chen");
+  const settingsEmp = await admEmp.read(getSettings);
+  console.log(`[EMPLOYEE] settings: ${settingsEmp[0].summary.slice(0, 60)}`);
+  assert(settingsEmp[0].summary.includes("HR access required"), "employee must be blocked from admin settings");
+
+  console.log("\n✅ admin slice verified end-to-end against staging");
 }
 
 main().catch((e) => {

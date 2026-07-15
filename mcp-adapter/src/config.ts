@@ -333,6 +333,42 @@ export const config: AdapterConfig = {
       row: { anchor: "div[style*='max-width:1040px']" },
       fields: { summary: { text: true } },
     },
+
+    // ---- admin (read-only detail reads; HR only, else "HR access required") ----
+    {
+      name: "get_admin_settings",
+      description:
+        "Get the workspace policy settings: working days, leave types, blackout periods, holidays, review " +
+        "competencies, and job-change types. HR only.",
+      path: "/settings",
+      row: { anchor: "div[style*='max-width:900px']" },
+      fields: { summary: { text: true } },
+    },
+    {
+      name: "get_org_structure",
+      description: "Get the org structure: departments (with lead + headcount), levels, and comp bands. HR only.",
+      path: "/org",
+      row: { anchor: "div[style*='max-width:900px']" },
+      fields: { summary: { text: true } },
+    },
+    {
+      name: "get_roles_and_access",
+      description:
+        "Get roles & access: who holds each access role (Employee / Manager / HR) plus the role×permission " +
+        "matrix. HR only.",
+      path: "/roles",
+      row: { anchor: "div[style*='max-width:900px']" },
+      fields: { summary: { text: true } },
+    },
+    {
+      name: "get_audit_log",
+      description:
+        "Get the unified audit log — recent events synthesized from every domain (hires, leave decisions, " +
+        "profile/job changes, exits) with actor, action, and timestamp. HR only.",
+      path: "/audit",
+      row: { anchor: "div[style*='max-width:940px']" },
+      fields: { summary: { text: true } },
+    },
   ],
 
   writeTools: [
