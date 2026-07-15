@@ -4,15 +4,18 @@
  * not writing new code. This is what makes the surface loop-able.
  *
  * Two channels per read row:
- *   - `id`      EXACT   — lifted from an attribute via regex (the write handle).
- *   - `summary` FUZZY   — the row's sanitized visible text (what the model reasons over).
+ *   - the HANDLE fields  EXACT   — lifted from attributes (the write handle; may be composite).
+ *   - `summary`          FUZZY   — the row's sanitized visible text (what the model reasons over).
  */
 
-export interface IdField {
-  /** Attribute on the ROW ANCHOR element to read the id from (e.g. a form's `action`). */
+/** Where to read one exact handle field from, relative to the row anchor. */
+export interface FieldExtract {
+  /** Descendant selector under the row anchor; omit to read the anchor element itself. */
+  selector?: string;
+  /** Attribute to read (e.g. a form's `action`, or a hidden input's `value`). */
   attr: string;
-  /** Regex with one capture group that extracts the id from that attribute value. */
-  extract: string;
+  /** Regex with one capture group to pull the id out of the attribute; omit for the whole value. */
+  extract?: string;
 }
 
 export interface ReadTool {
@@ -26,11 +29,12 @@ export interface ReadTool {
     container?: string;
   };
   fields: {
-    id?: IdField;
+    /** Named handle fields — together they identify the row for the write tools. */
+    handle?: Record<string, FieldExtract>;
     summary: { text: true };
   };
-  /** Text that means "legitimately empty / not permitted" → return []. Absence of both
-   *  rows and any marker means the page shape changed → fail loud. */
+  /** Text that means "legitimately empty / not permitted / page loaded but no rows" → return [].
+   *  Absence of both rows and any marker means the page shape changed → fail loud. */
   emptyMarkers?: string[];
 }
 
@@ -48,10 +52,12 @@ export interface WriteTool {
   /** Fixed form fields always sent (e.g. Meridian's `back=approvals`). */
   form: Record<string, string>;
   args: Record<string, WriteArg>;
+  /** Which args identify the row — used to confirm the write took (verify) and to ack it. */
+  handle: string[];
   /** Generic CSRF harvest — inert for Meridian (no spring-security); real legacy apps set it. */
   csrf?: { harvestFrom: string; selector: string; attr?: string; field: string } | null;
-  /** Post-write proof: re-fetch `path` and assert `absentText` is gone. */
-  verify?: { path: string; absentText: string };
+  /** Post-write proof: re-run read tool `via` and assert this row's handle is gone. */
+  verify?: { via: string };
 }
 
 export interface AdapterConfig {
@@ -64,6 +70,7 @@ export const config: AdapterConfig = {
   baseUrl: process.env.MERIDIAN_BASE_URL ?? "https://meridian-hr-staging.up.railway.app",
 
   readTools: [
+    // ---- leave ----
     {
       name: "list_pending_approvals",
       description:
@@ -76,22 +83,46 @@ export const config: AdapterConfig = {
         container: "div[style*='padding:16px 18px']",
       },
       fields: {
-        id: { attr: "action", extract: "/leave/(.+)/approve" },
+        handle: { id: { attr: "action", extract: "/leave/(.+)/approve" } },
         summary: { text: true },
       },
       emptyMarkers: ["Queue clear", "No approvals for your role"],
     },
+
+    // ---- time ----
+    {
+      name: "list_time_approvals",
+      description:
+        "List submitted timesheets awaiting the signed-in approver's decision. Each item has " +
+        "`empId` + `week` (pass both to approve_timesheet) and a human-readable `summary`. " +
+        "Returns an empty list when nothing is pending or the caller is not an approver.",
+      path: "/time",
+      row: {
+        anchor: "form[action*='/time/approve']",
+        container: "div[style*='padding:10px 12px']",
+      },
+      fields: {
+        handle: {
+          empId: { selector: "input[name='empId']", attr: "value" },
+          week: { selector: "input[name='week']", attr: "value" },
+        },
+        summary: { text: true },
+      },
+      emptyMarkers: ["Recent weeks"],
+    },
   ],
 
   writeTools: [
+    // ---- leave ----
     {
       name: "approve_leave",
       description: "Approve one pending leave request by id (obtained from list_pending_approvals).",
       path: "/leave/${id}/approve",
       form: { back: "approvals" },
       args: { id: { required: true, inPath: true, description: "Leave request id, e.g. R-1048" } },
+      handle: ["id"],
       csrf: null,
-      verify: { path: "/approvals", absentText: "/leave/${id}/approve" },
+      verify: { via: "list_pending_approvals" },
     },
     {
       name: "reject_leave",
@@ -102,8 +133,25 @@ export const config: AdapterConfig = {
         id: { required: true, inPath: true, description: "Leave request id, e.g. R-1048" },
         note: { required: true, description: "Reason for rejection (shown to the requester)." },
       },
+      handle: ["id"],
       csrf: null,
-      verify: { path: "/approvals", absentText: "/leave/${id}/approve" },
+      verify: { via: "list_pending_approvals" },
+    },
+
+    // ---- time ----
+    {
+      name: "approve_timesheet",
+      description:
+        "Approve one submitted timesheet. Pass the `empId` and `week` from list_time_approvals.",
+      path: "/time/approve",
+      form: {},
+      args: {
+        empId: { required: true, description: "Employee id whose timesheet is approved, e.g. marcus.reid" },
+        week: { required: true, description: "Week-start date of the timesheet, e.g. 2026-07-06" },
+      },
+      handle: ["empId", "week"],
+      csrf: null,
+      verify: { via: "list_time_approvals" },
     },
   ],
 };

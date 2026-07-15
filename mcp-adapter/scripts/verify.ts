@@ -13,6 +13,8 @@ import { config } from "../src/config.js";
 
 const list = config.readTools.find((t) => t.name === "list_pending_approvals")!;
 const approve = config.writeTools.find((t) => t.name === "approve_leave")!;
+const timeList = config.readTools.find((t) => t.name === "list_time_approvals")!;
+const timeApprove = config.writeTools.find((t) => t.name === "approve_timesheet")!;
 
 function assert(cond: boolean, msg: string): void {
   if (!cond) throw new Error(msg);
@@ -32,7 +34,7 @@ async function main(): Promise<void> {
 
   const target = before.find((r) => r.id)!;
   console.log(`\n[write] approve_leave(id=${target.id})`);
-  const res = await hr.write(approve, { id: target.id! });
+  const res = await hr.write(approve, { id: target.id });
   console.log(`   → ${JSON.stringify(res)}`);
 
   const after = await hr.read(list);
@@ -48,6 +50,37 @@ async function main(): Promise<void> {
   assert(empQueue.length === 0, "employee is not an approver — queue must be empty");
 
   console.log("\n✅ leave slice verified end-to-end against staging");
+
+  // --- Time: read pending timesheets + approve one (composite empId+week handle) ---
+  const tm = new FrontDoor(config);
+  await tm.bootstrap("priya.nair");
+  const tBefore = await tm.read(timeList);
+  console.log(`\n[HR] pending timesheets: ${tBefore.length}`);
+  for (const r of tBefore) console.log(`   ${r.empId} / ${r.week}  ·  ${r.summary}`);
+  assert(tBefore.length > 0, "expected pending timesheets on a fresh workspace");
+  assert(tBefore.every((r) => r.empId && r.week && r.summary), "each timesheet row needs empId + week + summary");
+
+  const tTarget = tBefore[0];
+  console.log(`\n[write] approve_timesheet(empId=${tTarget.empId}, week=${tTarget.week})`);
+  const tRes = await tm.write(timeApprove, { empId: tTarget.empId, week: tTarget.week });
+  console.log(`   → ${JSON.stringify(tRes)}`);
+
+  const tAfter = await tm.read(timeList);
+  console.log(`[HR] pending timesheets after: ${tAfter.length} (was ${tBefore.length})`);
+  assert(
+    !tAfter.some((r) => r.empId === tTarget.empId && r.week === tTarget.week),
+    "approved timesheet should be gone",
+  );
+  assert(tAfter.length === tBefore.length - 1, "pending timesheets should drop by exactly 1");
+
+  // --- Employee: no timesheet approvals (RBAC-for-free) ---
+  const empT = new FrontDoor(config);
+  await empT.bootstrap("sarah.chen");
+  const empTimeQueue = await empT.read(timeList);
+  console.log(`\n[EMPLOYEE sarah.chen] pending timesheets: ${empTimeQueue.length} (expect 0)`);
+  assert(empTimeQueue.length === 0, "employee is not an approver — timesheet queue must be empty");
+
+  console.log("\n✅ time slice verified end-to-end against staging");
 }
 
 main().catch((e) => {

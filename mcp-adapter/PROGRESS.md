@@ -36,8 +36,8 @@ Stop the loop when the backlog is clear or a blocker repeats across iterations; 
 | # | Domain | Controller | Planned tools | Status |
 |---|--------|-----------|---------------|--------|
 | 0 | leave | `leave/LeaveController` | list_pending_approvals, approve_leave, reject_leave | ✅ done + verified |
-| 1 | time | `time/TimeController` | list_time_approvals, approve_timesheet, reject_timesheet | ⬜ next |
-| 2 | jobchange | `jobchange/JobChangeController` | list_job_changes, approve_job_change, reject_job_change | ⬜ |
+| 1 | time | `time/TimeController` | list_time_approvals, approve_timesheet | ✅ done + verified |
+| 2 | jobchange | `jobchange/JobChangeController` | list_job_changes, approve_job_change, reject_job_change | ⬜ next |
 | 3 | recruitment | `recruitment/RecruitmentController` | list_requisitions, list_candidates, advance_candidate | ⬜ |
 | 4 | directory | `people/DirectoryController` | search_directory, get_employee | ⬜ |
 | 5 | onboarding | `onboarding/OnboardingController` | list_onboarding_cases, complete_onboarding_step | ⬜ |
@@ -53,6 +53,13 @@ Stop the loop when the backlog is clear or a blocker repeats across iterations; 
   form-POST write → post-write verify → fail-loud on empty scope), leave slice, stdio MCP server.
   Verified on staging: HR queue read (R-1048/R-1049 w/ id+summary), approve_leave 2→1, employee
   queue empty (RBAC-for-free). `tools/list` returns all 3 tools. Build clean.
+- **2026-07-15** — time: list_time_approvals + approve_timesheet. **No reject route exists** for
+  timesheets (controller only save/submit/approve/clock) — dropped reject_timesheet, did not invent it.
+  Drove a **coherent engine generalization**: reads now extract multi-field composite handles
+  (time's write key is `empId`+`week` in hidden inputs, not a path id), and post-write verify now
+  re-runs the read and asserts the handle is gone (replacing the leave-only string-includes check).
+  Leave migrated to the same shape. Verified on staging: HR read 2 pending timesheets, approve 2→1,
+  employee empty. Empty-detection uses "Recent weeks" as the page-loaded sanity marker.
 
 ## Blockers
 

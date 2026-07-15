@@ -6,9 +6,10 @@ import type { AdapterConfig, ReadTool, WriteTool } from "./config.js";
 /** A tool-level failure the server surfaces to the model as an error result. */
 export class ToolError extends Error {}
 
+/** A read row: its sanitized `summary` plus any exact handle fields (id, or empId+week, …). */
 export interface Row {
-  id: string | null;
   summary: string;
+  [field: string]: string;
 }
 
 /** Replace `${name}` in a template with args (no encoding; ids are simple business keys). */
@@ -57,13 +58,18 @@ export class FrontDoor {
       const $a = $(a);
       const container = tool.row.container ? $a.closest(tool.row.container) : $a;
       const node = container.length ? container : $a;
-      let id: string | null = null;
-      if (tool.fields.id) {
-        const attr = $a.attr(tool.fields.id.attr) ?? "";
-        const m = attr.match(new RegExp(tool.fields.id.extract));
-        id = m ? m[1] : null;
+      const row: Row = { summary: textOf(node) };
+      for (const [key, f] of Object.entries(tool.fields.handle ?? {})) {
+        const el = f.selector ? $a.find(f.selector).first() : $a;
+        const raw = el.attr(f.attr) ?? "";
+        if (f.extract) {
+          const m = raw.match(new RegExp(f.extract));
+          row[key] = m ? m[1] : "";
+        } else {
+          row[key] = raw.trim();
+        }
       }
-      return { id, summary: textOf(node) };
+      return row;
     });
   }
 
@@ -87,14 +93,17 @@ export class FrontDoor {
       throw new ToolError(`${tool.name}: POST ${path} → HTTP ${r.status}`);
     }
 
-    // Post-write proof: the write must have changed the page (fail loud if it didn't).
+    // Post-write proof: re-run the associated read and assert this row's handle is gone.
     if (tool.verify) {
-      const after = await this.session.get(tool.verify.path);
-      if (after.body.includes(fill(tool.verify.absentText, args))) {
-        throw new ToolError(`${tool.name}: write did not take — ${JSON.stringify(args)} still actionable.`);
+      const rt = this.cfg.readTools.find((t) => t.name === tool.verify!.via);
+      if (!rt) throw new ToolError(`${tool.name}: verify read-tool '${tool.verify.via}' not found`);
+      const rows = await this.read(rt);
+      const handle = Object.fromEntries(tool.handle.map((k) => [k, args[k]]));
+      if (rows.some((row) => tool.handle.every((k) => row[k] === args[k]))) {
+        throw new ToolError(`${tool.name}: write did not take — handle ${JSON.stringify(handle)} still present.`);
       }
     }
 
-    return { ok: true, id: args.id ?? "" };
+    return { ok: true, id: tool.handle.map((k) => args[k]).join("/") };
   }
 }
