@@ -102,7 +102,8 @@ export class FrontDoor {
     if (tool.verify) {
       const rt = this.cfg.readTools.find((t) => t.name === tool.verify!.via);
       if (!rt) throw new ToolError(`${tool.name}: verify read-tool '${tool.verify.via}' not found`);
-      const rows = await this.read(rt);
+      // Pass the write's args through — the verify read may need them (e.g. a caseId in its path).
+      const rows = await this.read(rt, args);
       const handle = Object.fromEntries(tool.handle.map((k) => [k, args[k]]));
       if (rows.some((row) => tool.handle.every((k) => row[k] === args[k]))) {
         throw new ToolError(`${tool.name}: write did not take — handle ${JSON.stringify(handle)} still present.`);

@@ -9,6 +9,7 @@
  *   3. Employee sees an EMPTY queue — RBAC enforced by the app's own front door.
  */
 import { FrontDoor } from "../src/engine.js";
+import type { Row } from "../src/engine.js";
 import { config } from "../src/config.js";
 
 const list = config.readTools.find((t) => t.name === "list_pending_approvals")!;
@@ -172,6 +173,53 @@ async function main(): Promise<void> {
   console.log(`   summary(head): ${prof[0].summary.slice(0, 140)}…`);
 
   console.log("\n✅ directory slice verified end-to-end against staging");
+
+  // --- Onboarding: cases → steps → complete a step (chain; verify-by-absence) ---
+  const obCases = config.readTools.find((t) => t.name === "list_onboarding_cases")!;
+  const obSteps = config.readTools.find((t) => t.name === "list_onboarding_steps")!;
+  const obComplete = config.writeTools.find((t) => t.name === "complete_onboarding_step")!;
+
+  const ob = new FrontDoor(config);
+  await ob.bootstrap("priya.nair");
+  const cases = await ob.read(obCases);
+  console.log(`\n[HR] onboarding cases: ${cases.length}`);
+  for (const c of cases) console.log(`   ${c.id}  ·  ${c.summary}`);
+  assert(cases.length > 0, "expected seeded onboarding cases");
+  assert(cases.every((c) => c.id && c.summary), "each case needs id + summary");
+
+  let chosen: Row | null = null;
+  let steps: Row[] = [];
+  for (const c of cases) {
+    const s = await ob.read(obSteps, { caseId: c.id });
+    if (s.length > 0) {
+      chosen = c;
+      steps = s;
+      break;
+    }
+  }
+  assert(chosen !== null, "expected at least one case with an in-progress step");
+  console.log(`\n[HR] actionable steps for ${chosen!.id}: ${steps.length}`);
+  for (const s of steps) console.log(`   ${s.caseId}/${s.stepId}  ·  ${s.title}`);
+  assert(steps.every((s) => s.caseId && s.stepId && s.title), "each step needs caseId + stepId + title");
+
+  const step = steps[0];
+  console.log(`\n[write] complete_onboarding_step(${step.caseId}/${step.stepId} — "${step.title}")`);
+  console.log(`   → ${JSON.stringify(await ob.write(obComplete, { caseId: step.caseId, stepId: step.stepId, title: step.title }))}`);
+  const stepsAfter = await ob.read(obSteps, { caseId: chosen!.id });
+  console.log(`[HR] actionable steps after: ${stepsAfter.length} (was ${steps.length})`);
+  assert(
+    !stepsAfter.some((s) => s.caseId === step.caseId && s.stepId === step.stepId),
+    "completed step should leave the actionable list",
+  );
+
+  // employee: onboarding restricted
+  const obEmp = new FrontDoor(config);
+  await obEmp.bootstrap("sarah.chen");
+  const obEmpCases = await obEmp.read(obCases);
+  console.log(`\n[EMPLOYEE] onboarding cases: ${obEmpCases.length} (expect 0 — restricted)`);
+  assert(obEmpCases.length === 0, "employee may not view onboarding");
+
+  console.log("\n✅ onboarding slice verified end-to-end against staging");
 }
 
 main().catch((e) => {

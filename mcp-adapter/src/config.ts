@@ -189,6 +189,43 @@ export const config: AdapterConfig = {
       },
       // The profile wrapper always renders (even for a bad id → "not found" text), so no empty marker.
     },
+
+    // ---- onboarding (chain: cases → steps → complete) ----
+    {
+      name: "list_onboarding_cases",
+      description:
+        "List active onboarding cases (new hires being provisioned). Each has an `id` (pass to " +
+        "list_onboarding_steps) and a `summary` (hire, role, start date, schema, progress). Manager/HR only.",
+      path: "/onboarding",
+      row: { anchor: "a[href^='/onboarding/case/']" },
+      fields: {
+        handle: { id: { attr: "href", extract: "/onboarding/case/(.+)" } },
+        summary: { text: true },
+      },
+      emptyMarkers: ["No active onboardings", "No matches", "managed by managers"],
+    },
+    {
+      name: "list_onboarding_steps",
+      description:
+        "List the actionable (in-progress) steps of one onboarding case. Each has `caseId`, `stepId`, and " +
+        "`title` (pass all three to complete_onboarding_step) plus a `summary`. Empty when no step is ready.",
+      path: "/onboarding/case/${caseId}",
+      args: { caseId: { required: true, description: "Onboarding case id, e.g. onb-anna" } },
+      row: {
+        anchor: "form[action*='/step/'][action*='/complete']",
+        container: "div[style*='flex:1; min-width:0']",
+      },
+      fields: {
+        handle: {
+          caseId: { attr: "action", extract: "/onboarding/case/([^/]+)/step/" },
+          stepId: { attr: "action", extract: "/step/([^/]+)/complete" },
+          title: { selector: "input[name='title']", attr: "value" },
+        },
+        summary: { text: true },
+      },
+      // A valid status page always shows one of these health labels → empty (no actionable step), not fail-loud.
+      emptyMarkers: ["On track", "Complete", "blocked"],
+    },
   ],
 
   writeTools: [
@@ -270,6 +307,24 @@ export const config: AdapterConfig = {
       handle: ["id"],
       csrf: null,
       verify: { via: "list_requisition_approvals" },
+    },
+
+    // ---- onboarding ----
+    {
+      name: "complete_onboarding_step",
+      description:
+        "Mark one in-progress onboarding step done (from list_onboarding_steps). Completing a step " +
+        "auto-releases any dependent steps.",
+      path: "/onboarding/case/${caseId}/step/${stepId}/complete",
+      form: {},
+      args: {
+        caseId: { required: true, inPath: true, description: "Onboarding case id, e.g. onb-anna" },
+        stepId: { required: true, inPath: true, description: "Step id, e.g. payroll" },
+        title: { required: true, description: "The step's title (from list_onboarding_steps)." },
+      },
+      handle: ["caseId", "stepId"],
+      csrf: null,
+      verify: { via: "list_onboarding_steps" },
     },
   ],
 };

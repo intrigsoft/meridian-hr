@@ -40,8 +40,8 @@ Stop the loop when the backlog is clear or a blocker repeats across iterations; 
 | 2 | jobchange | `jobchange/JobChangeController` | list_job_changes, approve_job_change, reject_job_change | ✅ done + verified |
 | 3 | recruitment | `recruitment/RecruitmentController` | list_requisition_approvals, approve_requisition (candidate-pipeline deferred) | 🟡 partial + verified |
 | 4 | directory | `people/DirectoryController` | search_directory, get_employee | ✅ done + verified |
-| 5 | onboarding | `onboarding/OnboardingController` | list_onboarding_cases, complete_onboarding_step | ⬜ next |
-| 6 | offboarding | `offboarding/OffboardingController` | list_offboarding, complete_offboarding_step | ⬜ |
+| 5 | onboarding | `onboarding/OnboardingController` | list_onboarding_cases, list_onboarding_steps, complete_onboarding_step | ✅ done + verified |
+| 6 | offboarding | `offboarding/OffboardingController` | list_offboarding, complete_offboarding_step | ⬜ next |
 | 7 | profile | `profile/ProfileController` | get_my_profile, submit_profile_change, approve_profile_change | ⬜ |
 | 8 | performance | `performance/PerformanceController` | list_reviews, list_cycles | ⬜ |
 | 9 | analytics | `analytics/AnalyticsController` | get_analytics (read-only) | ⬜ |
@@ -82,6 +82,15 @@ Stop the loop when the backlog is clear or a blocker repeats across iterations; 
   Verified as EMPLOYEE (base-role, not HR-gated): search "chen"→sarah.chen, no-match→empty, profile
   contains the name. This read-args support also unblocks the deferred recruitment candidate reads.
   tools/list now serves 12 tools with correct arg schemas.
+- **2026-07-15** — onboarding (chain): list_onboarding_cases → list_onboarding_steps(caseId) →
+  complete_onboarding_step(caseId, stepId, title). The step's composite handle (caseId+stepId) comes
+  from TWO regexes on the same form `action` (`/case/([^/]+)/step/` and `/step/([^/]+)/complete`), and
+  `title` from the hidden input. list_onboarding_steps lists only in-progress steps (anchored on the
+  complete form), so completing one removes its form → **verify-by-absence still fits** (no non-absence
+  verify needed). Small engine tweak: the verify re-read now receives the write's args, so a read tool
+  with a path arg (caseId) can be used as a verify target. Verified on staging: HR read 3 cases, complete
+  onb-anna/payroll (2→1 actionable), employee restricted. Templates tab + start-onboarding (multi-field
+  new-hire form) not exposed — out of scope for a tool.
 
 ## Deferred (need an engine generalization, not blocked)
 
