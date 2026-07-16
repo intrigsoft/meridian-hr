@@ -1,5 +1,27 @@
 # Meridian HR — Front-Door MCP Adapter · Build Progress
 
+## ✅ ADDENDUM — DioscHub integration (2026-07-16)
+
+The tool surface above is now **hub-integrable** per the PR #235 MCP contract (Streamable HTTP +
+BYOA-in-headers). Refactor committed on `feat/mcp-front-door-adapter` (`2306d53`):
+
+- **Transport**: added stateless Streamable HTTP (`src/mcp-http.ts` + `src/http-server.ts`, `npm run
+  mcp:http`, `POST /mcp`) — fresh Server+transport per request, mirroring the hub's connect-per-call
+  client. stdio entry retained for local/Inspector use. Shared factory: `src/mcp-server.ts`.
+- **Auth**: identity is now **per-call**, resolved from the request's `Authorization: Bearer <artifact>`
+  header (`src/auth.ts`). Grammar: `session:<meridian_device>` (production pass-through, credential-blind)
+  · `persona:<id>` (dev passwordless login). `FrontDoor` is per-call — no singleton persona. This closes
+  the one production gap flagged earlier ("real session forwarding was unbuilt").
+- **401 seam**: Meridian's `AuthInterceptor` 302→/login (invalid/expired session) → `AuthError` carrying a
+  `401 unauthorized` marker → hub classifies **AUTH** → mid-turn re-auth interrupt. RBAC denial stays an
+  empty read (MVC views render a restricted panel, not a 403).
+- **Verified**: `npm run verify:hub` boots the real HTTP server and drives it with an MCP `Client` passing
+  `Authorization` per call — proves 28-tool list, per-call RBAC (HR bearer→2 rows, employee→0), `session:`
+  pass-through, and the 401 marker, all against staging. Direct 28-tool suite still green.
+
+**Not yet done**: registering + driving it through a *running* hub instance (needs the hub up + a Meridian
+session to forward). The server is hub-ready; see README "Register in DioscHub".
+
 ## ✅ FINAL SUMMARY — build complete (2026-07-15)
 
 **28 MCP tools (18 reads · 10 writes) across 11 domains**, every one verified end-to-end against live

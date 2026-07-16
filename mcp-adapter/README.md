@@ -8,16 +8,22 @@ its existing HTML interface from the outside, the same way a browser does.
 ## How it works
 
 ```
-Hub ──MCP (tools/call)──►  this adapter  ──HTTP + HTML──►  Meridian
-                           (the front door)
+Hub ──MCP over Streamable HTTP──►  this adapter  ──HTTP + HTML──►  Meridian
+   (Authorization: Bearer <artifact>)  (the front door)
 ```
 
-Per tool call the adapter:
+The hub connects **per call** and injects the visitor's bound BYOA auth as that request's
+`Authorization` header (MCP spec 2025-11-25). Per tool call the adapter:
 
-1. **Session** — logs in as a persona and carries the `meridian_device` cookie in a jar.
-   The cookie is never serialized into a tool result, so the model never sees it
-   (credential-blind). In production the hub forwards the user's *real* session; the
-   adapter holds no credentials of its own.
+1. **Session** — resolves the caller's identity from the per-call `Authorization` header,
+   with no shared/singleton session, so two users never cross wires. Two artifact shapes:
+   - `session:<meridian_device>` — **pass-through** (production): the forwarded value is the
+     visitor's own signed-in device cookie; the adapter acts as them holding **no credentials
+     of its own**. The cookie is never serialized into a result, so the model never sees it.
+   - `persona:<userId>` — **dev exchange**: Meridian's login is passwordless, so the adapter
+     mints a signed-in session via `POST /login`. Local/demo convenience only.
+   An invalid/expired artifact makes Meridian bounce to `/login`; the adapter returns a
+   `401 unauthorized` error the hub classifies as **AUTH** → a mid-turn re-auth prompt.
 2. **Read** — GETs the page, scopes to the relevant region by a stable anchor, and
    **sanitizes it to visible text** (`summary`, fuzzy — survives a re-skin). The exact
    record **`id`** is lifted separately from an attribute (the write handle).
@@ -40,11 +46,23 @@ session is allowed to act. There is no side door to bypass.
 
 ```bash
 npm install
-npm run build && npm start          # stdio MCP server
-npm run verify                      # end-to-end check against staging
+npm run build
+npm run mcp:http                    # Streamable HTTP server on :5175/mcp — what the hub connects to
+npm run mcp                         # stdio server (MCP Inspector / local drives)
+
+npm run verify                      # 28-tool direct-engine suite vs staging
+npm run verify:hub                  # transport + BYOA seam: real MCP client, per-call Authorization
 ```
 
-Env: `MERIDIAN_PERSONA` (default `priya.nair`), `MERIDIAN_BASE_URL` (default staging).
+Env: `MERIDIAN_BASE_URL` (default staging), `PORT`/`MERIDIAN_MCP_PORT` (HTTP, default 5175).
+For stdio (no per-call header) identity comes from `MERIDIAN_ARTIFACT` (`persona:…` / `session:…`)
+or the `MERIDIAN_PERSONA` shorthand (default `priya.nair`).
+
+## Register in DioscHub
+
+Attach as an MCP instance: transport **http**, serverUrl **`http://<host>:5175/mcp`**. The hub
+forwards the visitor's bound session as `Authorization: Bearer session:<meridian_device>` on
+every call — no per-instance credentials, and Meridian's own RBAC gates each action.
 
 ## Tools
 
