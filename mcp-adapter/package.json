@@ -5,11 +5,17 @@
   "type": "module",
   "description": "HTML front-door MCP adapter for the Meridian HR sample — drives the server-rendered UI as a legacy app with no REST API (DioscHub integration demo).",
   "license": "MIT",
-  "bin": { "meridian-hr-mcp": "dist/server.js" },
+  "bin": {
+    "meridian-hr-mcp": "dist/server.js",
+    "meridian-hr-mcp-http": "dist/http-server.js"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "start": "node dist/server.js",
-    "verify": "tsx scripts/verify.ts"
+    "start": "node dist/http-server.js",
+    "mcp": "node dist/server.js",
+    "mcp:http": "node dist/http-server.js",
+    "verify": "tsx scripts/verify.ts",
+    "verify:hub": "tsx scripts/verify-hub.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.0",

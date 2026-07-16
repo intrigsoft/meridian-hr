@@ -13,9 +13,19 @@ export interface HttpResult {
 }
 
 export class Session {
+  /** Meridian's session cookie (see DeviceFilter.COOKIE). */
+  static readonly DEVICE_COOKIE = "meridian_device";
+
   private cookies = new Map<string, string>();
 
   constructor(readonly baseUrl: string) {}
+
+  /** Seed a cookie directly — used to forward a real, already-authenticated legacy
+   *  session (BYOA pass-through) instead of logging in. Credential-blind: the value
+   *  lives only in the jar and is never serialized into a tool result. */
+  seedCookie(name: string, value: string): void {
+    this.cookies.set(name, value);
+  }
 
   private cookieHeader(): string {
     return [...this.cookies].map(([k, v]) => `${k}=${v}`).join("; ");

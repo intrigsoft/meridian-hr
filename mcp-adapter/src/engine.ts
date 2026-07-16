@@ -1,10 +1,35 @@
 import * as cheerio from "cheerio";
 import { Session } from "./http.js";
 import { textOf } from "./sanitize.js";
+import type { Artifact } from "./auth.js";
 import type { AdapterConfig, ReadTool, WriteTool } from "./config.js";
 
 /** A tool-level failure the server surfaces to the model as an error result. */
 export class ToolError extends Error {}
+
+/**
+ * The forwarded session is invalid/expired — Meridian bounced us to /login. The message
+ * carries a `401 unauthorized` marker so DioscHub's `classifyMcpError` routes it to AUTH
+ * (recoverable → mid-turn re-auth interrupt), not a hard failure.
+ */
+export class AuthError extends ToolError {
+  constructor(detail: string) {
+    super(`401 unauthorized: ${detail}`);
+  }
+}
+
+/**
+ * The session is valid but not permitted for this operation (Meridian's REST/`@ResponseBody`
+ * surface answers 403). The `403 forbidden` marker routes it to FORBIDDEN — a terminal config
+ * error the hub does NOT re-auth (a fresh token resolves to the same identity). Note: the MVC
+ * views this adapter drives express denial as an empty *panel*, not a 403 — so RBAC denial on a
+ * read is a legitimate empty result, and this only fires if a legacy 403 body is seen.
+ */
+export class ForbiddenError extends ToolError {
+  constructor(detail: string) {
+    super(`403 forbidden: ${detail}`);
+  }
+}
 
 /** A read row: its sanitized `summary` plus any exact handle fields (id, or empId+week, …). */
 export interface Row {
@@ -21,6 +46,12 @@ function fill(tpl: string, args: Record<string, string>, encode = false): string
   });
 }
 
+/** Meridian's AuthInterceptor 302-redirects any not-signed-in request to /login. That is
+ *  the app's own "your session is invalid" signal — the 401 seam for the whole adapter. */
+function isLoginRedirect(res: { status: number; location: string | null }): boolean {
+  return res.status === 302 && (res.location ?? "").replace(/\?.*$/, "").endsWith("/login");
+}
+
 /**
  * The generic HTML front-door. It speaks the legacy app's own HTTP + HTML protocol
  * (as a logged-in user), so the app's native RBAC gates every action for free — the
@@ -34,19 +65,41 @@ export class FrontDoor {
     this.session = new Session(cfg.baseUrl);
   }
 
-  /** Establish the caller's session. Demo bootstrap = persona login; in production the
-   *  hub forwards the user's real session cookie and this step is pass-through. */
-  async bootstrap(persona: string): Promise<void> {
+  /**
+   * Establish the caller's session from a resolved BYOA artifact.
+   *   - `session:` — PASS-THROUGH: seed the forwarded `meridian_device`; the visitor is
+   *     already signed in server-side, so we act as them with no credentials of our own.
+   *   - `persona:` — DEV EXCHANGE: mint a fresh signed-in session via passwordless login.
+   * In production only the `session:` path runs (the hub forwards the real cookie); the
+   * persona path exists for local/demo drives where there's no browser session to capture.
+   */
+  async authenticate(artifact: Artifact): Promise<void> {
+    if (artifact.mode === "session") {
+      if (!artifact.value) throw new AuthError("empty session artifact");
+      this.session.seedCookie(Session.DEVICE_COOKIE, artifact.value);
+      this.persona = `session:${artifact.value.slice(0, 6)}…`;
+      return;
+    }
     await this.session.get("/login"); // DeviceFilter mints meridian_device here
-    const r = await this.session.post("/login", { userId: persona });
-    if (r.status !== 302) throw new ToolError(`login as '${persona}' failed: HTTP ${r.status}`);
-    this.persona = persona;
+    const r = await this.session.post("/login", { userId: artifact.value });
+    // doLogin redirects to `/` on success, `/login?error` on an unknown user.
+    if (r.status !== 302 || (r.location ?? "").includes("/login")) {
+      throw new AuthError(`login as '${artifact.value}' failed (HTTP ${r.status})`);
+    }
+    this.persona = artifact.value;
+  }
+
+  /** Persona-login convenience for direct-engine drivers (verify.ts). */
+  bootstrap(persona: string): Promise<void> {
+    return this.authenticate({ mode: "persona", value: persona });
   }
 
   async read(tool: ReadTool, args: Record<string, string> = {}): Promise<Row[]> {
     const path = fill(tool.path, args, true);
-    const { status, body } = await this.session.get(path);
-    if (status !== 200) throw new ToolError(`${tool.name}: GET ${path} → HTTP ${status} (auth redirect?)`);
+    const res = await this.session.get(path);
+    const { status, body } = res;
+    if (isLoginRedirect(res)) throw new AuthError(`${tool.name}: session not signed in (bounced to /login)`);
+    if (status !== 200) throw new ToolError(`${tool.name}: GET ${path} → HTTP ${status}`);
 
     const $ = cheerio.load(body);
     const anchors = $(tool.row.anchor).toArray();
@@ -93,6 +146,8 @@ export class FrontDoor {
     }
 
     const r = await this.session.post(path, form);
+    // A successful write 302s back to its list; a lost session 302s to /login. Split them.
+    if (isLoginRedirect(r)) throw new AuthError(`${tool.name}: session not signed in (bounced to /login)`);
     if (r.status !== 302 && r.status !== 200) {
       throw new ToolError(`${tool.name}: POST ${path} → HTTP ${r.status}`);
     }
