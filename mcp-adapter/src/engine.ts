@@ -130,12 +130,24 @@ export class FrontDoor {
     });
   }
 
-  async write(tool: WriteTool, args: Record<string, string>): Promise<{ ok: boolean; id: string }> {
+  async write(tool: WriteTool, args: Record<string, string>): Promise<{ ok: boolean; id: string; created?: string }> {
     const path = fill(tool.path, args);
 
     const form: Record<string, string> = { ...tool.form };
     for (const [k, spec] of Object.entries(tool.args)) {
-      if (!spec.inPath && args[k] != null) form[k] = args[k];
+      if (spec.inPath || args[k] == null) continue;
+      if (spec.expandJson) {
+        // The arg is a JSON object of dynamic per-item fields — expand to <prefix><key>=<value>.
+        let obj: Record<string, unknown>;
+        try {
+          obj = JSON.parse(args[k]);
+        } catch {
+          throw new ToolError(`${tool.name}: argument '${k}' must be a JSON object, e.g. {"exec": 4}`);
+        }
+        for (const [key, val] of Object.entries(obj)) form[spec.expandJson.prefix + key] = String(val);
+      } else {
+        form[k] = args[k];
+      }
     }
 
     // Generic CSRF harvest — no-op for Meridian.
@@ -152,6 +164,12 @@ export class FrontDoor {
       throw new ToolError(`${tool.name}: POST ${path} → HTTP ${r.status}`);
     }
 
+    // Creates that 302 to the new entity's page: lift the new id out of the Location.
+    let created: string | undefined;
+    if (tool.returns && r.location) {
+      created = r.location.match(new RegExp(tool.returns.fromLocation))?.[1];
+    }
+
     // Post-write proof: re-run the associated read and assert this row's handle is gone.
     if (tool.verify) {
       const rt = this.cfg.readTools.find((t) => t.name === tool.verify!.via);
@@ -164,6 +182,8 @@ export class FrontDoor {
       }
     }
 
-    return { ok: true, id: tool.handle.map((k) => args[k]).join("/") };
+    return created !== undefined
+      ? { ok: true, id: tool.handle.map((k) => args[k]).join("/"), created }
+      : { ok: true, id: tool.handle.map((k) => args[k]).join("/") };
   }
 }

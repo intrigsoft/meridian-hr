@@ -50,7 +50,7 @@ npm run build
 npm run mcp:http                    # Streamable HTTP server on :5175/mcp — what the hub connects to
 npm run mcp                         # stdio server (MCP Inspector / local drives)
 
-npm run verify                      # 28-tool direct-engine suite vs staging
+npm run verify                      # direct-engine domain-slice suite vs staging
 npm run verify:hub                  # transport + BYOA seam: real MCP client, per-call Authorization
 ```
 
@@ -66,21 +66,31 @@ every call — no per-instance credentials, and Meridian's own RBAC gates each a
 
 ## Tools
 
-**28 tools (18 reads · 10 writes) across 11 domains**, all verified end-to-end against staging
-(`npm run verify`). The catalog lives in `src/config.ts` — adding a domain is adding data, not code.
+**114 tools (29 reads · 85 writes) across 11 domains**, all verified end-to-end against a live
+instance. The catalog lives in `src/config.ts` — adding a domain is adding data, not code.
+
+Two engine affordances the catalog uses beyond plain reads/writes:
+
+- **`returns.fromLocation`** — creates that 302 to the new entity's page lift the new id out of the
+  redirect `Location` and return it as `created` (leave requests, employees, onboarding cases,
+  templates, cycles, requisitions).
+- **`expandJson`** — one arg carries a JSON object the engine expands into the app's dynamic form
+  fields (review scores `s_<compId>`, scorecard ratings `rating_<attrId>`, allowances `allow_<typeId>`).
 
 | Domain | Reads | Writes |
 |--------|-------|--------|
-| leave | `list_pending_approvals` | `approve_leave`, `reject_leave` |
-| time | `list_time_approvals` | `approve_timesheet` |
-| jobchange | `list_job_changes` | `approve_job_change`, `reject_job_change` |
-| recruitment | `list_requisition_approvals` | `approve_requisition` |
-| directory | `search_directory`, `get_employee` | — |
-| onboarding | `list_onboarding_cases`, `list_onboarding_steps` | `complete_onboarding_step` |
-| offboarding | `list_offboarding`, `list_offboarding_tasks` | `toggle_offboarding_task` |
-| profile | `list_profile_change_approvals` | `submit_legal_name_change`, `approve_profile_change` |
-| performance | `list_cycles`, `list_reviews` | — |
+| leave | `list_pending_approvals`, `list_my_leave`, `list_leave_balances` | `approve_leave`, `reject_leave`, `submit_leave_request`, `withdraw_leave_request`, `request_leave_info`, `undo_leave_decision` |
+| time | `list_time_approvals`, `get_my_timesheet` | `approve_timesheet`, `save_timesheet`, `submit_timesheet` |
+| jobchange | `list_job_changes` | `approve_job_change`, `reject_job_change`, `request_job_change`, `cancel_job_change` |
+| recruitment | `list_requisition_approvals`, `list_requisitions`, `get_requisition`, `get_pipeline`, `get_candidate` | `approve_requisition`, `create_requisition`, `update_requisition_details`, `toggle_panel_member`, `submit_requisition`, `reject_requisition`, `delete_requisition`, `close_requisition`, `add_candidate`, `submit_scorecard`, `add_candidate_note`, `advance_candidate`, `reject_candidate`, `reopen_candidate`, `make_offer`, `approve_offer`, `extend_offer`, `accept_offer`, `decline_offer` |
+| directory | `search_directory`, `get_employee` | `add_employee`, `edit_employee`, `set_employee_status` |
+| onboarding | `list_onboarding_cases`, `list_onboarding_steps`, `list_onboarding_templates`, `get_onboarding_template` | `complete_onboarding_step`, `start_onboarding`, `upload_onboarding_doc`, `reopen_onboarding_step`, `convert_onboarding_to_employee`, `create_onboarding_template`, `update_onboarding_template`, `delete_onboarding_template`, `add_template_step`, `edit_template_step` |
+| offboarding | `list_offboarding`, `list_offboarding_tasks` | `toggle_offboarding_task`, `start_offboarding`, `complete_offboarding`, `cancel_offboarding` |
+| profile | `list_profile_change_approvals`, `get_my_profile` | `submit_legal_name_change`, `submit_bank_change`, `approve_profile_change`, `reject_profile_change` |
+| performance | `list_cycles`, `list_reviews`, `get_review` | `create_cycle`, `launch_cycle`, `close_cycle`, `delete_cycle`, `rename_cycle`, `set_cycle_timeline`, `set_competency_weight`, `add_cycle_competency`, `remove_cycle_competency`, `balance_cycle_weights`, `submit_self_review`, `submit_manager_review`, `commit_calibration`, `reopen_calibration` |
 | analytics | `get_analytics` | — |
-| admin | `get_admin_settings`, `get_org_structure`, `get_roles_and_access`, `get_audit_log` | — |
+| admin | `get_admin_settings`, `get_org_structure`, `get_roles_and_access`, `get_audit_log` | `set_work_week_target`, `set_leave_allowances`, `set_leave_rules`, `add_blackout`, `remove_blackout`, `add_holiday`, `remove_holiday`, `add_competency`, `update_competency`, `remove_competency`, `add_department`, `remove_department`, `add_level`, `remove_level`, `add_comp_band`, `update_comp_band`, `remove_comp_band`, `set_access_role` |
 
-Deferred (stateful multi-field forms and the recruitment candidate pipeline) are listed in `PROGRESS.md`.
+Deliberately not exposed: `/time/clock`, `/profile/lists`, `/settings/workweek/day`,
+`/settings/change-types/toggle`, `/performance/designer/dept`, `/recruitment/req/{id}/scorecard/toggle`,
+`/org/levels/move`, auth routes, and the CSV export.

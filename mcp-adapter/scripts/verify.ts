@@ -360,7 +360,10 @@ async function main(): Promise<void> {
   await admEmp.bootstrap("sarah.chen");
   const settingsEmp = await admEmp.read(getSettings);
   console.log(`[EMPLOYEE] settings: ${settingsEmp[0].summary.slice(0, 60)}`);
-  assert(settingsEmp[0].summary.includes("HR access required"), "employee must be blocked from admin settings");
+  assert(
+    settingsEmp[0].summary.includes("HR access required") || settingsEmp[0].summary.includes("Configuration is HR-only"),
+    "employee must be blocked from admin settings",
+  );
 
   console.log("\n✅ admin slice verified end-to-end against staging");
 }

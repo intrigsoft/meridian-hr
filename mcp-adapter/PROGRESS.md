@@ -1,5 +1,28 @@
 # Meridian HR — Front-Door MCP Adapter · Build Progress
 
+## ✅ ADDENDUM — full-surface expansion 28 → 114 tools (2026-07-16)
+
+Every remaining Meridian route (minus a deliberate skip list) is now covered: **114 tools
+(29 reads · 85 writes)**. Two minimal engine extensions carried the whole expansion:
+
+- `WriteTool.returns.fromLocation` — regex over the redirect `Location` returns the new
+  entity's id as `created` (leave requests, employees, onboarding cases, templates, cycles,
+  requisitions).
+- `WriteArg.expandJson` — a JSON-object arg expands into dynamic form fields
+  (`s_<compId>` review scores, `rating_<attrId>` scorecard ratings, `allow_<typeId>` allowances).
+
+All 86 new tools live-verified against `http://localhost:3020` (83-step matrix, 0 failures:
+employee/manager/HR personas, fresh isolated workspaces). Full lifecycle chains proven:
+leave submit→withdraw, req create→submit→reject→delete, candidate add→advance→scorecard→
+offer→hire, onboarding start→steps→doc-upload→convert-to-directory, cycle create→design→
+launch→close, offboarding start→cancel / tasks→complete. Fixed along the way:
+`list_offboarding` gained the "Active exits" empty-marker (all-cases-completed page), and
+`verify.ts` now accepts the current restricted-settings text.
+
+Endpoints that 302 without an id (documented, no `returns`): `/job-changes/new`,
+`/offboarding/new`, `/recruitment/req/{id}/candidate` (candidate ids are discoverable via
+`get_pipeline`).
+
 ## ✅ ADDENDUM — DioscHub integration (2026-07-16)
 
 The tool surface above is now **hub-integrable** per the PR #235 MCP contract (Streamable HTTP +
