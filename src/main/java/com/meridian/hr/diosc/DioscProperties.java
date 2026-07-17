@@ -21,6 +21,8 @@ public class DioscProperties {
     private String assistantId = "";
     /** Host BYOA bind route the kit POSTs to. */
     private String bindEndpoint = "/api/diosc/bind";
+    /** Secret hub admin API key (scope auth:bind) used server-to-server. Never rendered. */
+    private String bindKey = "";
 
     /** True once the assistant is configured enough to mount the real kit. */
     public boolean isConfigured() {
@@ -57,5 +59,13 @@ public class DioscProperties {
 
     public void setBindEndpoint(String bindEndpoint) {
         this.bindEndpoint = bindEndpoint;
+    }
+
+    public String getBindKey() {
+        return bindKey;
+    }
+
+    public void setBindKey(String bindKey) {
+        this.bindKey = bindKey;
     }
 }

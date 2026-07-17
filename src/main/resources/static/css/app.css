@@ -108,8 +108,33 @@ a { text-decoration: none; color: inherit; }
 /* ---------- assistant rail (reserved kit mount) ---------- */
 .assistant-rail {
     width: 372px; flex: 0 0 372px; background: #f4f6f9; border-left: 1px solid #e0e5ea;
-    display: flex; flex-direction: column; position: relative;
+    display: flex; flex-direction: row; position: relative;
+    transition: width 0.18s ease, flex-basis 0.18s ease;
 }
+
+/* Grip: full-height collapse handle on the rail's inner edge. */
+.rail-grip {
+    flex: 0 0 18px; width: 18px; padding: 12px 0; border: 0; border-right: 1px solid #e6eaef;
+    background: #eef1f5; color: #8d97a3; cursor: pointer; font-family: inherit;
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
+    -webkit-appearance: none; appearance: none;
+}
+.rail-grip:hover { background: #e4e9ef; color: #4a5563; }
+.rail-grip .chev { width: 13px; height: 13px; flex: 0 0 auto; transition: transform 0.18s ease; }
+.rail-grip .grip-label {
+    display: none; writing-mode: vertical-rl; font-size: 10px; font-weight: 700;
+    color: inherit; text-transform: uppercase; letter-spacing: 0.08em;
+}
+
+/* Body: everything except the grip; hidden (kit stays mounted) when collapsed. */
+.rail-body { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.rail-body > diosc-chat { flex: 1 1 auto; min-height: 0; }
+
+html.rail-collapsed .assistant-rail { width: 19px; flex: 0 0 19px; }
+html.rail-collapsed .rail-body { display: none; }
+html.rail-collapsed .rail-grip { border-right: 0; }
+html.rail-collapsed .rail-grip .chev { transform: rotate(180deg); }
+html.rail-collapsed .rail-grip .grip-label { display: block; }
 .assistant-rail .rail-head {
     height: 44px; flex: 0 0 44px; display: flex; align-items: center; gap: 8px; padding: 0 16px;
     border-bottom: 1px solid #e6eaef; background: #fff;

@@ -18,6 +18,9 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addInterceptor(authInterceptor)
                 .addPathPatterns("/**")
                 .excludePathPatterns(
+                        // The kit's bind POST must never be redirected to /login —
+                        // an unauthenticated caller gets an anonymous bind instead.
+                        "/api/diosc/**",
                         "/login", "/logout", "/reset", "/ping",
                         "/css/**", "/js/**", "/images/**", "/webjars/**",
                         "/favicon.ico", "/error");

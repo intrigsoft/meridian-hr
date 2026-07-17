@@ -8,44 +8,69 @@
   Until then, the same slot renders an inert placeholder.
 -->
 <aside th:fragment="rail" class="assistant-rail">
-    <div class="rail-head">
-        <span class="label">Assistant</span>
-        <span class="mount-id">#dioschub-assistant-root</span>
+    <!-- Grip: full-height collapse/expand handle on the rail's inner edge. The kit
+         stays MOUNTED while collapsed (only .rail-body hides), so the WS connection,
+         bound identity and session all survive minimize/restore. -->
+    <button type="button" class="rail-grip" id="railToggle" aria-expanded="true" title="Collapse assistant">
+        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+             stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        <span class="grip-label">Assistant</span>
+    </button>
+
+    <div class="rail-body">
+        <!-- CONFIGURED: the live kit (BYOA identity flows via bind-endpoint, not the DOM). -->
+        <th:block th:if="${diosc != null and diosc.configured}">
+            <diosc-chat mode="embed"
+                        th:attr="api-key=${diosc.embedKey},
+                                 backend-url=${diosc.hubUrl},
+                                 assistant-id=${diosc.assistantId},
+                                 bind-endpoint=${diosc.bindEndpoint},
+                                 data-operating-user=${currentUser != null ? currentUser.email : ''}"></diosc-chat>
+            <script th:inline="javascript">
+                /*<![CDATA[*/
+                (function () {
+                    var hub = /*[[${diosc.hubUrl}]]*/ '';
+                    var key = /*[[${diosc.embedKey}]]*/ '';
+                    if (!hub || !key || document.getElementById('meridian-diosc-loader')) return;
+                    var s = document.createElement('script');
+                    s.id = 'meridian-diosc-loader';
+                    s.src = hub + '/api/embed/' + key + '/loader.js';
+                    s.async = true;
+                    document.head.appendChild(s);
+                })();
+                /*]]>*/
+            </script>
+        </th:block>
+
+        <!-- INERT PLACEHOLDER: shown until the assistant is configured. -->
+        <div th:unless="${diosc != null and diosc.configured}" class="assistant-placeholder">
+            <div class="glyph">◆</div>
+            <div class="title">Dioschub Assistant</div>
+            <div class="desc">The embedded assistant mounts here. It operates as <em>you</em>, within your
+                permissions — wired up in the AI-integration phase.</div>
+            <div class="op" th:if="${currentUser != null}"
+                 th:text="'operating as ' + ${currentUser.email}">operating as you</div>
+        </div>
     </div>
 
-    <!-- CONFIGURED: the live kit (BYOA identity flows via bind-endpoint, not the DOM). -->
-    <th:block th:if="${diosc != null and diosc.configured}">
-        <diosc-chat mode="embed"
-                    th:attr="api-key=${diosc.embedKey},
-                             backend-url=${diosc.hubUrl},
-                             assistant-id=${diosc.assistantId},
-                             bind-endpoint=${diosc.bindEndpoint},
-                             data-operating-user=${currentUser != null ? currentUser.email : ''}"></diosc-chat>
-        <script th:inline="javascript">
-            /*<![CDATA[*/
-            (function () {
-                var hub = /*[[${diosc.hubUrl}]]*/ '';
-                var key = /*[[${diosc.embedKey}]]*/ '';
-                if (!hub || !key || document.getElementById('meridian-diosc-loader')) return;
-                var s = document.createElement('script');
-                s.id = 'meridian-diosc-loader';
-                s.src = hub + '/api/embed/' + key + '/loader.js';
-                s.async = true;
-                document.head.appendChild(s);
-            })();
-            /*]]>*/
-        </script>
-    </th:block>
-
-    <!-- INERT PLACEHOLDER: shown until the assistant is configured. -->
-    <div th:unless="${diosc != null and diosc.configured}" class="assistant-placeholder">
-        <div class="glyph">◆</div>
-        <div class="title">Dioschub Assistant</div>
-        <div class="desc">The embedded assistant mounts here. It operates as <em>you</em>, within your
-            permissions — wired up in the AI-integration phase.</div>
-        <div class="op" th:if="${currentUser != null}"
-             th:text="'operating as ' + ${currentUser.email}">operating as you</div>
-    </div>
+    <script>
+        (function () {
+            var t = document.getElementById('railToggle');
+            if (!t) return;
+            var root = document.documentElement;
+            function sync() {
+                var collapsed = root.classList.contains('rail-collapsed');
+                t.setAttribute('aria-expanded', String(!collapsed));
+                t.title = collapsed ? 'Expand assistant' : 'Collapse assistant';
+            }
+            t.addEventListener('click', function () {
+                root.classList.toggle('rail-collapsed');
+                try { localStorage.setItem('meridian.rail', root.classList.contains('rail-collapsed') ? 'collapsed' : 'open'); } catch (e) { /* private mode */ }
+                sync();
+            });
+            sync();
+        })();
+    </script>
 </aside>
 </body>
 </html>

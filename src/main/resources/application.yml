@@ -2,6 +2,10 @@ server:
   # Railway/containers inject PORT; local dev defaults to 3020 to avoid clashing
   # with the hub (3333) and admin portal (7001).
   port: ${PORT:3020}
+  servlet:
+    session:
+      # Cookie-only session tracking — never rewrite ;jsessionid into redirect URLs.
+      tracking-modes: cookie
 
 spring:
   application:
@@ -22,6 +26,8 @@ meridian:
     embed-key: ${MERIDIAN_DIOSC_EMBED_KEY:}
     assistant-id: ${MERIDIAN_DIOSC_ASSISTANT_ID:}
     bind-endpoint: ${MERIDIAN_DIOSC_BIND_ENDPOINT:/api/diosc/bind}
+    # Secret hub admin API key with scope auth:bind — server-to-server only.
+    bind-key: ${MERIDIAN_DIOSC_BIND_KEY:}
 
 logging:
   level:
