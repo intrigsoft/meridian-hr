@@ -5,9 +5,10 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Static job-change metadata: the change-type catalog (which fields each type touches),
- * human field labels, and status pill styling. Mirrors the constants in the fixture's
- * {@code jobchange-store.js}. (The Settings-editable type fields are deferred; static here.)
+ * Static job-change metadata: the change-type catalog (which fields each type touches by
+ * default), human field labels, and status pill styling. Mirrors the constants in the
+ * fixture's {@code jobchange-store.js}. HR can override each type's field set per workspace
+ * (Settings → Job-change types); resolve via {@code PolicyConfig.changeTypeFields(id, defaults)}.
  */
 public final class JobChangeMeta {
 
@@ -50,6 +51,11 @@ public final class JobChangeMeta {
 
     public static String fieldLabel(String f) {
         return FIELD_LABELS.getOrDefault(f, f);
+    }
+
+    /** Every field a change type may be configured to edit (display order). */
+    public static List<String> allFields() {
+        return List.copyOf(FIELD_LABELS.keySet());
     }
 
     /** Fields whose editor is a dropdown (rest are free text). */

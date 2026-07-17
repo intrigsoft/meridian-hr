@@ -48,6 +48,11 @@ public class RecruitmentService {
         return e != null ? e.initials : "?";
     }
 
+    public String personAvatarBg(String id) {
+        Employee e = people.get(id);
+        return e != null && e.avatarBg != null ? e.avatarBg : "#c7cdd6";
+    }
+
     // ---- requisitions ----
 
     public List<Requisition> reqs() {
@@ -81,12 +86,80 @@ public class RecruitmentService {
         return r;
     }
 
-    public void submitForApproval(String id) {
+    /** The title a fresh draft is born with — must be replaced before the req can be submitted. */
+    public static final String DEFAULT_TITLE = "New requisition";
+
+    /** Edit a draft's role details. No-op once the req has left draft — the setup locks. */
+    public void updateReqDetails(String id, String title, String dept, String level,
+                                 Integer headcount, String location, String ownerId) {
         Requisition r = getReq(id);
-        if (r == null) return;
+        if (r == null || !"draft".equals(r.status)) return;
+        if (title != null && !title.isBlank()) r.title = title.trim();
+        if (dept != null && !dept.isBlank()) r.dept = dept;
+        if (level != null && !level.isBlank()) r.level = level;
+        if (headcount != null && headcount >= 1) r.headcount = headcount;
+        if (location != null && !location.isBlank()) r.location = location.trim();
+        if (ownerId != null && people.get(ownerId) != null) r.ownerId = ownerId;
+    }
+
+    /** Toggle a scorecard-library attribute on a draft req (fixture's toggleAttr). */
+    public void toggleScorecardAttr(String id, String attrId) {
+        Requisition r = getReq(id);
+        if (r == null || !"draft".equals(r.status) || !RecruitmentMeta.isLibraryAttr(attrId)) return;
+        if (!r.scorecard.remove(attrId)) r.scorecard.add(attrId);
+    }
+
+    /** Toggle an interviewer on a draft req's round (fixture's toggleInterviewer). */
+    public void togglePanelMember(String id, String stageId, String personId) {
+        Requisition r = getReq(id);
+        if (r == null || !"draft".equals(r.status) || personId == null || people.get(personId) == null) return;
+        for (Requisition.Round rd : r.interviewPlan) {
+            if (rd.stageId.equals(stageId)) {
+                if (!rd.interviewerIds.remove(personId)) rd.interviewerIds.add(personId);
+            }
+        }
+    }
+
+    /**
+     * The designer's submit gate (fixture's validity rule): a real title (not the create
+     * default), at least one scorecard attribute, and every round staffed.
+     */
+    public boolean reqReadyForSubmit(Requisition r) {
+        if (r == null) return false;
+        if (r.title == null || r.title.isBlank() || DEFAULT_TITLE.equalsIgnoreCase(r.title.trim())) return false;
+        if (r.scorecard.isEmpty()) return false;
+        for (Requisition.Round rd : r.interviewPlan) {
+            if (rd.interviewerIds.isEmpty()) return false;
+        }
+        return true;
+    }
+
+    /** Draft → pending approval; refuses non-drafts and drafts that fail the submit gate. */
+    public boolean submitForApproval(String id) {
+        Requisition r = getReq(id);
+        if (r == null || !"draft".equals(r.status) || !reqReadyForSubmit(r)) return false;
         r.status = "pending_approval";
         r.approvalStatus = "pending";
         r.approvalAt = null;
+        return true;
+    }
+
+    /** VP declines a pending req: it drops back to draft for rework (the store keeps no rejected state). */
+    public void rejectReq(String id) {
+        Requisition r = getReq(id);
+        if (r == null || !"pending_approval".equals(r.status)) return;
+        r.status = "draft";
+        r.approvalStatus = "none";
+        r.approvalAt = null;
+    }
+
+    /** Delete a draft req and its candidates (fixture's deleteReq). Only drafts can be deleted. */
+    public boolean deleteReq(String id) {
+        Requisition r = getReq(id);
+        if (r == null || !"draft".equals(r.status)) return false;
+        ws().requisitions.remove(r);
+        ws().candidates.removeIf(c -> c.reqId.equals(id));
+        return true;
     }
 
     public void approveReq(String id) {
@@ -181,6 +254,42 @@ public class RecruitmentService {
         Candidate c = getCandidate(id);
         if (c == null || text == null || text.isBlank()) return;
         c.notes.add(0, new Candidate.Note(authorId, text.trim(), System.currentTimeMillis()));
+    }
+
+    /**
+     * Record an interviewer's scorecard for a scored stage (fixture's submitScorecard).
+     * Rules: the stage must be a scored round the candidate has reached (rejected counts
+     * as having reached interview, matching the seed), the interviewer must sit on that
+     * round's panel, ratings are clamped 1–5 and keyed to the req's scorecard attributes.
+     * One card per interviewer per stage — resubmitting replaces the earlier card.
+     */
+    public boolean submitScorecard(String candId, String stageId, String interviewerId,
+                                   Map<String, Integer> ratings, String recId, String comment) {
+        Candidate c = getCandidate(candId);
+        if (c == null || interviewerId == null || !RecruitmentMeta.SCORED_STAGES.contains(stageId)) return false;
+        Requisition req = getReq(c.reqId);
+        if (req == null) return false;
+        int reached = RecruitmentMeta.stageIndex("rejected".equals(c.stage) ? "interview" : c.stage);
+        if (reached < RecruitmentMeta.stageIndex(stageId)) return false;
+        boolean onPanel = false;
+        for (Requisition.Round rd : req.interviewPlan) {
+            if (rd.stageId.equals(stageId) && rd.interviewerIds.contains(interviewerId)) onPanel = true;
+        }
+        if (!onPanel) return false;
+        Candidate.Scorecard card = new Candidate.Scorecard();
+        for (String aid : req.scorecard) {
+            Integer v = ratings == null ? null : ratings.get(aid);
+            if (v != null) card.ratings.put(aid, Math.max(1, Math.min(5, v)));
+        }
+        if (card.ratings.isEmpty()) return false;
+        card.rec = switch (recId == null ? "" : recId) {
+            case "strong_yes", "yes", "no", "strong_no" -> recId;
+            default -> "yes";
+        };
+        card.comment = comment == null ? "" : comment.trim();
+        card.submittedAt = System.currentTimeMillis();
+        c.scorecards.computeIfAbsent(stageId, k -> new LinkedHashMap<>()).put(interviewerId, card);
+        return true;
     }
 
     // ---- offers ----

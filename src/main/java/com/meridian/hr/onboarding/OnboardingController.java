@@ -24,8 +24,11 @@ import java.util.Locale;
  * People Ops → Onboarding. Two views under one nav item:
  *  - active list (search + status filter) and per-hire status board (the resolved
  *    provisioning plan, with complete/upload/reopen + convert-to-directory actions);
- *  - a read-only Templates tab listing the role schemas (HR only).
- * Start + convert are HR-only; step actions are open to managers and HR.
+ *  - a Templates tab (HR only) with the full schema editor: create/delete templates,
+ *    edit name/role/description, and add/remove/reorder/edit provisioning steps.
+ * Template edits apply to FUTURE cases only (running cases are repointed to frozen
+ * snapshots on first edit — see OnboardingService). Start + convert + template admin
+ * are HR-only; step actions are open to managers and HR.
  * Ports the fixture's {@code Onboarding.dc.html} / {@code New Onboarding.dc.html}.
  */
 @Controller
@@ -160,32 +163,42 @@ public class OnboardingController {
             tplRows.add(new TplRow(t.id, t.name, rf.label(), t.stepCount(), t.id.equals(sel)));
         }
         model.addAttribute("templates", tplRows);
+        model.addAttribute("roleOpts", OnboardingMeta.roles());
+        model.addAttribute("systemOpts", OnboardingMeta.systems());
+        model.addAttribute("ownerOpts", OnboardingMeta.OWNERS);
 
         OnboardingTemplate draft = onboarding.template(sel);
+        if (draft != null && draft.archived) draft = null;
         model.addAttribute("hasDraft", draft != null);
         if (draft != null) {
+            model.addAttribute("dId", draft.id);
             model.addAttribute("dName", draft.name);
             model.addAttribute("dDesc", draft.description == null ? "" : draft.description);
-            model.addAttribute("dRoleLabel", OnboardingMeta.role(draft.role).label());
-            List<TplStepView> steps = new ArrayList<>();
+            model.addAttribute("dRole", draft.role);
+            List<TplStepEdit> steps = new ArrayList<>();
             List<OnboardingTemplate.Step> ordered = new ArrayList<>(draft.steps);
             ordered.sort((a, b) -> Integer.compare(a.order, b.order));
             for (int i = 0; i < ordered.size(); i++) {
                 OnboardingTemplate.Step s = ordered.get(i);
-                OnboardingMeta.System sys = OnboardingMeta.system(s.system);
-                String dep = s.dependsOn == null ? null : titleOf(ordered, s.dependsOn);
-                steps.add(new TplStepView(i + 1, s.title, sys.label(), sys.color(), sys.bg(), s.owner,
-                        dueLabel(s.dueOffset), dep, s.autoAssign, s.requiresDoc != null, s.requiresDoc));
+                boolean first = i == 0;
+                boolean last = i == ordered.size() - 1;
+                boolean autoOn = s.autoAssign;
+                boolean docOn = s.requiresDoc != null;
+                List<DepOpt> depOpts = new ArrayList<>();
+                for (OnboardingTemplate.Step other : ordered) {
+                    if (!other.id.equals(s.id)) depOpts.add(new DepOpt(other.id, other.title));
+                }
+                steps.add(new TplStepEdit(i + 1, s.id, s.title, s.system, s.owner, s.dueOffset,
+                        s.dependsOn == null ? "" : s.dependsOn, depOpts,
+                        autoOn, autoOn ? "#eef4fb" : "#fff", autoOn ? "#cfdbe9" : "#e4e8ed",
+                        autoOn ? "#17457f" : "#8894a3", autoOn ? "#17457f" : "#cdd4dc", autoOn ? "13px" : "2px",
+                        docOn, docOn ? s.requiresDoc : "", docOn ? "#f7f4ec" : "#fff",
+                        docOn ? "#ece2c6" : "#e4e8ed", docOn ? "#9a6a1a" : "#8894a3",
+                        docOn ? "#c68a2a" : "#cdd4dc", docOn ? "13px" : "2px",
+                        first, last, first ? "#cdd4dc" : "#5a6472", last ? "#cdd4dc" : "#5a6472"));
             }
             model.addAttribute("tplSteps", steps);
         }
-    }
-
-    private static String titleOf(List<OnboardingTemplate.Step> steps, String id) {
-        for (OnboardingTemplate.Step s : steps) {
-            if (s.id.equals(id)) return s.title;
-        }
-        return "a prior step";
     }
 
     @GetMapping("/onboarding/templates/{tplId}")
@@ -193,6 +206,9 @@ public class OnboardingController {
         boolean hr = policy.can(Permission.ONBOARDING_ADMIN);
         if (!hr) return "redirect:/onboarding";
         model.addAttribute("active", "onboarding");
+        // The whole page body sits behind th:if="${allowed}" — omitting these rendered a blank page.
+        model.addAttribute("allowed", true);
+        model.addAttribute("restricted", false);
         model.addAttribute("canManage", true);
         model.addAttribute("isHr", true);
         model.addAttribute("showStartBtn", false);
@@ -203,6 +219,101 @@ public class OnboardingController {
         model.addAttribute("noteSub", asum.active() + " active · " + asum.blocked() + " blocked");
         buildTemplatesView(model, tplId);
         return "onboarding/onboarding";
+    }
+
+    // ===================== template editor actions (HR only) =====================
+
+    @PostMapping("/onboarding/templates")
+    public String createTemplate(@RequestParam(required = false) String name,
+                                 @RequestParam(defaultValue = "general") String role,
+                                 RedirectAttributes ra) {
+        policy.require(Permission.ONBOARDING_ADMIN);
+        OnboardingTemplate t = onboarding.createTemplate(name, role);
+        ra.addFlashAttribute("toast", "Template created");
+        ra.addFlashAttribute("toastDot", "#4a9d7a");
+        return "redirect:/onboarding/templates/" + t.id;
+    }
+
+    @PostMapping("/onboarding/templates/{tplId}/delete")
+    public String deleteTemplate(@PathVariable String tplId, RedirectAttributes ra) {
+        policy.require(Permission.ONBOARDING_ADMIN);
+        int blockedBy = onboarding.deleteTemplate(tplId);
+        if (blockedBy > 0) {
+            ra.addFlashAttribute("toast", "Cannot delete — " + blockedBy + " active onboarding"
+                    + (blockedBy > 1 ? "s" : "") + " still use" + (blockedBy > 1 ? "" : "s") + " this template.");
+            ra.addFlashAttribute("toastDot", "#c68a2a");
+            return "redirect:/onboarding/templates/" + tplId;
+        }
+        ra.addFlashAttribute("toast", "Template deleted");
+        ra.addFlashAttribute("toastDot", "#8894a3");
+        return "redirect:/onboarding?tab=templates";
+    }
+
+    @PostMapping("/onboarding/templates/{tplId}/meta")
+    public String saveTemplateMeta(@PathVariable String tplId,
+                                   @RequestParam(required = false) String name,
+                                   @RequestParam(required = false) String role,
+                                   @RequestParam(required = false) String description,
+                                   RedirectAttributes ra) {
+        policy.require(Permission.ONBOARDING_ADMIN);
+        onboarding.updateTemplateMeta(tplId, name, role, description);
+        ra.addFlashAttribute("toast", "Template details saved.");
+        ra.addFlashAttribute("toastDot", "#3ecf8e");
+        return "redirect:/onboarding/templates/" + tplId;
+    }
+
+    @PostMapping("/onboarding/templates/{tplId}/steps")
+    public String addStep(@PathVariable String tplId, RedirectAttributes ra) {
+        policy.require(Permission.ONBOARDING_ADMIN);
+        onboarding.addStep(tplId);
+        ra.addFlashAttribute("toast", "Step added.");
+        ra.addFlashAttribute("toastDot", "#4a9d7a");
+        return "redirect:/onboarding/templates/" + tplId;
+    }
+
+    /**
+     * One form per step card; the pressed button picks the action. Field edits in the
+     * form are saved FIRST for every action except delete, so toggling or reordering
+     * never loses what was just typed.
+     */
+    @PostMapping("/onboarding/templates/{tplId}/step/{stepId}")
+    public String editStep(@PathVariable String tplId, @PathVariable String stepId,
+                           @RequestParam(defaultValue = "save") String action,
+                           @RequestParam(required = false) String title,
+                           @RequestParam(required = false) String system,
+                           @RequestParam(required = false) String owner,
+                           @RequestParam(required = false) String dueOffset,
+                           @RequestParam(required = false) String dependsOn,
+                           @RequestParam(required = false) String docName,
+                           RedirectAttributes ra) {
+        policy.require(Permission.ONBOARDING_ADMIN);
+        if ("delete".equals(action)) {
+            onboarding.deleteStep(tplId, stepId);
+            ra.addFlashAttribute("toast", "Step removed");
+            ra.addFlashAttribute("toastDot", "#8894a3");
+            return "redirect:/onboarding/templates/" + tplId;
+        }
+        onboarding.updateStep(tplId, stepId, title, system, owner, parseOffset(dueOffset), dependsOn, docName);
+        switch (action) {
+            case "up" -> onboarding.moveStep(tplId, stepId, -1);
+            case "down" -> onboarding.moveStep(tplId, stepId, 1);
+            case "auto" -> onboarding.toggleAuto(tplId, stepId);
+            case "doc" -> onboarding.toggleDoc(tplId, stepId);
+            default -> {
+            }
+        }
+        ra.addFlashAttribute("toast", "Step saved.");
+        ra.addFlashAttribute("toastDot", "#3ecf8e");
+        return "redirect:/onboarding/templates/" + tplId;
+    }
+
+    private static Integer parseOffset(String raw) {
+        if (raw == null || raw.isBlank()) return null;
+        try {
+            return Integer.parseInt(raw.trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     // ===================== status board =====================
@@ -447,11 +558,6 @@ public class OnboardingController {
         }
     }
 
-    private static String dueLabel(int offset) {
-        if (offset == 0) return "on start day";
-        return offset < 0 ? Math.abs(offset) + "d before start" : offset + "d after start";
-    }
-
     private static Integer orderOf(List<OnboardingTemplate.Step> steps, String id) {
         for (int i = 0; i < steps.size(); i++) {
             if (steps.get(i).id.equals(id)) return i + 1;
@@ -500,8 +606,18 @@ public class OnboardingController {
     public record TplRow(String id, String name, String roleLabel, int stepCount, boolean on) {
     }
 
-    public record TplStepView(int order, String title, String sysLabel, String sysColor, String sysBg, String owner,
-                              String dueLabel, String dependsOn, boolean auto, boolean hasDoc, String docName) {
+    /** One editable step card in the template editor (toggle/arrow styling precomputed). */
+    public record TplStepEdit(int order, String stepId, String title, String system, String owner,
+                              int dueOffset, String dependsOn, List<DepOpt> depOpts,
+                              boolean autoOn, String autoBg, String autoBorder, String autoFg,
+                              String autoTrack, String autoKnob,
+                              boolean docOn, String docName, String docBg, String docBorder, String docFg,
+                              String docTrack, String docKnob,
+                              boolean first, boolean last, String upColor, String downColor) {
+    }
+
+    /** A "depends on" option: every OTHER step in the same template. */
+    public record DepOpt(String id, String title) {
     }
 
     public record RoleOption(String id, String label, String tplName, int stepCount, boolean on) {

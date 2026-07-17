@@ -92,26 +92,143 @@ public class PerformanceService {
         c.calibrationDate = "2026-08-05";
         c.scaleMax = 5;
         c.comp("exec", 40).comp("collab", 30).comp("owner", 30);
-        // Deferred-designer scope: prefill all active employees so the cycle is launchable.
-        for (Employee e : reviewables()) {
-            c.participants.add(e.id);
-        }
+        // Participants start empty (design parity) — HR includes departments in the designer.
         c.createdAt = System.currentTimeMillis();
         c.createdBy = "Priya Nair";
         ws().reviewCycles.add(0, c);
         return c;
     }
 
-    public void launchCycle(String id) {
+    /** Launch gate: a non-blank name, weights totalling exactly 100, and ≥1 participant. */
+    public boolean launchable(ReviewCycle c) {
+        return c != null && c.name != null && !c.name.isBlank()
+                && weightTotal(c) == 100 && !c.participants.isEmpty();
+    }
+
+    public int weightTotal(ReviewCycle c) {
+        int total = 0;
+        for (ReviewCycle.CompWeight cw : c.competencies) total += cw.weight;
+        return total;
+    }
+
+    /** The workspace competency catalog (HR-editable in Settings; lazily seeded). */
+    public List<PerformanceMeta.Competency> catalog() {
+        List<PerformanceMeta.Competency> out = new ArrayList<>();
+        for (com.meridian.hr.domain.PolicyConfig.Competency c : PerformanceMeta.catalog(ws().policy)) {
+            out.add(new PerformanceMeta.Competency(c.id, c.name, c.blurb));
+        }
+        return out;
+    }
+
+    /** Resolve a competency for display through the workspace catalog (static fallback). */
+    public PerformanceMeta.Competency competencyOf(String id) {
+        return PerformanceMeta.catalogEntry(ws().policy, id);
+    }
+
+    /** Draft → active. Enforces the launch gate; returns false when blocked. */
+    public boolean launchCycle(String id) {
         ReviewCycle c = getCycle(id);
-        if (c == null || !"draft".equals(c.status)) return;
+        if (c == null || !"draft".equals(c.status) || !launchable(c)) return false;
         c.status = "active";
         ensureReviews(c);
+        return true;
     }
 
     public void closeCycle(String id) {
         ReviewCycle c = getCycle(id);
-        if (c != null) c.status = "closed";
+        if (c != null && "active".equals(c.status)) c.status = "closed";
+    }
+
+    /** Delete a DRAFT cycle and any (orphan) review rows keyed to it. No-op for active/closed. */
+    public boolean deleteCycle(String id) {
+        ReviewCycle c = getCycle(id);
+        if (c == null || !"draft".equals(c.status)) return false;
+        ws().reviewCycles.remove(c);
+        ws().reviews.removeIf(r -> r.cycleId.equals(id));
+        return true;
+    }
+
+    // ---- designer edits (draft cycles only; active/closed schemas are locked) ----
+
+    private ReviewCycle draft(String id) {
+        ReviewCycle c = getCycle(id);
+        return c != null && "draft".equals(c.status) ? c : null;
+    }
+
+    public void renameCycle(String id, String name) {
+        ReviewCycle c = draft(id);
+        if (c != null) c.name = name == null ? "" : name.trim();
+    }
+
+    public void updateSchedule(String id, String type, String startDate, String selfDue,
+                               String mgrDue, String calibrationDate) {
+        ReviewCycle c = draft(id);
+        if (c == null) return;
+        if (type != null && PerformanceMeta.cycleTypes().containsKey(type)) c.type = type;
+        if (startDate != null && !startDate.isBlank()) c.startDate = startDate;
+        if (selfDue != null && !selfDue.isBlank()) c.selfDue = selfDue;
+        if (mgrDue != null && !mgrDue.isBlank()) c.mgrDue = mgrDue;
+        if (calibrationDate != null && !calibrationDate.isBlank()) c.calibrationDate = calibrationDate;
+    }
+
+    public void setWeight(String id, String compId, int weight) {
+        ReviewCycle c = draft(id);
+        if (c == null) return;
+        for (ReviewCycle.CompWeight cw : c.competencies) {
+            if (cw.id.equals(compId)) cw.weight = Math.max(0, Math.min(100, weight));
+        }
+    }
+
+    public void addCompetency(String id, String compId) {
+        ReviewCycle c = draft(id);
+        if (c == null || compId == null || compId.isBlank()) return;
+        boolean known = false;
+        for (PerformanceMeta.Competency lib : catalog()) {
+            if (lib.id().equals(compId)) known = true;
+        }
+        if (!known) return;
+        for (ReviewCycle.CompWeight cw : c.competencies) {
+            if (cw.id.equals(compId)) return;
+        }
+        c.competencies.add(new ReviewCycle.CompWeight(compId, 0));
+    }
+
+    /** Remove a competency row — only while more than one remains. */
+    public void removeCompetency(String id, String compId) {
+        ReviewCycle c = draft(id);
+        if (c == null || c.competencies.size() <= 1) return;
+        c.competencies.removeIf(cw -> cw.id.equals(compId));
+    }
+
+    /** Spread 100% evenly: floor(100/n) each, remainder +1 to the first rows. */
+    public void balanceWeights(String id) {
+        ReviewCycle c = draft(id);
+        if (c == null || c.competencies.isEmpty()) return;
+        int n = c.competencies.size();
+        int base = 100 / n;
+        int rem = 100 - base * n;
+        for (int i = 0; i < n; i++) {
+            c.competencies.get(i).weight = base + (i < rem ? 1 : 0);
+        }
+    }
+
+    /** Include/exclude a whole department's ACTIVE employees from the participant set. */
+    public void toggleDepartment(String id, String dept) {
+        ReviewCycle c = draft(id);
+        if (c == null || dept == null) return;
+        List<String> ids = new ArrayList<>();
+        for (Employee e : reviewables()) {
+            if (dept.equals(e.dept)) ids.add(e.id);
+        }
+        if (ids.isEmpty()) return;
+        boolean allIn = c.participants.containsAll(ids);
+        if (allIn) {
+            c.participants.removeAll(ids);
+        } else {
+            for (String eid : ids) {
+                if (!c.participants.contains(eid)) c.participants.add(eid);
+            }
+        }
     }
 
     /** Create a blank review row for any participant that doesn't have one (used on launch). */
@@ -288,7 +405,7 @@ public class PerformanceService {
             }
             double self = n == 0 ? 0 : sSum / n;
             double mgr = n == 0 ? 0 : mSum / n;
-            out.add(new GapRow(c.id, PerformanceMeta.competency(c.id).name(), c.weight, self, mgr, self - mgr, n));
+            out.add(new GapRow(c.id, competencyOf(c.id).name(), c.weight, self, mgr, self - mgr, n));
         }
         return out;
     }

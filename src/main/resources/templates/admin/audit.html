@@ -22,9 +22,30 @@
     </div>
 
     <th:block th:if="${isHr}">
-        <div style="background:#fbfcfd; border:1px dashed #d9e0e8; border-radius:10px; padding:12px 15px; margin-bottom:18px; font-size:12px; color:#6b7480; line-height:1.5;">
+        <div style="background:#fbfcfd; border:1px dashed #d9e0e8; border-radius:10px; padding:12px 15px; margin-bottom:14px; font-size:12px; color:#6b7480; line-height:1.5;">
             A unified, read-only trail synthesized from every domain's event log — hires, promotions,
-            transfers, comp, leave decisions, profile changes, and exits — newest first (latest 80).
+            transfers, comp, leave decisions, profile changes, exits, and admin configuration
+            changes — newest first (latest 80).
+        </div>
+
+        <!-- Filters: category chips + free-text search (applied before the 80-row cap). -->
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:16px;">
+            <a th:href="@{/audit(q=${q})}"
+               style="font-size:11.5px; font-weight:600; padding:5px 12px; border-radius:16px; text-decoration:none; border:1px solid #dfe4ea; color:#5a6472; background:#fff;"
+               th:styleappend="${activeCategory == ''} ? '; background:#1a2331; color:#fff; border-color:#1a2331' : ''">All</a>
+            <a th:each="c : ${categories}" th:href="@{/audit(category=${c}, q=${q})}" th:text="${c}"
+               style="font-size:11.5px; font-weight:600; padding:5px 12px; border-radius:16px; text-decoration:none; border:1px solid #dfe4ea; color:#5a6472; background:#fff;"
+               th:styleappend="${activeCategory == c} ? '; background:#1a2331; color:#fff; border-color:#1a2331' : ''">Leave</a>
+            <form method="get" th:action="@{/audit}" style="margin:0 0 0 auto; display:flex; gap:6px;">
+                <input type="hidden" name="category" th:value="${activeCategory}"/>
+                <input name="q" th:value="${q}" placeholder="Search actor, action, detail…"
+                       style="font-family:inherit; font-size:12px; padding:6px 11px; border:1px solid #dfe4ea; border-radius:8px; width:220px; color:#28323f;"/>
+                <button type="submit" style="font-family:inherit; font-size:12px; font-weight:600; padding:6px 13px; border:1px solid #dfe4ea; border-radius:8px; background:#fff; color:#5a6472; cursor:pointer;">Search</button>
+            </form>
+        </div>
+
+        <div th:if="${#lists.isEmpty(rows)}" style="background:#f7f9fb; border:1px dashed #d9e0e8; border-radius:13px; padding:36px 20px; text-align:center; margin-bottom:18px;">
+            <div style="font-size:13px; font-weight:600; color:#5a6472;">No events match this filter.</div>
         </div>
 
         <div style="background:#fff; border:1px solid #e4e8ed; border-radius:12px; overflow:hidden;">

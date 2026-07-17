@@ -53,6 +53,12 @@
                         <form th:if="${r.canApprove()}" th:action="@{/recruitment/req/{id}/approve(id=${r.id()})}" method="post" style="margin:0;">
                             <button type="submit" style="height:34px; padding:0 14px; border:none; border-radius:8px; background:#2f6f4f; color:#fff; font-family:inherit; font-size:12.5px; font-weight:600; cursor:pointer;">Approve</button>
                         </form>
+                        <form th:if="${r.canReject()}" th:action="@{/recruitment/req/{id}/reject(id=${r.id()})}" method="post" style="margin:0;">
+                            <button type="submit" style="height:34px; padding:0 14px; border:1px solid #f0cfc9; border-radius:8px; background:#fff; color:#b23b2e; font-family:inherit; font-size:12.5px; font-weight:600; cursor:pointer;">Reject</button>
+                        </form>
+                        <form th:if="${r.canDelete()}" th:action="@{/recruitment/req/{id}/delete(id=${r.id()})}" method="post" style="margin:0;">
+                            <button type="submit" style="height:34px; padding:0 14px; border:1px solid #f0cfc9; border-radius:8px; background:#fff; color:#b23b2e; font-family:inherit; font-size:12.5px; font-weight:600; cursor:pointer;">Delete</button>
+                        </form>
                         <a th:href="@{/recruitment/req/{id}(id=${r.id()})}" style="height:34px; padding:0 14px; border:1px solid #dde2e8; border-radius:8px; background:#fff; color:#3a4453; font-size:12.5px; font-weight:600; display:flex; align-items:center;">Details</a>
                         <a th:if="${r.canPipeline()}" th:href="@{/recruitment/req/{id}/pipeline(id=${r.id()})}" style="height:34px; padding:0 14px; border:1px solid #cfdbe9; border-radius:8px; background:#eef4fb; color:#17457f; font-size:12.5px; font-weight:600; display:flex; align-items:center;">View pipeline</a>
                     </div>

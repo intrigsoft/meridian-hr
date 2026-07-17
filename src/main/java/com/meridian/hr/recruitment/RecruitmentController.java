@@ -1,7 +1,10 @@
 package com.meridian.hr.recruitment;
 
 import com.meridian.hr.domain.Candidate;
+import com.meridian.hr.domain.Employee;
+import com.meridian.hr.domain.EmployeeStatus;
 import com.meridian.hr.domain.Requisition;
+import com.meridian.hr.people.PeopleService;
 import com.meridian.hr.security.AccessPolicy;
 import com.meridian.hr.security.Permission;
 import com.meridian.hr.session.Actor;
@@ -15,13 +18,18 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * People Ops → Recruitment (ATS). HR + managers browse requisitions and pipelines; HR opens
- * requisitions, approves them, and runs the offer flow. Accepting an offer hires the candidate
- * and opens an onboarding case. The requisition designer is read-only (editable builder deferred)
- * and interviewer scorecards are seeded read-only. Ports the fixture's {@code Recruitment.dc.html}.
+ * requisitions, approves or rejects them, and runs the offer flow. Draft requisitions get an
+ * editable designer (role details, scorecard attributes, interview panel — fixture's
+ * {@code New Requisition.dc.html}); once past draft the setup locks. Interviewers submit
+ * scorecards at scored stages and anyone driving the pipeline can post candidate notes.
+ * Accepting an offer hires the candidate and opens an onboarding case. Ports the fixture's
+ * {@code Recruitment.dc.html}.
  */
 @Controller
 public class RecruitmentController {
@@ -29,11 +37,14 @@ public class RecruitmentController {
     private final RecruitmentService rec;
     private final SessionContext session;
     private final AccessPolicy policy;
+    private final PeopleService people;
 
-    public RecruitmentController(RecruitmentService rec, SessionContext session, AccessPolicy policy) {
+    public RecruitmentController(RecruitmentService rec, SessionContext session, AccessPolicy policy,
+                                 PeopleService people) {
         this.rec = rec;
         this.session = session;
         this.policy = policy;
+        this.people = people;
     }
 
     // ===================== requisitions + reports =====================
@@ -77,11 +88,13 @@ public class RecruitmentController {
             funnel.add(new FunnelCell(s.shortLabel(), f.counts().getOrDefault(s.id(), 0), s.color()));
         }
         boolean pending = "pending_approval".equals(r.status);
-        boolean nonDraft = !"draft".equals(r.status) && !pending;
+        boolean draft = "draft".equals(r.status);
+        boolean nonDraft = !draft && !pending;
         return new ReqCard(r.id, r.title, sm.label(), sm.bg(), sm.fg(),
                 r.dept + " · " + r.level + " · " + r.location + " · " + r.headcount + " opening · HM " + rec.personName(r.ownerId),
-                isHr && pending, "draft".equals(r.status), nonDraft || pending, funnel, nonDraft,
-                pending, "Awaiting VP approval before the role opens.");
+                isHr && pending, draft, nonDraft || pending, funnel, nonDraft,
+                pending, "Awaiting VP approval before the role opens.",
+                isHr && pending, isHr && draft);
     }
 
     private void buildReports(Model model) {
@@ -115,10 +128,59 @@ public class RecruitmentController {
 
     @PostMapping("/recruitment/req/{id}/submit")
     public String submit(@PathVariable String id, RedirectAttributes ra) {
-        if (approver()) rec.submitForApproval(id);
-        ra.addFlashAttribute("toast", "Requisition submitted for approval.");
-        ra.addFlashAttribute("toastDot", "#e0a13a");
+        if (approver() && rec.submitForApproval(id)) {
+            ra.addFlashAttribute("toast", "Requisition submitted for approval.");
+            ra.addFlashAttribute("toastDot", "#e0a13a");
+        } else {
+            ra.addFlashAttribute("toast", "Not ready to submit — name the role, keep at least one scorecard attribute, and staff every interview round.");
+            ra.addFlashAttribute("toastDot", "#b23b2e");
+        }
         return "redirect:/recruitment/req/" + id;
+    }
+
+    // ---- draft designer (fixture's New Requisition.dc.html) ----
+
+    @PostMapping("/recruitment/req/{id}/details")
+    public String updateDetails(@PathVariable String id, @RequestParam String title, @RequestParam String dept,
+                                @RequestParam String level, @RequestParam(defaultValue = "1") int headcount,
+                                @RequestParam String location, @RequestParam String ownerId, RedirectAttributes ra) {
+        if (approver()) {
+            rec.updateReqDetails(id, title, dept, level, headcount, location, ownerId);
+            ra.addFlashAttribute("toast", "Role details saved.");
+            ra.addFlashAttribute("toastDot", "#3ecf8e");
+        }
+        return "redirect:/recruitment/req/" + id;
+    }
+
+    @PostMapping("/recruitment/req/{id}/scorecard/toggle")
+    public String toggleAttr(@PathVariable String id, @RequestParam String attr) {
+        if (approver()) rec.toggleScorecardAttr(id, attr);
+        return "redirect:/recruitment/req/" + id;
+    }
+
+    @PostMapping("/recruitment/req/{id}/panel/toggle")
+    public String togglePanel(@PathVariable String id, @RequestParam String stage, @RequestParam String person) {
+        if (approver()) rec.togglePanelMember(id, stage, person);
+        return "redirect:/recruitment/req/" + id;
+    }
+
+    @PostMapping("/recruitment/req/{id}/reject")
+    public String rejectReq(@PathVariable String id, RedirectAttributes ra) {
+        if (policy.can(Permission.RECRUIT_ADMIN)) {
+            rec.rejectReq(id);
+            ra.addFlashAttribute("toast", "Requisition rejected — sent back to draft for rework.");
+            ra.addFlashAttribute("toastDot", "#b23b2e");
+        }
+        return "redirect:/recruitment";
+    }
+
+    @PostMapping("/recruitment/req/{id}/delete")
+    public String deleteReq(@PathVariable String id, RedirectAttributes ra) {
+        if (policy.can(Permission.RECRUIT_ADMIN) && rec.deleteReq(id)) {
+            ra.addFlashAttribute("toast", "Draft requisition deleted.");
+            ra.addFlashAttribute("toastDot", "#8894a3");
+        }
+        return "redirect:/recruitment";
     }
 
     @PostMapping("/recruitment/req/{id}/approve")
@@ -165,6 +227,47 @@ public class RecruitmentController {
         }
         model.addAttribute("rounds", rounds);
         model.addAttribute("summary", rec.reqSummary(id));
+
+        // draft designer (fixture's New Requisition.dc.html): editable only while the req is a draft
+        boolean canManage = policy.can(Permission.RECRUIT_MANAGE);
+        boolean designer = "draft".equals(r.status) && canManage;
+        model.addAttribute("canManage", canManage);
+        model.addAttribute("designer", designer);
+        model.addAttribute("canDelete", "draft".equals(r.status) && policy.can(Permission.RECRUIT_ADMIN));
+        if (designer) {
+            model.addAttribute("deptOptions", people.departmentNames());
+            model.addAttribute("levelOptions", people.levels());
+            List<Employee> managerPool = new ArrayList<>();
+            List<Employee> panelPool = new ArrayList<>();
+            for (Employee e : people.all()) {
+                if (e.status != EmployeeStatus.ACTIVE) continue;
+                if (!e.id.equals(r.approverId)) panelPool.add(e);
+                if (e.title != null && e.title.contains("Manager")) managerPool.add(e);
+            }
+            List<OwnerOption> ownerOptions = new ArrayList<>();
+            for (Employee e : managerPool) ownerOptions.add(new OwnerOption(e.id, e.fullName()));
+            model.addAttribute("ownerOptions", ownerOptions);
+
+            List<AttrChip> attrChips = new ArrayList<>();
+            for (RecruitmentMeta.Attr a : RecruitmentMeta.library()) {
+                attrChips.add(new AttrChip(a.id(), a.name(), r.scorecard.contains(a.id())));
+            }
+            model.addAttribute("attrChips", attrChips);
+            model.addAttribute("attrCount", r.scorecard.size());
+
+            List<PanelRound> panelRounds = new ArrayList<>();
+            for (Requisition.Round rd : r.interviewPlan) {
+                List<PanelPerson> members = new ArrayList<>();
+                for (Employee e : panelPool) {
+                    members.add(new PanelPerson(e.id, e.fullName(), e.initials, e.avatarBg,
+                            rd.interviewerIds.contains(e.id)));
+                }
+                panelRounds.add(new PanelRound(rd.stageId, RecruitmentMeta.stage(rd.stageId).label(), members));
+            }
+            model.addAttribute("panelRounds", panelRounds);
+            model.addAttribute("readyToSubmit", rec.reqReadyForSubmit(r));
+            model.addAttribute("defaultTitle", RecruitmentService.DEFAULT_TITLE.equals(r.title));
+        }
         return "recruitment/requisition";
     }
 
@@ -255,6 +358,56 @@ public class RecruitmentController {
         }
         model.addAttribute("cardViews", cardViews);
 
+        // recommendation tally (design's debriefFor recTally)
+        List<RecTallyView> recTally = new ArrayList<>();
+        if (db != null && db.count() > 0) {
+            for (RecruitmentMeta.Rec rc : RecruitmentMeta.recOrder()) {
+                recTally.add(new RecTallyView(rc.label(), db.recTally().getOrDefault(rc.id(), 0), rc.color(), rc.bg()));
+            }
+        }
+        model.addAttribute("recTally", recTally);
+
+        // scorecard entry: current user sits on the panel of the candidate's current scored stage
+        boolean canManage = policy.can(Permission.RECRUIT_MANAGE);
+        model.addAttribute("canManage", canManage);
+        boolean scoredNow = RecruitmentMeta.SCORED_STAGES.contains(c.stage);
+        boolean onPanel = false;
+        if (r != null && actor != null && scoredNow) {
+            for (Requisition.Round rd : r.interviewPlan) {
+                if (rd.stageId.equals(c.stage) && rd.interviewerIds.contains(actor.userId())) onPanel = true;
+            }
+        }
+        boolean canSubmitCard = canManage && scoredNow && onPanel;
+        model.addAttribute("canSubmitCard", canSubmitCard);
+        List<CardRow> cardRows = new ArrayList<>();
+        String currentRec = "yes";
+        String currentComment = "";
+        boolean resubmit = false;
+        if (canSubmitCard && r != null) {
+            Candidate.Scorecard mine = c.scorecards.getOrDefault(c.stage, Map.of()).get(actor.userId());
+            resubmit = mine != null;
+            for (String aid : r.scorecard) {
+                Integer cur = mine == null ? null : mine.ratings.get(aid);
+                cardRows.add(new CardRow(aid, RecruitmentMeta.attrName(aid), cur == null ? 3 : cur));
+            }
+            if (mine != null && mine.rec != null) currentRec = mine.rec;
+            if (mine != null && mine.comment != null) currentComment = mine.comment;
+        }
+        model.addAttribute("cardRows", cardRows);
+        model.addAttribute("ratingScale", List.of(1, 2, 3, 4, 5));
+        model.addAttribute("recOptions", RecruitmentMeta.recOrder());
+        model.addAttribute("currentRec", currentRec);
+        model.addAttribute("currentComment", currentComment);
+        model.addAttribute("resubmit", resubmit);
+
+        // notes timeline (newest first)
+        List<NoteView> noteViews = new ArrayList<>();
+        for (Candidate.Note n : c.notes) {
+            noteViews.add(new NoteView(rec.personName(n.authorId), rec.personInitials(n.authorId),
+                    rec.personAvatarBg(n.authorId), ago(n.at), n.text));
+        }
+        model.addAttribute("notes", noteViews);
+
         // offer
         model.addAttribute("hasOffer", c.offer != null);
         model.addAttribute("offer", c.offer);
@@ -262,6 +415,40 @@ public class RecruitmentController {
         model.addAttribute("offerLevel", r != null ? r.level : c.stage);
         model.addAttribute("onboardingCaseId", c.onboardingCaseId);
         return "recruitment/candidate";
+    }
+
+    @PostMapping("/recruitment/candidate/{id}/scorecard")
+    public String submitScorecard(@PathVariable String id, @RequestParam String stage,
+                                  @RequestParam("rec") String recommendation,
+                                  @RequestParam(required = false) String comment,
+                                  @RequestParam Map<String, String> params, RedirectAttributes ra) {
+        Actor actor = session.actor();
+        Map<String, Integer> ratings = new LinkedHashMap<>();
+        for (Map.Entry<String, String> e : params.entrySet()) {
+            if (e.getKey().startsWith("rating_")) {
+                try {
+                    ratings.put(e.getKey().substring("rating_".length()), Integer.parseInt(e.getValue()));
+                } catch (NumberFormatException ignored) {
+                    // skip malformed rating fields
+                }
+            }
+        }
+        if (approver() && actor != null
+                && rec.submitScorecard(id, stage, actor.userId(), ratings, recommendation, comment)) {
+            ra.addFlashAttribute("toast", "Scorecard submitted.");
+            ra.addFlashAttribute("toastDot", "#3ecf8e");
+        } else {
+            ra.addFlashAttribute("toast", "Scorecard not recorded — you must be on the panel of a scored round the candidate has reached.");
+            ra.addFlashAttribute("toastDot", "#b23b2e");
+        }
+        return back(id);
+    }
+
+    @PostMapping("/recruitment/candidate/{id}/note")
+    public String addNote(@PathVariable String id, @RequestParam String text, RedirectAttributes ra) {
+        Actor actor = session.actor();
+        if (approver() && actor != null) rec.addNote(id, actor.userId(), text);
+        return back(id);
     }
 
     @PostMapping("/recruitment/candidate/{id}/advance")
@@ -333,6 +520,13 @@ public class RecruitmentController {
         return "redirect:/recruitment/candidate/" + candId;
     }
 
+    /** Relative-day label matching the fixture's ago(): today / yesterday / Nd ago. */
+    private static String ago(Long ts) {
+        if (ts == null) return "";
+        long d = Math.round((System.currentTimeMillis() - ts) / 86400000.0);
+        return d <= 0 ? "today" : d == 1 ? "yesterday" : d + "d ago";
+    }
+
     // ===================== view records =====================
 
     public record TabView(String key, String label, boolean showCount, int count, boolean on) {
@@ -343,7 +537,8 @@ public class RecruitmentController {
 
     public record ReqCard(String id, String title, String statusLabel, String statusBg, String statusFg,
                           String meta, boolean canApprove, boolean canEdit, boolean canPipeline,
-                          List<FunnelCell> funnel, boolean showFunnel, boolean showPending, String pendingMsg) {
+                          List<FunnelCell> funnel, boolean showFunnel, boolean showPending, String pendingMsg,
+                          boolean canReject, boolean canDelete) {
     }
 
     public record StatTile(String label, String value, String sub) {
@@ -368,5 +563,26 @@ public class RecruitmentController {
     }
 
     public record CardView(String stage, String interviewer, String recLabel, String recColor, String recBg, String comment) {
+    }
+
+    public record OwnerOption(String id, String name) {
+    }
+
+    public record AttrChip(String id, String name, boolean on) {
+    }
+
+    public record PanelPerson(String id, String name, String initials, String avatarBg, boolean on) {
+    }
+
+    public record PanelRound(String stageId, String label, List<PanelPerson> members) {
+    }
+
+    public record RecTallyView(String label, int count, String color, String bg) {
+    }
+
+    public record CardRow(String attrId, String name, int current) {
+    }
+
+    public record NoteView(String who, String initials, String bg, String ago, String text) {
     }
 }

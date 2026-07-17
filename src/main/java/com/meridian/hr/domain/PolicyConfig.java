@@ -2,7 +2,9 @@ package com.meridian.hr.domain;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Central policy/config: the work week, leave allowances + approval thresholds,
@@ -25,6 +27,33 @@ public class PolicyConfig {
 
     // holidays
     public List<Holiday> holidays = new ArrayList<>();
+
+    /**
+     * Workspace-owned copy of the performance competency catalog HR edits in Settings.
+     * Lazily seeded from the static defaults on first admin access so the seed stays
+     * in one place; review cycles keep referencing competencies by id.
+     */
+    public List<Competency> competencies = new ArrayList<>();
+
+    /**
+     * Per-change-type overrides of which employee fields that job-change type edits
+     * (Settings → Job-change types). Empty until HR toggles a chip; absent types fall
+     * back to the static {@code JobChangeMeta} defaults.
+     */
+    public Map<String, List<String>> changeTypeFields = new LinkedHashMap<>();
+
+    /** The fields change type {@code typeId} edits: the HR override, or {@code defaults}. */
+    public List<String> changeTypeFields(String typeId, List<String> defaults) {
+        List<String> override = changeTypeFields.get(typeId);
+        return override != null ? override : defaults;
+    }
+
+    public Competency competency(String id) {
+        for (Competency c : competencies) {
+            if (c.id.equals(id)) return c;
+        }
+        return null;
+    }
 
     public LeaveType leaveType(String id) {
         for (LeaveType t : leaveTypes) {
@@ -93,6 +122,22 @@ public class PolicyConfig {
             this.start = start;
             this.end = end;
             this.scope = scope;
+        }
+    }
+
+    /** A competency in the workspace catalog (id is stable; name/blurb are HR-editable). */
+    public static class Competency {
+        public String id;
+        public String name;
+        public String blurb;
+
+        public Competency() {
+        }
+
+        public Competency(String id, String name, String blurb) {
+            this.id = id;
+            this.name = name;
+            this.blurb = blurb == null ? "" : blurb;
         }
     }
 

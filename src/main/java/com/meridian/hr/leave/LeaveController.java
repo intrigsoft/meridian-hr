@@ -96,6 +96,7 @@ public class LeaveController {
         model.addAttribute("coverOptions", List.of("M. Reid", "E. Vasquez", "T. Bradley"));
         model.addAttribute("scenarios", scenarios());
         model.addAttribute("holidaysInRange", holidaysInRange(start, end));
+        model.addAttribute("sickCertDays", session.workspace().policy.sickCertDays);
         model.addAttribute("active", "leave");
         model.addAttribute("noteTitle", "New leave request");
         return "leave/new-leave";

@@ -6,65 +6,166 @@
     <title layout:fragment="title">Cycle designer · Meridian HR</title>
 </head>
 <body>
-<div layout:fragment="content" style="max-width:840px;">
+<div layout:fragment="content" style="max-width:920px;">
 
     <a th:href="@{/performance(tab='cycles')}" style="display:inline-flex; align-items:center; gap:6px; margin-bottom:14px; font-size:12.5px; color:#8894a3; font-weight:600;">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-        Back to cycles
+        All cycles
     </a>
 
-    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:14px; margin-bottom:18px;">
-        <div>
+    <!-- Header: inline title (auto-saves on change), status pill, launch -->
+    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:14px; margin-bottom:8px;">
+        <div style="flex:1; min-width:0;">
             <div style="font-size:12.5px; color:#8894a3; font-weight:500; margin-bottom:2px;">Performance / Cycle designer</div>
-            <div style="display:flex; align-items:center; gap:10px;">
-                <h1 style="margin:0; font-size:23px; font-weight:700; letter-spacing:-0.02em; color:#1a2331;" th:text="${cycle.name}">H1 2026 Review</h1>
-                <span style="font-size:11px; font-weight:600; padding:3px 10px; border-radius:20px; background:#f7f1e0; color:#9a6a1a;" th:text="${statusLabel}">Draft</span>
-            </div>
+            <form th:action="@{/performance/designer/name}" method="post" style="margin:0;">
+                <input type="hidden" name="cycle" th:value="${cycle.id}"/>
+                <input name="name" th:value="${cycle.name}" th:disabled="${locked}" onchange="this.form.submit()"
+                       placeholder="Name this cycle…"
+                       style="width:100%; font-size:24px; font-weight:700; letter-spacing:-0.02em; color:#1a2331; border:none; border-bottom:1.5px solid transparent; outline:none; padding:2px 0; background:transparent; font-family:inherit;"
+                       onfocus="this.style.borderBottomColor='#cfdbe9'" onblur="this.style.borderBottomColor='transparent'"/>
+            </form>
         </div>
-        <form th:if="${isDraft}" th:action="@{/performance/cycle/{id}/launch(id=${cycle.id})}" method="post" style="margin:0;">
-            <button type="submit" class="btn btn-primary">Launch cycle</button>
+        <div style="display:flex; align-items:center; gap:10px; flex-shrink:0; padding-top:18px;">
+            <span style="font-size:11px; font-weight:600; padding:4px 11px; border-radius:20px;"
+                  th:styleappend="'; ' + ('background:' + ${statusBg} + '; color:' + ${statusFg})"
+                  th:text="${statusLabel}">Draft</span>
+            <form th:if="${isDraft}" th:action="@{/performance/cycle/{id}/launch(id=${cycle.id})}" method="post" style="margin:0;">
+                <button type="submit" th:disabled="${!launchOk}"
+                        style="height:38px; padding:0 16px; border:none; border-radius:8px; font-family:inherit; font-size:13.5px; font-weight:600;"
+                        th:styleappend="'; ' + ('background:' + ${launchBg} + '; color:' + ${launchFg} + '; cursor:' + (${launchOk} ? 'pointer' : 'not-allowed'))">Launch cycle</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Locked banner (active/closed) -->
+    <div th:if="${locked}" style="display:flex; align-items:center; gap:9px; padding:11px 14px; background:#eef4fb; border:1px solid #d6e3f2; border-radius:9px; margin:8px 0 18px; font-size:12.5px; color:#2f5a94;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        <span th:text="'This cycle is ' + ${statusLabel} + ' — its design is locked. Reviews are read from this template as-is.'">This cycle is Active — its design is locked.</span>
+    </div>
+    <!-- Draft autosave hint -->
+    <div th:if="${isDraft}" style="display:flex; align-items:center; gap:6px; margin:6px 2px 18px; font-size:11.5px; color:#9aa3ad;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#4a9d7a" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+        Draft · saved automatically
+    </div>
+
+    <!-- Cycle & timeline (one form; every field auto-submits) -->
+    <div style="background:#fff; border:1px solid #e4e8ed; border-radius:12px; padding:18px 20px; margin-bottom:16px;">
+        <div style="font-size:13px; font-weight:700; color:#1a2331; margin-bottom:14px;">Cycle &amp; timeline</div>
+        <form th:action="@{/performance/designer/timeline}" method="post" style="margin:0; display:grid; grid-template-columns:1.4fr 1fr 1fr 1fr 1fr; gap:14px;">
+            <input type="hidden" name="cycle" th:value="${cycle.id}"/>
+            <div>
+                <label style="display:block; font-size:11px; font-weight:600; color:#9aa3ad; margin-bottom:5px;">Type</label>
+                <select name="type" th:disabled="${locked}" onchange="this.form.submit()"
+                        style="width:100%; height:38px; border:1px solid #dde2e8; border-radius:8px; padding:0 10px; font-size:13px; color:#28323f; background:#fff; outline:none; font-family:inherit;">
+                    <option th:each="t : ${typeOptions}" th:value="${t.id()}" th:text="${t.label()}" th:selected="${t.on()}">Half-yearly review</option>
+                </select>
+            </div>
+            <div>
+                <label style="display:block; font-size:11px; font-weight:600; color:#9aa3ad; margin-bottom:5px;">Opens</label>
+                <input type="date" name="startDate" th:value="${cycle.startDate}" th:disabled="${locked}" onchange="this.form.submit()"
+                       style="width:100%; height:38px; border:1px solid #dde2e8; border-radius:8px; padding:0 10px; font-size:12.5px; color:#28323f; outline:none; font-family:inherit;"/>
+            </div>
+            <div>
+                <label style="display:block; font-size:11px; font-weight:600; color:#9aa3ad; margin-bottom:5px;">Self due</label>
+                <input type="date" name="selfDue" th:value="${cycle.selfDue}" th:disabled="${locked}" onchange="this.form.submit()"
+                       style="width:100%; height:38px; border:1px solid #dde2e8; border-radius:8px; padding:0 10px; font-size:12.5px; color:#28323f; outline:none; font-family:inherit;"/>
+            </div>
+            <div>
+                <label style="display:block; font-size:11px; font-weight:600; color:#9aa3ad; margin-bottom:5px;">Manager due</label>
+                <input type="date" name="mgrDue" th:value="${cycle.mgrDue}" th:disabled="${locked}" onchange="this.form.submit()"
+                       style="width:100%; height:38px; border:1px solid #dde2e8; border-radius:8px; padding:0 10px; font-size:12.5px; color:#28323f; outline:none; font-family:inherit;"/>
+            </div>
+            <div>
+                <label style="display:block; font-size:11px; font-weight:600; color:#9aa3ad; margin-bottom:5px;">Calibration</label>
+                <input type="date" name="calibrationDate" th:value="${cycle.calibrationDate}" th:disabled="${locked}" onchange="this.form.submit()"
+                       style="width:100%; height:38px; border:1px solid #dde2e8; border-radius:8px; padding:0 10px; font-size:12.5px; color:#28323f; outline:none; font-family:inherit;"/>
+            </div>
         </form>
     </div>
 
-    <div style="background:#fbfcfd; border:1px dashed #d9e0e8; border-radius:10px; padding:12px 15px; margin-bottom:18px; font-size:12px; color:#6b7480; line-height:1.5;">
-        This designer is <strong>read-only</strong> in the sample — the schema (competencies, weights, timeline,
-        participants) is shown as configured. The interactive editor (reorder, reweight, edit participants) is
-        deferred; a draft is pre-populated with all active employees so it can be launched.
-    </div>
-
-    <!-- Timeline -->
+    <!-- Competencies & weights -->
     <div style="background:#fff; border:1px solid #e4e8ed; border-radius:12px; padding:18px 20px; margin-bottom:16px;">
-        <div style="font-size:14px; font-weight:700; color:#1a2331; margin-bottom:14px;" th:text="${typeLabel}">Half-yearly review</div>
-        <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:12px;">
-            <div><div style="font-size:11px; font-weight:600; color:#9aa3ad; text-transform:uppercase; letter-spacing:0.04em;">Starts</div><div style="font-size:13.5px; font-weight:600; color:#28323f; margin-top:4px;" th:text="${cycle.startDate}">2026-06-01</div></div>
-            <div><div style="font-size:11px; font-weight:600; color:#9aa3ad; text-transform:uppercase; letter-spacing:0.04em;">Self due</div><div style="font-size:13.5px; font-weight:600; color:#28323f; margin-top:4px;" th:text="${cycle.selfDue}">2026-06-19</div></div>
-            <div><div style="font-size:11px; font-weight:600; color:#9aa3ad; text-transform:uppercase; letter-spacing:0.04em;">Manager due</div><div style="font-size:13.5px; font-weight:600; color:#28323f; margin-top:4px;" th:text="${cycle.mgrDue}">2026-06-30</div></div>
-            <div><div style="font-size:11px; font-weight:600; color:#9aa3ad; text-transform:uppercase; letter-spacing:0.04em;">Calibration</div><div style="font-size:13.5px; font-weight:600; color:#28323f; margin-top:4px;" th:text="${cycle.calibrationDate}">2026-07-10</div></div>
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+            <div style="font-size:13px; font-weight:700; color:#1a2331;">Competencies &amp; weights</div>
+            <span style="font-size:12px; font-weight:700; padding:3px 11px; border-radius:20px;"
+                  th:styleappend="'; ' + ('color:' + ${weightFg} + '; background:' + ${weightBg})"
+                  th:text="'Total ' + ${weightTotal} + '%'">Total 100%</span>
+        </div>
+        <div style="font-size:11.5px; color:#9aa3ad; margin-bottom:14px;">Pick from the library. Weights should total 100%.</div>
+
+        <div style="display:flex; flex-direction:column; gap:9px;">
+            <div th:each="c : ${comps}" style="display:flex; align-items:center; gap:12px; padding:11px 13px; border:1px solid #eef1f4; border-radius:9px;">
+                <div style="width:8px; height:32px; border-radius:4px; flex-shrink:0;" th:styleappend="'; ' + ('background:' + ${c.accent()})"></div>
+                <div style="flex:1; min-width:0;">
+                    <div style="font-size:13px; font-weight:600; color:#28323f;" th:text="${c.name()}">Technical execution</div>
+                    <div style="font-size:11.5px; color:#9aa3ad;" th:text="${c.blurb()}">Ships high-quality work reliably.</div>
+                </div>
+                <form th:action="@{/performance/designer/weight}" method="post" style="margin:0; display:flex; align-items:center; gap:6px; flex-shrink:0;">
+                    <input type="hidden" name="cycle" th:value="${cycle.id}"/>
+                    <input type="hidden" name="comp" th:value="${c.id()}"/>
+                    <input type="number" name="weight" th:value="${c.weight()}" th:disabled="${locked}" onchange="this.form.submit()" min="0" max="100"
+                           style="width:64px; height:34px; border:1px solid #dde2e8; border-radius:7px; padding:0 8px; font-size:13px; font-weight:600; color:#28323f; text-align:center; outline:none; font-family:inherit;"/>
+                    <span style="font-size:12px; color:#9aa3ad;">%</span>
+                </form>
+                <form th:if="${c.removable()}" th:action="@{/performance/designer/comp/remove}" method="post" style="margin:0; flex-shrink:0;">
+                    <input type="hidden" name="cycle" th:value="${cycle.id}"/>
+                    <input type="hidden" name="comp" th:value="${c.id()}"/>
+                    <button type="submit" title="Remove" style="width:32px; height:32px; border:1px solid #f0cfc9; border-radius:7px; background:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; color:#b23b2e;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div th:if="${isDraft}" style="display:flex; align-items:center; gap:10px; margin-top:13px;">
+            <form th:action="@{/performance/designer/comp/add}" method="post" style="margin:0;">
+                <input type="hidden" name="cycle" th:value="${cycle.id}"/>
+                <select name="comp" onchange="this.form.submit()"
+                        style="height:36px; border:1px solid #dde2e8; border-radius:8px; padding:0 10px; font-size:12.5px; color:#3a4453; background:#fff; outline:none; min-width:220px; font-family:inherit;">
+                    <option value="">+ Add competency from library…</option>
+                    <option th:each="a : ${addable}" th:value="${a.id()}" th:text="${a.name()}">Leadership</option>
+                </select>
+            </form>
+            <form th:action="@{/performance/designer/balance}" method="post" style="margin:0;">
+                <input type="hidden" name="cycle" th:value="${cycle.id}"/>
+                <button type="submit" style="height:36px; padding:0 13px; border:1px solid #dde2e8; border-radius:8px; background:#fff; color:#5a6472; font-family:inherit; font-size:12.5px; font-weight:600; cursor:pointer;">Balance evenly</button>
+            </form>
         </div>
     </div>
 
-    <!-- Competencies -->
-    <div style="background:#fff; border:1px solid #e4e8ed; border-radius:12px; overflow:hidden; margin-bottom:16px;">
-        <div style="padding:14px 20px; border-bottom:1px solid #eef1f4; font-size:14px; font-weight:700; color:#1a2331;">Competencies &amp; weights</div>
-        <div th:each="c : ${comps}" style="display:flex; align-items:center; gap:14px; padding:13px 20px; border-bottom:1px solid #f4f6f8;">
-            <div style="flex:1; min-width:0;">
-                <div style="font-size:13.5px; font-weight:600; color:#28323f;" th:text="${c.name()}">Technical execution</div>
-                <div style="font-size:12px; color:#8894a3; margin-top:2px;" th:text="${c.blurb()}">Ships high-quality work reliably.</div>
-            </div>
-            <div style="display:flex; align-items:center; gap:10px; flex-shrink:0; width:160px;">
-                <div style="height:7px; flex:1; border-radius:4px; background:#eef1f4; overflow:hidden;"><div style="height:100%; background:#3f7cc4; border-radius:4px;" th:styleappend="'; ' + ('height:100%; background:#3f7cc4; border-radius:4px; width:' + ${c.weight()} + '%')"></div></div>
-                <span style="font-size:12.5px; font-weight:700; color:#3a4453; width:34px; text-align:right;" th:text="${c.weight()} + '%'">30%</span>
-            </div>
-        </div>
-    </div>
-
-    <!-- Participants -->
+    <!-- Participants: per-department toggle cards -->
     <div style="background:#fff; border:1px solid #e4e8ed; border-radius:12px; padding:18px 20px;">
-        <div style="font-size:14px; font-weight:700; color:#1a2331; margin-bottom:12px;">Participants <span style="color:#9aa3ad; font-weight:600;" th:text="'· ' + ${participantNames.size()}">· 15</span></div>
-        <div style="display:flex; flex-wrap:wrap; gap:8px;">
-            <span th:each="n : ${participantNames}" style="font-size:12px; font-weight:600; color:#4a5563; background:#f2f5f8; border:1px solid #e4e8ed; padding:4px 11px; border-radius:20px;" th:text="${n}">Sarah Chen</span>
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+            <div style="font-size:13px; font-weight:700; color:#1a2331;">Participants</div>
+            <span style="font-size:12px; font-weight:700; color:#17457f; background:#eef4fb; padding:3px 11px; border-radius:20px;" th:text="${partTotal} + ' people'">0 people</span>
+        </div>
+        <div style="font-size:11.5px; color:#9aa3ad; margin-bottom:14px;">Include whole departments. Each person&#39;s manager becomes their reviewer.</div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+            <form th:each="d : ${deptRows}" th:action="@{/performance/designer/dept}" method="post" style="margin:0; display:contents;">
+                <input type="hidden" name="cycle" th:value="${cycle.id}"/>
+                <input type="hidden" name="dept" th:value="${d.dept()}"/>
+                <button type="submit" th:disabled="${locked}"
+                        style="display:flex; align-items:center; gap:11px; padding:12px 14px; border-radius:9px; font-family:inherit; text-align:left;"
+                        th:styleappend="'; ' + ('border:1px solid ' + ${d.border()} + '; background:' + ${d.bg()} + '; cursor:' + (${locked} ? 'not-allowed' : 'pointer'))">
+                    <span style="width:20px; height:20px; border-radius:6px; display:flex; align-items:center; justify-content:center; flex-shrink:0;"
+                          th:styleappend="'; ' + ('border:2px solid ' + ${d.boxBorder()} + '; background:' + ${d.boxBg()})">
+                        <svg th:if="${d.allIn()}" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>
+                    </span>
+                    <span style="flex:1; min-width:0;">
+                        <span style="display:block; font-size:13px; font-weight:600; color:#28323f;" th:text="${d.dept()}">Engineering</span>
+                        <span style="display:block; font-size:11.5px; color:#9aa3ad;" th:text="${d.selected()} + ' of ' + ${d.total()} + ' included'">0 of 6 included</span>
+                    </span>
+                </button>
+            </form>
         </div>
     </div>
 </div>
+
+<th:block layout:fragment="content-after">
+    <div th:if="${toast != null}" style="position:fixed; right:22px; bottom:22px; z-index:400; display:flex; align-items:center; gap:11px; background:#1a2331; color:#fff; padding:12px 14px; border-radius:10px; box-shadow:0 10px 28px rgba(20,30,50,0.28); min-width:280px; max-width:390px;">
+        <span style="width:8px; height:8px; border-radius:50%; flex-shrink:0;" th:styleappend="'; ' + ('background:' + (${toastDot} ?: '#3ecf8e'))"></span>
+        <span style="flex:1; font-size:12.5px; font-weight:500; line-height:1.4;" th:text="${toast}">Done.</span>
+    </div>
+</th:block>
 </body>
 </html>

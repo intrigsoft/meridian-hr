@@ -31,8 +31,9 @@ import java.util.Map;
 /**
  * People Ops → Performance. HR runs cycles (Cycles / Reviews / Reports tabs); managers see
  * their team's reviews; employees see their own. The per-employee Review page drives the
- * self → manager → calibration flow. The Cycle Designer is read-only (the editable schema
- * builder is deferred). Ports the fixture's {@code Performance.dc.html} + {@code Review.dc.html}.
+ * self → manager → calibration flow. The Cycle Designer is fully editable for DRAFT cycles
+ * (auto-save per change via small PRG forms) and locked once active/closed. Ports the
+ * fixture's {@code Performance.dc.html} + {@code Cycle Designer.dc.html} + {@code Review.dc.html}.
  */
 @Controller
 public class PerformanceController {
@@ -134,7 +135,8 @@ public class PerformanceController {
             cards.add(new CycleCard(c.id, c.name, PerformanceMeta.cycleTypeLabel(c.type),
                     fmt(c.startDate) + " – " + fmt(c.calibrationDate), c.participants.size(),
                     bg, fg, label, draft, !draft, !draft, comp.pct(), comp.done(),
-                    "closed".equals(c.status) ? "#4a9d7a" : "#3f7cc4"));
+                    "closed".equals(c.status) ? "#4a9d7a" : "#3f7cc4",
+                    draft && perf.launchable(c), "active".equals(c.status), draft));
         }
         model.addAttribute("cycleCards", cards);
     }
@@ -253,11 +255,17 @@ public class PerformanceController {
     public String launch(@org.springframework.web.bind.annotation.PathVariable String id, RedirectAttributes ra) {
         if (!policy.can(Permission.PERF_CYCLE_ADMIN)) return "redirect:/performance";
         ReviewCycle c = perf.getCycle(id);
-        perf.launchCycle(id);
-        if (c != null) {
-            ra.addFlashAttribute("toast", "\"" + c.name + "\" launched — self-assessments are now open.");
-            ra.addFlashAttribute("toastDot", "#3ecf8e");
+        if (c == null) return "redirect:/performance?tab=cycles";
+        if (!"draft".equals(c.status)) return "redirect:/performance?tab=cycles";
+        if (!perf.launchable(c)) {
+            ra.addFlashAttribute("toast",
+                    "Can't launch yet — a cycle needs a name, weights totalling exactly 100%, and at least one participant.");
+            ra.addFlashAttribute("toastDot", "#c0563f");
+            return "redirect:/performance/designer?cycle=" + id;
         }
+        perf.launchCycle(id);
+        ra.addFlashAttribute("toast", "\"" + c.name + "\" launched — self-assessments are now open.");
+        ra.addFlashAttribute("toastDot", "#3ecf8e");
         return "redirect:/performance?tab=reviews&cycle=" + id;
     }
 
@@ -270,29 +278,168 @@ public class PerformanceController {
         return "redirect:/performance?tab=cycles";
     }
 
+    @PostMapping("/performance/cycle/{id}/delete")
+    public String delete(@org.springframework.web.bind.annotation.PathVariable String id, RedirectAttributes ra) {
+        if (!policy.can(Permission.PERF_CYCLE_ADMIN)) return "redirect:/performance";
+        ReviewCycle c = perf.getCycle(id);
+        if (perf.deleteCycle(id)) {
+            ra.addFlashAttribute("toast", "Draft \"" + (c != null ? c.name : "") + "\" deleted.");
+            ra.addFlashAttribute("toastDot", "#8894a3");
+        }
+        return "redirect:/performance?tab=cycles";
+    }
+
+    // ===================== cycle designer =====================
+
+    private static final String[] ACCENTS = {"#3f7cc4", "#4a9d7a", "#c68a2a", "#9a6ab5", "#c0563f",
+            "#5a8fb5", "#b58f4a", "#6ba58f", "#b56b8f", "#7a6bb5"};
+
     @GetMapping("/performance/designer")
     public String designer(@RequestParam String cycle, Model model) {
         if (!policy.can(Permission.PERF_CYCLE_ADMIN)) return "redirect:/performance";
         ReviewCycle c = perf.getCycle(cycle);
         if (c == null) return "redirect:/performance";
+        boolean isDraft = "draft".equals(c.status);
+        boolean locked = !isDraft;
+
         model.addAttribute("active", "performance");
         model.addAttribute("cycle", c);
-        model.addAttribute("typeLabel", PerformanceMeta.cycleTypeLabel(c.type));
-        model.addAttribute("statusLabel", c.status.substring(0, 1).toUpperCase() + c.status.substring(1));
+        model.addAttribute("isDraft", isDraft);
+        model.addAttribute("locked", locked);
+        String statusBg, statusFg, statusLabel;
+        switch (c.status) {
+            case "active" -> { statusBg = "#e8eefb"; statusFg = "#3a5aa8"; statusLabel = "Active"; }
+            case "closed" -> { statusBg = "#eef1f4"; statusFg = "#6b7480"; statusLabel = "Closed"; }
+            default -> { statusBg = "#f7f1e0"; statusFg = "#9a6a1a"; statusLabel = "Draft"; }
+        }
+        model.addAttribute("statusBg", statusBg);
+        model.addAttribute("statusFg", statusFg);
+        model.addAttribute("statusLabel", statusLabel);
+
+        // Cycle & timeline
+        List<TypeOption> typeOptions = new ArrayList<>();
+        for (Map.Entry<String, String> en : PerformanceMeta.cycleTypes().entrySet()) {
+            typeOptions.add(new TypeOption(en.getKey(), en.getValue(), en.getKey().equals(c.type)));
+        }
+        model.addAttribute("typeOptions", typeOptions);
+
+        // Competencies & weights
         List<DesignComp> comps = new ArrayList<>();
-        for (ReviewCycle.CompWeight cw : c.competencies) {
-            PerformanceMeta.Competency meta = PerformanceMeta.competency(cw.id);
-            comps.add(new DesignComp(meta.name(), meta.blurb(), cw.weight));
+        boolean removable = isDraft && c.competencies.size() > 1;
+        for (int i = 0; i < c.competencies.size(); i++) {
+            ReviewCycle.CompWeight cw = c.competencies.get(i);
+            PerformanceMeta.Competency meta = perf.competencyOf(cw.id);
+            comps.add(new DesignComp(cw.id, meta.name(), meta.blurb(), cw.weight,
+                    ACCENTS[i % ACCENTS.length], removable));
         }
         model.addAttribute("comps", comps);
-        model.addAttribute("isDraft", "draft".equals(c.status));
-        List<String> partNames = new ArrayList<>();
-        for (String eid : c.participants) {
-            Employee e = people.get(eid);
-            if (e != null) partNames.add(e.fullName());
+        List<PerformanceMeta.Competency> addable = new ArrayList<>();
+        for (PerformanceMeta.Competency lib : perf.catalog()) {
+            boolean chosen = false;
+            for (ReviewCycle.CompWeight cw : c.competencies) {
+                if (cw.id.equals(lib.id())) chosen = true;
+            }
+            if (!chosen) addable.add(lib);
         }
-        model.addAttribute("participantNames", partNames);
+        model.addAttribute("addable", addable);
+        int weightTotal = perf.weightTotal(c);
+        boolean weightOk = weightTotal == 100;
+        model.addAttribute("weightTotal", weightTotal);
+        model.addAttribute("weightFg", weightOk ? "#2f6f4f" : "#9a6a1a");
+        model.addAttribute("weightBg", weightOk ? "#e6f3ec" : "#f7f1e0");
+
+        // Participants (per-department toggle cards over ACTIVE employees)
+        List<DeptRow> deptRows = new ArrayList<>();
+        Map<String, List<String>> byDept = new LinkedHashMap<>();
+        for (String d : people.departmentNames()) byDept.put(d, new ArrayList<>());
+        for (Employee e : perf.reviewables()) {
+            byDept.computeIfAbsent(e.dept, k -> new ArrayList<>()).add(e.id);
+        }
+        for (Map.Entry<String, List<String>> en : byDept.entrySet()) {
+            List<String> ids = en.getValue();
+            if (ids.isEmpty()) continue;
+            int sel = 0;
+            for (String eid : ids) {
+                if (c.participants.contains(eid)) sel++;
+            }
+            boolean allIn = sel == ids.size();
+            deptRows.add(new DeptRow(en.getKey(), ids.size(), sel, allIn,
+                    allIn ? "#bcd0ea" : "#e4e8ed", allIn ? "#f2f7fc" : "#fff",
+                    allIn ? "#17457f" : "#cdd4dc", allIn ? "#17457f" : "#fff"));
+        }
+        model.addAttribute("deptRows", deptRows);
+        model.addAttribute("partTotal", c.participants.size());
+
+        // Launch gate
+        boolean launchOk = isDraft && perf.launchable(c);
+        model.addAttribute("launchOk", launchOk);
+        model.addAttribute("launchBg", launchOk ? "#17457f" : "#e4e8ed");
+        model.addAttribute("launchFg", launchOk ? "#fff" : "#9aa3ad");
         return "performance/designer";
+    }
+
+    private String backToDesigner(String cycle) {
+        return "redirect:/performance/designer?cycle=" + cycle;
+    }
+
+    @PostMapping("/performance/designer/name")
+    public String designerName(@RequestParam String cycle, @RequestParam(defaultValue = "") String name) {
+        if (!policy.can(Permission.PERF_CYCLE_ADMIN)) return "redirect:/performance";
+        perf.renameCycle(cycle, name);
+        return backToDesigner(cycle);
+    }
+
+    @PostMapping("/performance/designer/timeline")
+    public String designerTimeline(@RequestParam String cycle,
+                                   @RequestParam(required = false) String type,
+                                   @RequestParam(required = false) String startDate,
+                                   @RequestParam(required = false) String selfDue,
+                                   @RequestParam(required = false) String mgrDue,
+                                   @RequestParam(required = false) String calibrationDate) {
+        if (!policy.can(Permission.PERF_CYCLE_ADMIN)) return "redirect:/performance";
+        perf.updateSchedule(cycle, type, startDate, selfDue, mgrDue, calibrationDate);
+        return backToDesigner(cycle);
+    }
+
+    @PostMapping("/performance/designer/weight")
+    public String designerWeight(@RequestParam String cycle, @RequestParam String comp,
+                                 @RequestParam(defaultValue = "0") String weight) {
+        if (!policy.can(Permission.PERF_CYCLE_ADMIN)) return "redirect:/performance";
+        int w = 0;
+        try {
+            w = Integer.parseInt(weight.trim());
+        } catch (NumberFormatException ignore) {
+        }
+        perf.setWeight(cycle, comp, w);
+        return backToDesigner(cycle);
+    }
+
+    @PostMapping("/performance/designer/comp/add")
+    public String designerAddComp(@RequestParam String cycle, @RequestParam(defaultValue = "") String comp) {
+        if (!policy.can(Permission.PERF_CYCLE_ADMIN)) return "redirect:/performance";
+        perf.addCompetency(cycle, comp);
+        return backToDesigner(cycle);
+    }
+
+    @PostMapping("/performance/designer/comp/remove")
+    public String designerRemoveComp(@RequestParam String cycle, @RequestParam String comp) {
+        if (!policy.can(Permission.PERF_CYCLE_ADMIN)) return "redirect:/performance";
+        perf.removeCompetency(cycle, comp);
+        return backToDesigner(cycle);
+    }
+
+    @PostMapping("/performance/designer/balance")
+    public String designerBalance(@RequestParam String cycle) {
+        if (!policy.can(Permission.PERF_CYCLE_ADMIN)) return "redirect:/performance";
+        perf.balanceWeights(cycle);
+        return backToDesigner(cycle);
+    }
+
+    @PostMapping("/performance/designer/dept")
+    public String designerToggleDept(@RequestParam String cycle, @RequestParam String dept) {
+        if (!policy.can(Permission.PERF_CYCLE_ADMIN)) return "redirect:/performance";
+        perf.toggleDepartment(cycle, dept);
+        return backToDesigner(cycle);
     }
 
     // ===================== review page =====================
@@ -341,7 +488,7 @@ public class PerformanceController {
 
         List<CompScoreRow> comps = new ArrayList<>();
         for (ReviewCycle.CompWeight cw : cy.competencies) {
-            PerformanceMeta.Competency meta = PerformanceMeta.competency(cw.id);
+            PerformanceMeta.Competency meta = perf.competencyOf(cw.id);
             comps.add(new CompScoreRow(cw.id, meta.name(), meta.blurb(), cw.weight,
                     r.self.scores.get(cw.id), r.mgr.scores.get(cw.id), r.cal.scores.get(cw.id)));
         }
@@ -478,7 +625,8 @@ public class PerformanceController {
     public record CycleCard(String id, String name, String typeLabel, String dateRange, int partCount,
                             String statusBg, String statusFg, String statusLabel,
                             boolean canDesign, boolean canView, boolean showProgress,
-                            int pct, int done, String barColor) {
+                            int pct, int done, String barColor,
+                            boolean launchOk, boolean canClose, boolean canDelete) {
     }
 
     public record StatusFilter(String id, String label, int count,
@@ -503,7 +651,14 @@ public class PerformanceController {
                              String band, String bandBg, String bandFg) {
     }
 
-    public record DesignComp(String name, String blurb, int weight) {
+    public record DesignComp(String id, String name, String blurb, int weight, String accent, boolean removable) {
+    }
+
+    public record TypeOption(String id, String label, boolean on) {
+    }
+
+    public record DeptRow(String dept, int total, int selected, boolean allIn,
+                          String border, String bg, String boxBorder, String boxBg) {
     }
 
     public record CompScoreRow(String id, String name, String blurb, int weight,

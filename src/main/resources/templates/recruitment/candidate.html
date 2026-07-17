@@ -102,13 +102,24 @@
         <div style="font-size:14px; font-weight:700; color:#1a2331; margin-bottom:4px;">Interview debrief</div>
         <div style="font-size:11.5px; color:#9aa3ad; margin-bottom:16px;" th:text="${debrief.count()} + ' scorecard(s)'">4 scorecards</div>
 
-        <div style="display:flex; flex-direction:column; gap:11px; margin-bottom:18px;">
-            <div th:each="as : ${attrScores}">
-                <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
-                    <span style="font-size:12px; font-weight:600; color:#4a5563;" th:text="${as.name()}">Coding</span>
-                    <span style="font-size:12px; font-weight:700; color:#28323f;" th:text="${as.avg()}">4.2</span>
+        <div style="display:grid; grid-template-columns:1.3fr 1fr; gap:22px; margin-bottom:18px;">
+            <div style="display:flex; flex-direction:column; gap:11px;">
+                <div th:each="as : ${attrScores}">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                        <span style="font-size:12px; font-weight:600; color:#4a5563;" th:text="${as.name()}">Coding</span>
+                        <span style="font-size:12px; font-weight:700; color:#28323f;" th:text="${as.avg()}">4.2</span>
+                    </div>
+                    <div style="height:8px; border-radius:5px; background:#f1f4f7; overflow:hidden;"><div style="height:100%; border-radius:5px; background:#3f7cc4;" th:styleappend="'; ' + ('height:100%; border-radius:5px; background:#3f7cc4; width:' + ${as.pct()} + '%')"></div></div>
                 </div>
-                <div style="height:8px; border-radius:5px; background:#f1f4f7; overflow:hidden;"><div style="height:100%; border-radius:5px; background:#3f7cc4;" th:styleappend="'; ' + ('height:100%; border-radius:5px; background:#3f7cc4; width:' + ${as.pct()} + '%')"></div></div>
+            </div>
+            <div>
+                <div style="font-size:11px; font-weight:700; color:#9aa3ad; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:10px;">Recommendations</div>
+                <div style="display:flex; flex-direction:column; gap:8px;">
+                    <div th:each="rt : ${recTally}" style="display:flex; align-items:center; gap:9px;">
+                        <span style="width:24px; height:24px; border-radius:6px; font-size:12px; font-weight:700; display:inline-flex; align-items:center; justify-content:center;" th:styleappend="'; ' + ('background:' + ${rt.bg()} + '; color:' + ${rt.color()})" th:text="${rt.count()}">2</span>
+                        <span style="font-size:12.5px; color:#4a5563;" th:text="${rt.label()}">Strong hire</span>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -120,6 +131,57 @@
                     <div style="font-size:12px; color:#6b7480; margin-top:2px; line-height:1.5;" th:text="${cv.comment()}">Solid across the board.</div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Your scorecard (interviewer entry) -->
+    <div th:if="${canSubmitCard}" style="background:#f8fbff; border:1.5px solid #cfdbe9; border-radius:12px; padding:16px 18px; margin-top:16px;">
+        <div style="font-size:13px; font-weight:700; color:#17457f; margin-bottom:2px;" th:text="'Your scorecard · ' + ${stageLabel}">Your scorecard · HM interview</div>
+        <div th:if="${resubmit}" style="font-size:11.5px; color:#9a6a1a; margin-bottom:10px;">You already submitted a scorecard for this round — submitting again replaces it.</div>
+        <div th:unless="${resubmit}" style="font-size:11.5px; color:#9aa3ad; margin-bottom:10px;">Rate each attribute 1–5, pick a recommendation, and add evidence.</div>
+        <form th:action="@{/recruitment/candidate/{id}/scorecard(id=${cand.id})}" method="post" style="margin:0;">
+            <input type="hidden" name="stage" th:value="${cand.stage}"/>
+            <div th:each="cr : ${cardRows}" style="display:flex; align-items:center; gap:14px; padding:8px 0; border-bottom:1px solid #eef4fb;">
+                <div style="flex:1; font-size:12.5px; font-weight:600; color:#28323f;" th:text="${cr.name()}">Coding</div>
+                <div style="display:flex; gap:10px;">
+                    <label th:each="n : ${ratingScale}" style="display:inline-flex; align-items:center; gap:4px; font-size:12.5px; font-weight:600; color:#5a6472; cursor:pointer;">
+                        <input type="radio" th:name="'rating_' + ${cr.attrId()}" th:value="${n}" th:checked="${cr.current() == n}"/>
+                        <span th:text="${n}">3</span>
+                    </label>
+                </div>
+            </div>
+            <div style="margin-top:13px;">
+                <div style="font-size:11.5px; font-weight:600; color:#8894a3; margin-bottom:7px;">Recommendation</div>
+                <div style="display:flex; gap:14px; flex-wrap:wrap;">
+                    <label th:each="ro : ${recOptions}" style="display:inline-flex; align-items:center; gap:5px; font-size:12.5px; font-weight:600; cursor:pointer;" th:styleappend="'; ' + ('color:' + ${ro.color()})">
+                        <input type="radio" name="rec" th:value="${ro.id()}" th:checked="${currentRec == ro.id()}"/>
+                        <span th:text="${ro.label()}">Hire</span>
+                    </label>
+                </div>
+            </div>
+            <textarea name="comment" placeholder="What stood out? Evidence for your rating…" th:text="${currentComment}" style="width:100%; min-height:80px; margin-top:13px; border:1px solid #dde2e8; border-radius:9px; padding:11px 13px; font-size:12.5px; line-height:1.55; color:#28323f; outline:none; resize:vertical; font-family:inherit;"></textarea>
+            <div style="display:flex; justify-content:flex-end; margin-top:12px;">
+                <button type="submit" class="btn btn-primary" style="height:38px;" th:text="${resubmit} ? 'Resubmit scorecard' : 'Submit scorecard'">Submit scorecard</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Notes -->
+    <div style="background:#fff; border:1px solid #e4e8ed; border-radius:12px; padding:18px 20px; margin-top:16px;">
+        <div style="font-size:14px; font-weight:700; color:#1a2331; margin-bottom:12px;">Notes</div>
+        <form th:if="${canManage}" th:action="@{/recruitment/candidate/{id}/note(id=${cand.id})}" method="post" style="display:flex; gap:9px; margin:0 0 14px;">
+            <input name="text" required placeholder="Add an internal note…" style="flex:1; height:38px; border:1px solid #dde2e8; border-radius:8px; padding:0 12px; font-size:12.5px; color:#28323f; outline:none; font-family:inherit;"/>
+            <button type="submit" class="btn btn-primary" style="height:38px;">Post</button>
+        </form>
+        <div style="display:flex; flex-direction:column; gap:12px;">
+            <div th:each="nv : ${notes}" style="display:flex; gap:11px;">
+                <div style="width:28px; height:28px; border-radius:50%; color:#fff; font-size:11px; font-weight:600; display:flex; align-items:center; justify-content:center; flex-shrink:0;" th:styleappend="'; ' + ('background:' + ${nv.bg()})" th:text="${nv.initials()}">PN</div>
+                <div style="flex:1; min-width:0;">
+                    <div style="font-size:12px;"><strong style="color:#28323f;" th:text="${nv.who()}">Priya Nair</strong> <span style="color:#b6bdc6;" th:text="'· ' + ${nv.ago()}">· today</span></div>
+                    <div style="font-size:12.5px; color:#4a5563; line-height:1.5; margin-top:2px;" th:text="${nv.text()}">Strong references.</div>
+                </div>
+            </div>
+            <div th:if="${notes.isEmpty()}" style="font-size:12px; color:#b6bdc6;">No notes yet.</div>
         </div>
     </div>
 </div>

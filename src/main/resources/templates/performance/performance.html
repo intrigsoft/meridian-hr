@@ -55,9 +55,19 @@
                 <div style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
                     <a th:if="${c.canDesign()}" th:href="@{/performance/designer(cycle=${c.id()})}" style="height:34px; padding:0 14px; border:1px solid #dde2e8; border-radius:8px; background:#fff; color:#3a4453; font-size:12.5px; font-weight:600; display:flex; align-items:center;">Design</a>
                     <form th:if="${c.canDesign()}" th:action="@{/performance/cycle/{id}/launch(id=${c.id()})}" method="post" style="margin:0;">
-                        <button type="submit" style="height:34px; padding:0 14px; border:none; border-radius:8px; background:#17457f; color:#fff; font-family:inherit; font-size:12.5px; font-weight:600; cursor:pointer;">Launch cycle</button>
+                        <button type="submit" th:disabled="${!c.launchOk()}"
+                                th:title="${c.launchOk()} ? 'Launch this cycle' : 'Needs a name, weights totalling 100%, and at least one participant'"
+                                style="height:34px; padding:0 14px; border:none; border-radius:8px; font-family:inherit; font-size:12.5px; font-weight:600;"
+                                th:styleappend="'; ' + (${c.launchOk()} ? 'background:#17457f; color:#fff; cursor:pointer' : 'background:#e4e8ed; color:#9aa3ad; cursor:not-allowed')">Launch cycle</button>
+                    </form>
+                    <form th:if="${c.canDelete()}" th:action="@{/performance/cycle/{id}/delete(id=${c.id()})}" method="post" style="margin:0;">
+                        <button type="submit" title="Delete draft" style="height:34px; padding:0 14px; border:1px solid #f0cfc9; border-radius:8px; background:#fff; color:#b23b2e; font-family:inherit; font-size:12.5px; font-weight:600; cursor:pointer;">Delete</button>
                     </form>
                     <a th:if="${c.canView()}" th:href="@{/performance(tab='reviews', cycle=${c.id()})}" style="height:34px; padding:0 14px; border:1px solid #cfdbe9; border-radius:8px; background:#eef4fb; color:#17457f; font-size:12.5px; font-weight:600; display:flex; align-items:center;">View reviews</a>
+                    <a th:if="${c.canView()}" th:href="@{/performance/designer(cycle=${c.id()})}" style="height:34px; padding:0 14px; border:1px solid #dde2e8; border-radius:8px; background:#fff; color:#3a4453; font-size:12.5px; font-weight:600; display:flex; align-items:center;">View design</a>
+                    <form th:if="${c.canClose()}" th:action="@{/performance/cycle/{id}/close(id=${c.id()})}" method="post" style="margin:0;">
+                        <button type="submit" title="Close this cycle" style="height:34px; padding:0 14px; border:1px solid #dde2e8; border-radius:8px; background:#fff; color:#5a6472; font-family:inherit; font-size:12.5px; font-weight:600; cursor:pointer;">Close cycle</button>
+                    </form>
                 </div>
             </div>
             <div th:if="${c.showProgress()}" style="display:flex; align-items:center; gap:12px; margin-top:14px;">

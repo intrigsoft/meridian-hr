@@ -22,55 +22,175 @@
                 <span style="font-size:11px; font-weight:600; padding:3px 10px; border-radius:20px;" th:styleappend="'; ' + ('background:' + ${statusMeta.bg()} + '; color:' + ${statusMeta.fg()})" th:text="${statusMeta.label()}">Open</span>
             </div>
         </div>
-        <div style="display:flex; gap:8px; flex-shrink:0;">
-            <form th:if="${isDraft}" th:action="@{/recruitment/req/{id}/submit(id=${req.id})}" method="post" style="margin:0;">
+        <div style="display:flex; gap:8px; flex-shrink:0; flex-wrap:wrap; justify-content:flex-end;">
+            <form th:if="${designer and readyToSubmit}" th:action="@{/recruitment/req/{id}/submit(id=${req.id})}" method="post" style="margin:0;">
                 <button type="submit" class="btn btn-primary">Submit for approval</button>
+            </form>
+            <button th:if="${designer and !readyToSubmit}" type="button" disabled
+                    style="height:38px; padding:0 16px; border:none; border-radius:9px; background:#e4e8ed; color:#9aa3ad; font-family:inherit; font-size:13.5px; font-weight:600; cursor:not-allowed;">Submit for approval</button>
+            <form th:if="${canDelete}" th:action="@{/recruitment/req/{id}/delete(id=${req.id})}" method="post" style="margin:0;">
+                <button type="submit" style="height:38px; padding:0 14px; border:1px solid #f0cfc9; border-radius:9px; background:#fff; color:#b23b2e; font-family:inherit; font-size:13.5px; font-weight:600; cursor:pointer;">Delete draft</button>
             </form>
             <form th:if="${isHr and isPending}" th:action="@{/recruitment/req/{id}/approve(id=${req.id})}" method="post" style="margin:0;">
                 <button type="submit" style="height:38px; padding:0 16px; border:none; border-radius:9px; background:#2f6f4f; color:#fff; font-family:inherit; font-size:13.5px; font-weight:600; cursor:pointer;">Approve</button>
+            </form>
+            <form th:if="${isHr and isPending}" th:action="@{/recruitment/req/{id}/reject(id=${req.id})}" method="post" style="margin:0;">
+                <button type="submit" style="height:38px; padding:0 14px; border:1px solid #f0cfc9; border-radius:9px; background:#fff; color:#b23b2e; font-family:inherit; font-size:13.5px; font-weight:600; cursor:pointer;">Reject</button>
             </form>
             <form th:if="${isOpen}" th:action="@{/recruitment/req/{id}/close(id=${req.id})}" method="post" style="margin:0;">
                 <input type="hidden" name="filled" value="true"/>
                 <button type="submit" class="btn btn-ghost">Mark filled</button>
             </form>
+            <form th:if="${isOpen}" th:action="@{/recruitment/req/{id}/close(id=${req.id})}" method="post" style="margin:0;">
+                <input type="hidden" name="filled" value="false"/>
+                <button type="submit" style="height:38px; padding:0 14px; border:1px solid #dde2e8; border-radius:9px; background:#fff; color:#5a6472; font-family:inherit; font-size:13.5px; font-weight:600; cursor:pointer;">Close role</button>
+            </form>
             <a th:unless="${isDraft}" th:href="@{/recruitment/req/{id}/pipeline(id=${req.id})}" style="height:38px; padding:0 16px; border:1px solid #cfdbe9; border-radius:9px; background:#eef4fb; color:#17457f; font-size:13.5px; font-weight:600; display:inline-flex; align-items:center;">View pipeline</a>
         </div>
     </div>
 
-    <div style="background:#fbfcfd; border:1px dashed #d9e0e8; border-radius:10px; padding:12px 15px; margin-bottom:18px; font-size:12px; color:#6b7480; line-height:1.5;">
-        This requisition view is <strong>read-only</strong> in the sample — the scorecard and interview plan are shown
-        as configured. The interactive editor is deferred; new drafts get a sensible default plan and can be submitted
-        for approval as-is.
-    </div>
-
-    <!-- Meta -->
-    <div style="background:#fff; border:1px solid #e4e8ed; border-radius:12px; padding:18px 20px; margin-bottom:16px;">
-        <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:16px;">
-            <div><div style="font-size:11px; font-weight:600; color:#9aa3ad; text-transform:uppercase; letter-spacing:0.04em;">Department</div><div style="font-size:13.5px; font-weight:600; color:#28323f; margin-top:4px;" th:text="${req.dept}">Engineering</div></div>
-            <div><div style="font-size:11px; font-weight:600; color:#9aa3ad; text-transform:uppercase; letter-spacing:0.04em;">Level</div><div style="font-size:13.5px; font-weight:600; color:#28323f; margin-top:4px;" th:text="${req.level}">Senior</div></div>
-            <div><div style="font-size:11px; font-weight:600; color:#9aa3ad; text-transform:uppercase; letter-spacing:0.04em;">Location</div><div style="font-size:13.5px; font-weight:600; color:#28323f; margin-top:4px;" th:text="${req.location}">Remote · EU</div></div>
-            <div><div style="font-size:11px; font-weight:600; color:#9aa3ad; text-transform:uppercase; letter-spacing:0.04em;">Openings</div><div style="font-size:13.5px; font-weight:600; color:#28323f; margin-top:4px;" th:text="${req.headcount}">1</div></div>
-            <div><div style="font-size:11px; font-weight:600; color:#9aa3ad; text-transform:uppercase; letter-spacing:0.04em;">Hiring manager</div><div style="font-size:13.5px; font-weight:600; color:#28323f; margin-top:4px;" th:text="${ownerName}">David Okonkwo</div></div>
-            <div><div style="font-size:11px; font-weight:600; color:#9aa3ad; text-transform:uppercase; letter-spacing:0.04em;">Recruiter</div><div style="font-size:13.5px; font-weight:600; color:#28323f; margin-top:4px;" th:text="${recruiterName}">Priya Nair</div></div>
+    <!-- ===================== DRAFT DESIGNER ===================== -->
+    <th:block th:if="${designer}">
+        <div th:if="${!readyToSubmit}" style="display:flex; align-items:center; gap:9px; padding:11px 14px; background:#f7f1e0; border:1px solid #ece2c6; border-radius:9px; margin-bottom:16px; font-size:12.5px; color:#7c6428;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9a6a1a" stroke-width="2" style="flex-shrink:0;"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+            <span th:if="${defaultTitle}">Name the role (replace the default title), keep at least one scorecard attribute, and staff every interview round to submit.</span>
+            <span th:unless="${defaultTitle}">Keep at least one scorecard attribute and staff every interview round to submit.</span>
         </div>
-    </div>
-
-    <!-- Scorecard -->
-    <div style="background:#fff; border:1px solid #e4e8ed; border-radius:12px; padding:18px 20px; margin-bottom:16px;">
-        <div style="font-size:14px; font-weight:700; color:#1a2331; margin-bottom:12px;">Scorecard</div>
-        <div style="display:flex; flex-wrap:wrap; gap:8px;">
-            <span th:each="a : ${attrs}" style="font-size:12px; font-weight:600; color:#4a5563; background:#f2f5f8; border:1px solid #e4e8ed; padding:4px 11px; border-radius:20px;" th:text="${a.name()}">Coding</span>
+        <div th:if="${readyToSubmit}" style="display:flex; align-items:center; gap:9px; padding:11px 14px; background:#edf6f0; border:1px solid #cfe4d6; border-radius:9px; margin-bottom:16px; font-size:12.5px; color:#2f6f4f;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2f6f4f" stroke-width="2" style="flex-shrink:0;"><path d="M20 6L9 17l-5-5"/></svg>
+            Draft is complete — submit it for VP approval when you are ready.
         </div>
-    </div>
 
-    <!-- Interview plan -->
-    <div style="background:#fff; border:1px solid #e4e8ed; border-radius:12px; padding:18px 20px;">
-        <div style="font-size:14px; font-weight:700; color:#1a2331; margin-bottom:12px;">Interview plan</div>
-        <div th:each="rd : ${rounds}" style="display:flex; align-items:baseline; gap:12px; padding:9px 0; border-bottom:1px solid #f4f6f8;">
-            <span style="font-size:13px; font-weight:600; color:#28323f; width:120px; flex-shrink:0;" th:text="${rd.stage()}">HM interview</span>
-            <span style="font-size:12.5px; color:#6b7480;" th:text="${rd.interviewers()}">David Okonkwo, Marcus Reid</span>
+        <!-- Role details -->
+        <div style="background:#fff; border:1px solid #e4e8ed; border-radius:12px; padding:18px 20px; margin-bottom:16px;">
+            <div style="font-size:13px; font-weight:700; color:#1a2331; margin-bottom:14px;">Role details</div>
+            <form th:action="@{/recruitment/req/{id}/details(id=${req.id})}" method="post" style="margin:0;">
+                <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:14px;">
+                    <div style="grid-column:span 3;">
+                        <label style="display:block; font-size:11px; font-weight:600; color:#9aa3ad; margin-bottom:5px;">Role title</label>
+                        <input name="title" th:value="${req.title}" required placeholder="e.g. Senior Backend Engineer" style="width:100%; height:38px; border:1px solid #dde2e8; border-radius:8px; padding:0 11px; font-size:13.5px; font-weight:600; color:#28323f; outline:none; font-family:inherit;"/>
+                    </div>
+                    <div>
+                        <label style="display:block; font-size:11px; font-weight:600; color:#9aa3ad; margin-bottom:5px;">Department</label>
+                        <select name="dept" style="width:100%; height:38px; border:1px solid #dde2e8; border-radius:8px; padding:0 10px; font-size:13px; color:#28323f; background:#fff; outline:none;">
+                            <option th:each="d : ${deptOptions}" th:value="${d}" th:text="${d}" th:selected="${d == req.dept}">Engineering</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display:block; font-size:11px; font-weight:600; color:#9aa3ad; margin-bottom:5px;">Level</label>
+                        <select name="level" style="width:100%; height:38px; border:1px solid #dde2e8; border-radius:8px; padding:0 10px; font-size:13px; color:#28323f; background:#fff; outline:none;">
+                            <option th:each="lv : ${levelOptions}" th:value="${lv}" th:text="${lv}" th:selected="${lv == req.level}">Mid</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display:block; font-size:11px; font-weight:600; color:#9aa3ad; margin-bottom:5px;">Headcount</label>
+                        <input name="headcount" type="number" min="1" th:value="${req.headcount}" style="width:100%; height:38px; border:1px solid #dde2e8; border-radius:8px; padding:0 10px; font-size:13px; color:#28323f; outline:none; font-family:inherit;"/>
+                    </div>
+                    <div style="grid-column:span 2;">
+                        <label style="display:block; font-size:11px; font-weight:600; color:#9aa3ad; margin-bottom:5px;">Location</label>
+                        <input name="location" th:value="${req.location}" placeholder="Remote · EU" style="width:100%; height:38px; border:1px solid #dde2e8; border-radius:8px; padding:0 11px; font-size:13px; color:#28323f; outline:none; font-family:inherit;"/>
+                    </div>
+                    <div>
+                        <label style="display:block; font-size:11px; font-weight:600; color:#9aa3ad; margin-bottom:5px;">Hiring manager</label>
+                        <select name="ownerId" style="width:100%; height:38px; border:1px solid #dde2e8; border-radius:8px; padding:0 10px; font-size:13px; color:#28323f; background:#fff; outline:none;">
+                            <option th:each="ow : ${ownerOptions}" th:value="${ow.id()}" th:text="${ow.name()}" th:selected="${ow.id() == req.ownerId}">David Okonkwo</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="display:flex; justify-content:flex-end; margin-top:14px;">
+                    <button type="submit" class="btn btn-primary" style="height:36px;">Save details</button>
+                </div>
+            </form>
         </div>
-    </div>
+
+        <!-- Scorecard attributes -->
+        <div style="background:#fff; border:1px solid #e4e8ed; border-radius:12px; padding:18px 20px; margin-bottom:16px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+                <div style="font-size:13px; font-weight:700; color:#1a2331;">Scorecard attributes</div>
+                <span style="font-size:12px; font-weight:700; color:#17457f; background:#eef4fb; padding:3px 11px; border-radius:20px;" th:text="${attrCount} + ' selected'">3 selected</span>
+            </div>
+            <div style="font-size:11.5px; color:#9aa3ad; margin-bottom:14px;">What every interviewer rates. Consistent attributes make candidates comparable.</div>
+            <div style="display:flex; flex-wrap:wrap; gap:8px;">
+                <form th:each="a : ${attrChips}" th:action="@{/recruitment/req/{id}/scorecard/toggle(id=${req.id})}" method="post" style="margin:0; display:inline;">
+                    <input type="hidden" name="attr" th:value="${a.id()}"/>
+                    <button type="submit"
+                            style="display:inline-flex; align-items:center; gap:7px; height:34px; padding:0 13px; border-radius:20px; font-family:inherit; font-size:12.5px; font-weight:600; cursor:pointer;"
+                            th:styleappend="${a.on()} ? 'border:1px solid #17457f; background:#eef4fb; color:#17457f;' : 'border:1px solid #dde2e8; background:#fff; color:#5a6472;'">
+                        <svg th:if="${a.on()}" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>
+                        <span th:text="${a.name()}">Coding</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Interview plan -->
+        <div style="background:#fff; border:1px solid #e4e8ed; border-radius:12px; padding:18px 20px;">
+            <div style="font-size:13px; font-weight:700; color:#1a2331; margin-bottom:4px;">Interview plan</div>
+            <div style="font-size:11.5px; color:#9aa3ad; margin-bottom:16px;">Who runs each scored round. Each interviewer submits a scorecard.</div>
+            <div style="display:flex; flex-direction:column; gap:16px;">
+                <div th:each="pr : ${panelRounds}">
+                    <div style="font-size:12px; font-weight:700; color:#5b3ea8; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:9px;" th:text="${pr.label()}">HM interview</div>
+                    <div style="display:flex; flex-wrap:wrap; gap:8px;">
+                        <form th:each="pp : ${pr.members()}" th:action="@{/recruitment/req/{id}/panel/toggle(id=${req.id})}" method="post" style="margin:0; display:inline;">
+                            <input type="hidden" name="stage" th:value="${pr.stageId()}"/>
+                            <input type="hidden" name="person" th:value="${pp.id()}"/>
+                            <button type="submit"
+                                    style="display:inline-flex; align-items:center; gap:8px; height:36px; padding:0 12px 0 8px; border-radius:20px; cursor:pointer; font-family:inherit;"
+                                    th:styleappend="${pp.on()} ? 'border:1px solid #17457f; background:#eef4fb;' : 'border:1px solid #dde2e8; background:#fff;'">
+                                <span style="width:22px; height:22px; border-radius:50%; color:#fff; font-size:10px; font-weight:600; display:inline-flex; align-items:center; justify-content:center;" th:styleappend="'; ' + ('background:' + ${pp.avatarBg()})" th:text="${pp.initials()}">DO</span>
+                                <span style="font-size:12.5px; font-weight:600;" th:styleappend="${pp.on()} ? 'color:#17457f;' : 'color:#4a5563;'" th:text="${pp.name()}">David Okonkwo</span>
+                                <svg th:if="${pp.on()}" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#17457f" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </th:block>
+
+    <!-- ===================== LOCKED (past draft) ===================== -->
+    <th:block th:unless="${designer}">
+        <div th:unless="${isDraft}" style="display:flex; align-items:center; gap:9px; padding:11px 14px; background:#eef4fb; border:1px solid #d6e3f2; border-radius:9px; margin-bottom:18px; font-size:12.5px; color:#2f5a94;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <span th:text="'This requisition is ' + ${statusMeta.label()} + ' — its setup is locked.'">This requisition is Open — its setup is locked.</span>
+        </div>
+
+        <!-- Meta -->
+        <div style="background:#fff; border:1px solid #e4e8ed; border-radius:12px; padding:18px 20px; margin-bottom:16px;">
+            <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:16px;">
+                <div><div style="font-size:11px; font-weight:600; color:#9aa3ad; text-transform:uppercase; letter-spacing:0.04em;">Department</div><div style="font-size:13.5px; font-weight:600; color:#28323f; margin-top:4px;" th:text="${req.dept}">Engineering</div></div>
+                <div><div style="font-size:11px; font-weight:600; color:#9aa3ad; text-transform:uppercase; letter-spacing:0.04em;">Level</div><div style="font-size:13.5px; font-weight:600; color:#28323f; margin-top:4px;" th:text="${req.level}">Senior</div></div>
+                <div><div style="font-size:11px; font-weight:600; color:#9aa3ad; text-transform:uppercase; letter-spacing:0.04em;">Location</div><div style="font-size:13.5px; font-weight:600; color:#28323f; margin-top:4px;" th:text="${req.location}">Remote · EU</div></div>
+                <div><div style="font-size:11px; font-weight:600; color:#9aa3ad; text-transform:uppercase; letter-spacing:0.04em;">Openings</div><div style="font-size:13.5px; font-weight:600; color:#28323f; margin-top:4px;" th:text="${req.headcount}">1</div></div>
+                <div><div style="font-size:11px; font-weight:600; color:#9aa3ad; text-transform:uppercase; letter-spacing:0.04em;">Hiring manager</div><div style="font-size:13.5px; font-weight:600; color:#28323f; margin-top:4px;" th:text="${ownerName}">David Okonkwo</div></div>
+                <div><div style="font-size:11px; font-weight:600; color:#9aa3ad; text-transform:uppercase; letter-spacing:0.04em;">Recruiter</div><div style="font-size:13.5px; font-weight:600; color:#28323f; margin-top:4px;" th:text="${recruiterName}">Priya Nair</div></div>
+            </div>
+        </div>
+
+        <!-- Scorecard -->
+        <div style="background:#fff; border:1px solid #e4e8ed; border-radius:12px; padding:18px 20px; margin-bottom:16px;">
+            <div style="font-size:14px; font-weight:700; color:#1a2331; margin-bottom:12px;">Scorecard</div>
+            <div style="display:flex; flex-wrap:wrap; gap:8px;">
+                <span th:each="a : ${attrs}" style="font-size:12px; font-weight:600; color:#4a5563; background:#f2f5f8; border:1px solid #e4e8ed; padding:4px 11px; border-radius:20px;" th:text="${a.name()}">Coding</span>
+            </div>
+        </div>
+
+        <!-- Interview plan -->
+        <div style="background:#fff; border:1px solid #e4e8ed; border-radius:12px; padding:18px 20px;">
+            <div style="font-size:14px; font-weight:700; color:#1a2331; margin-bottom:12px;">Interview plan</div>
+            <div th:each="rd : ${rounds}" style="display:flex; align-items:baseline; gap:12px; padding:9px 0; border-bottom:1px solid #f4f6f8;">
+                <span style="font-size:13px; font-weight:600; color:#28323f; width:120px; flex-shrink:0;" th:text="${rd.stage()}">HM interview</span>
+                <span style="font-size:12.5px; color:#6b7480;" th:text="${rd.interviewers()}">David Okonkwo, Marcus Reid</span>
+            </div>
+        </div>
+    </th:block>
 </div>
+
+<th:block layout:fragment="content-after">
+    <div th:if="${toast != null}" style="position:fixed; right:22px; bottom:22px; z-index:400; display:flex; align-items:center; gap:11px; background:#1a2331; color:#fff; padding:12px 14px; border-radius:10px; box-shadow:0 10px 28px rgba(20,30,50,0.28); min-width:280px; max-width:390px;">
+        <span style="width:8px; height:8px; border-radius:50%; flex-shrink:0;" th:styleappend="'; ' + ('background:' + (${toastDot} ?: '#3ecf8e'))"></span>
+        <span style="flex:1; font-size:12.5px; font-weight:500; line-height:1.4;" th:text="${toast}">Done.</span>
+    </div>
+</th:block>
 </body>
 </html>

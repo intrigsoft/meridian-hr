@@ -89,9 +89,9 @@
         </div>
     </div>
 
-    <!-- ===================== TEMPLATES VIEW (read-only) ===================== -->
+    <!-- ===================== TEMPLATES VIEW (editor) ===================== -->
     <div th:if="${tab == 'templates'}" style="display:grid; grid-template-columns:260px 1fr; gap:18px; align-items:start;">
-        <!-- Schema list -->
+        <!-- Schema list + create -->
         <div style="background:#fff; border:1px solid #e4e8ed; border-radius:10px; overflow:hidden;">
             <div style="padding:12px 14px; border-bottom:1px solid #eef1f4; font-size:11px; font-weight:700; color:#9aa3ad; text-transform:uppercase; letter-spacing:0.05em;">Role schemas</div>
             <a th:each="t : ${templates}" th:href="@{/onboarding/templates/{id}(id=${t.id()})}"
@@ -100,46 +100,123 @@
                 <div style="font-size:13px; font-weight:600; color:#28323f;" th:text="${t.name()}">Design / Product hire</div>
                 <div style="font-size:11.5px; color:#8894a3; margin-top:2px;" th:text="${t.roleLabel()} + ' · ' + ${t.stepCount()} + ' steps'">Design / Product · 7 steps</div>
             </a>
+            <form method="post" th:action="@{/onboarding/templates}" style="padding:12px 14px; display:flex; flex-direction:column; gap:8px;">
+                <input name="name" placeholder="New template name" style="width:100%; height:32px; border:1px solid #dde2e8; border-radius:7px; padding:0 10px; font-size:12.5px; color:#28323f; outline:none; font-family:inherit;"/>
+                <select name="role" style="width:100%; height:32px; border:1px solid #dde2e8; border-radius:7px; padding:0 8px; font-size:12.5px; color:#28323f; background:#fff; outline:none;">
+                    <option th:each="ro : ${roleOpts}" th:value="${ro.id()}" th:text="${ro.label()}" th:selected="${ro.id() == 'general'}">General / Other</option>
+                </select>
+                <button type="submit" style="display:flex; align-items:center; justify-content:center; gap:7px; width:100%; height:32px; border:none; border-radius:7px; background:#f2f7fc; cursor:pointer; font-family:inherit; font-size:12.5px; font-weight:600; color:#17457f;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                    New template
+                </button>
+            </form>
         </div>
 
-        <!-- Read-only schema detail -->
+        <!-- Schema editor -->
         <div th:if="${hasDraft}">
-            <div style="background:#fff; border:1px solid #e4e8ed; border-radius:10px; padding:16px 18px; margin-bottom:14px;">
-                <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:8px;">
-                    <div style="font-size:16px; font-weight:700; color:#1a2331;" th:text="${dName}">Design / Product hire</div>
-                    <span style="flex-shrink:0; font-size:11px; font-weight:600; color:#8894a3; background:#eef1f4; padding:4px 10px; border-radius:20px;" th:text="${dRoleLabel}">Design / Product</span>
+            <form id="del-tpl" method="post" th:action="@{/onboarding/templates/{id}/delete(id=${dId})}"></form>
+
+            <form method="post" th:action="@{/onboarding/templates/{id}/meta(id=${dId})}"
+                  style="display:block; background:#fff; border:1px solid #e4e8ed; border-radius:10px; padding:16px 18px; margin-bottom:14px;">
+                <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px;">
+                    <input name="name" th:value="${dName}" style="flex:1; font-size:16px; font-weight:700; color:#1a2331; border:none; border-bottom:1.5px solid #e4e8ed; outline:none; padding:2px 0; font-family:inherit; background:transparent;"/>
+                    <button type="submit" style="flex-shrink:0; height:34px; padding:0 14px; border:none; border-radius:8px; background:#17457f; color:#fff; cursor:pointer; font-family:inherit; font-size:12.5px; font-weight:600;">Save details</button>
+                    <button type="submit" form="del-tpl" title="Delete template" style="flex-shrink:0; width:34px; height:34px; border:1px solid #f0cfc9; border-radius:8px; background:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; color:#b23b2e;">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+                    </button>
                 </div>
-                <div style="font-size:12.5px; color:#8894a3; line-height:1.5;" th:text="${dDesc}">Standard schema for designers and PMs.</div>
-            </div>
+                <div style="display:flex; gap:14px;">
+                    <div style="flex:1;">
+                        <label style="display:block; font-size:11.5px; font-weight:600; color:#8894a3; margin-bottom:5px;">Applies to role</label>
+                        <select name="role" style="width:100%; height:38px; border:1px solid #dde2e8; border-radius:8px; padding:0 10px; font-size:13px; color:#28323f; background:#fff; outline:none;">
+                            <option th:each="ro : ${roleOpts}" th:value="${ro.id()}" th:text="${ro.label()}" th:selected="${ro.id() == dRole}">Design / Product</option>
+                        </select>
+                    </div>
+                    <div style="flex:2;">
+                        <label style="display:block; font-size:11.5px; font-weight:600; color:#8894a3; margin-bottom:5px;">Description</label>
+                        <input name="description" th:value="${dDesc}" placeholder="What this schema is for…" style="width:100%; height:38px; border:1px solid #dde2e8; border-radius:8px; padding:0 11px; font-size:13px; color:#28323f; outline:none; font-family:inherit;"/>
+                    </div>
+                </div>
+            </form>
 
             <div style="display:flex; align-items:center; justify-content:space-between; margin:4px 2px 10px;">
                 <div style="font-size:13px; font-weight:700; color:#1a2331;">Provisioning steps <span style="color:#9aa3ad; font-weight:600;">· runs top to bottom</span></div>
-                <div style="font-size:11.5px; color:#9aa3ad;">Read-only</div>
+                <div style="font-size:11.5px; color:#9aa3ad;">Edits apply to future onboardings only</div>
             </div>
 
-            <div th:each="st : ${tplSteps}" style="background:#fff; border:1px solid #e4e8ed; border-radius:10px; padding:14px 15px; margin-bottom:10px;">
-                <div style="display:flex; align-items:center; gap:10px;">
+            <form th:each="st : ${tplSteps}" method="post"
+                  th:action="@{/onboarding/templates/{id}/step/{sid}(id=${dId}, sid=${st.stepId()})}"
+                  style="display:block; background:#fff; border:1px solid #e4e8ed; border-radius:10px; padding:14px 15px; margin-bottom:10px;">
+                <!-- hidden default submit so Enter in a field saves instead of hitting the first arrow button -->
+                <button type="submit" name="action" value="save" style="display:none;" aria-hidden="true" tabindex="-1"></button>
+                <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
                     <div style="width:24px; height:24px; border-radius:50%; background:#eef1f4; color:#6b7480; font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0;" th:text="${st.order()}">1</div>
-                    <div style="flex:1; min-width:0;">
-                        <div style="display:flex; align-items:center; gap:9px; flex-wrap:wrap;">
-                            <span style="font-size:13.5px; font-weight:600; color:#28323f;" th:text="${st.title()}">Create identity & directory account</span>
-                            <span style="font-size:10.5px; font-weight:600; padding:2px 8px; border-radius:5px; font-family:var(--mono);" th:styleappend="'; ' + ('color:' + ${st.sysColor()} + '; background:' + ${st.sysBg()})" th:text="${st.sysLabel()}">Azure AD</span>
-                            <span style="font-size:11px; color:#a2abb5;" th:text="'· ' + ${st.owner()}">· IT</span>
-                        </div>
-                        <div style="display:flex; align-items:center; gap:14px; margin-top:6px; flex-wrap:wrap; font-size:11.5px; color:#8894a3;">
-                            <span th:text="'Due ' + ${st.dueLabel()}">Due 2d before start</span>
-                            <span th:if="${st.dependsOn() != null}" th:text="'Depends on: ' + ${st.dependsOn()}">Depends on: identity</span>
-                            <span th:if="${st.auto()}" style="color:#2f6aa8; display:inline-flex; align-items:center; gap:4px;">
-                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M13 2L3 14h7l-1 8 10-12h-7z"/></svg>Auto-run
-                            </span>
-                            <span th:if="${st.hasDoc()}" style="color:#9a6a1a; display:inline-flex; align-items:center; gap:4px;">
-                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                                <span th:text="${st.docName()}">Signed I-9</span>
-                            </span>
-                        </div>
+                    <input name="title" th:value="${st.title()}" style="flex:1; height:36px; border:1px solid #e4e8ed; border-radius:7px; padding:0 11px; font-size:13.5px; font-weight:600; color:#28323f; outline:none; font-family:inherit;"/>
+                    <div style="display:flex; gap:4px; flex-shrink:0;">
+                        <button type="submit" name="action" value="up" th:disabled="${st.first()}" title="Move up"
+                                style="width:30px; height:30px; border:1px solid #e4e8ed; border-radius:7px; background:#fff; display:flex; align-items:center; justify-content:center;"
+                                th:styleappend="'; ' + ('color:' + ${st.upColor()} + '; cursor:' + (${st.first()} ? 'not-allowed' : 'pointer'))">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 15l-6-6-6 6"/></svg>
+                        </button>
+                        <button type="submit" name="action" value="down" th:disabled="${st.last()}" title="Move down"
+                                style="width:30px; height:30px; border:1px solid #e4e8ed; border-radius:7px; background:#fff; display:flex; align-items:center; justify-content:center;"
+                                th:styleappend="'; ' + ('color:' + ${st.downColor()} + '; cursor:' + (${st.last()} ? 'not-allowed' : 'pointer'))">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                        </button>
+                        <button type="submit" name="action" value="delete" title="Delete step" style="width:30px; height:30px; border:1px solid #f0cfc9; border-radius:7px; background:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; color:#b23b2e;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+                        </button>
                     </div>
                 </div>
-            </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:10px;">
+                    <div>
+                        <label style="display:block; font-size:11px; font-weight:600; color:#9aa3ad; margin-bottom:4px;">Target system</label>
+                        <select name="system" style="width:100%; height:34px; border:1px solid #dde2e8; border-radius:7px; padding:0 8px; font-size:12.5px; color:#28323f; background:#fff; outline:none;">
+                            <option th:each="sys : ${systemOpts}" th:value="${sys.id()}" th:text="${sys.label()}" th:selected="${sys.id() == st.system()}">Azure AD</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display:block; font-size:11px; font-weight:600; color:#9aa3ad; margin-bottom:4px;">Owner</label>
+                        <select name="owner" style="width:100%; height:34px; border:1px solid #dde2e8; border-radius:7px; padding:0 8px; font-size:12.5px; color:#28323f; background:#fff; outline:none;">
+                            <option th:each="own : ${ownerOpts}" th:value="${own}" th:text="${own}" th:selected="${own == st.owner()}">IT</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display:block; font-size:11px; font-weight:600; color:#9aa3ad; margin-bottom:4px;">Due (days from start)</label>
+                        <input type="number" name="dueOffset" th:value="${st.dueOffset()}" style="width:100%; height:34px; border:1px solid #dde2e8; border-radius:7px; padding:0 9px; font-size:12.5px; color:#28323f; outline:none; font-family:inherit;"/>
+                    </div>
+                </div>
+                <div style="display:flex; align-items:flex-end; gap:12px; flex-wrap:wrap;">
+                    <div style="flex:1; min-width:180px;">
+                        <label style="display:block; font-size:11px; font-weight:600; color:#9aa3ad; margin-bottom:4px;">Depends on</label>
+                        <select name="dependsOn" style="width:100%; height:34px; border:1px solid #dde2e8; border-radius:7px; padding:0 8px; font-size:12.5px; color:#28323f; background:#fff; outline:none;">
+                            <option value="">Nothing (runs immediately)</option>
+                            <option th:each="dep : ${st.depOpts()}" th:value="${dep.id()}" th:text="${dep.title()}" th:selected="${dep.id() == st.dependsOn()}">Create identity</option>
+                        </select>
+                    </div>
+                    <button type="submit" name="action" value="auto" title="Dioschub fires this step automatically once unblocked"
+                            style="display:flex; align-items:center; gap:7px; height:34px; padding:0 11px; border-radius:7px; cursor:pointer; font-family:inherit; font-size:12px; font-weight:600;"
+                            th:styleappend="'; ' + ('border:1px solid ' + ${st.autoBorder()} + '; background:' + ${st.autoBg()} + '; color:' + ${st.autoFg()})">
+                        <span style="width:26px; height:15px; border-radius:8px; position:relative; flex-shrink:0;" th:styleappend="'; ' + ('background:' + ${st.autoTrack()})"><span style="position:absolute; top:2px; width:11px; height:11px; border-radius:50%; background:#fff;" th:styleappend="'; ' + ('left:' + ${st.autoKnob()})"></span></span>
+                        Dioschub executes automatically
+                    </button>
+                    <button type="submit" name="action" value="doc"
+                            style="display:flex; align-items:center; gap:7px; height:34px; padding:0 11px; border-radius:7px; cursor:pointer; font-family:inherit; font-size:12px; font-weight:600;"
+                            th:styleappend="'; ' + ('border:1px solid ' + ${st.docBorder()} + '; background:' + ${st.docBg()} + '; color:' + ${st.docFg()})">
+                        <span style="width:26px; height:15px; border-radius:8px; position:relative; flex-shrink:0;" th:styleappend="'; ' + ('background:' + ${st.docTrack()})"><span style="position:absolute; top:2px; width:11px; height:11px; border-radius:50%; background:#fff;" th:styleappend="'; ' + ('left:' + ${st.docKnob()})"></span></span>
+                        Requires document
+                    </button>
+                    <input th:if="${st.docOn()}" name="docName" th:value="${st.docName()}" placeholder="Document name" style="flex:1; min-width:150px; height:34px; border:1px solid #dde2e8; border-radius:7px; padding:0 10px; font-size:12.5px; color:#28323f; outline:none; font-family:inherit;"/>
+                    <button type="submit" name="action" value="save" style="height:34px; padding:0 14px; border:none; border-radius:7px; background:#17457f; color:#fff; cursor:pointer; font-family:inherit; font-size:12px; font-weight:600;">Save step</button>
+                </div>
+            </form>
+
+            <form method="post" th:action="@{/onboarding/templates/{id}/steps(id=${dId})}" style="display:block;">
+                <button type="submit" style="display:flex; align-items:center; justify-content:center; gap:8px; width:100%; height:44px; border:1.5px dashed #cbd3dc; border-radius:10px; background:#fff; cursor:pointer; font-family:inherit; font-size:13px; font-weight:600; color:#5a6472;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                    Add step
+                </button>
+            </form>
         </div>
     </div>
     </th:block>

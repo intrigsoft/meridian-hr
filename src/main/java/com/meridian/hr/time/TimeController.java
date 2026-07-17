@@ -50,7 +50,8 @@ public class TimeController {
         List<Cell> cells = new ArrayList<>();
         for (int i = 0; i < 7; i++) {
             String iso = dates.get(i);
-            boolean weekend = i >= 5;
+            // non-working day per the HR-configured work week (Settings), not a fixed Sat/Sun
+            boolean weekend = !session.workspace().policy.workingDays.contains(Timesheet.DAY_IDS[i]);
             double h = sheet.days.getOrDefault(Timesheet.DAY_IDS[i], 0.0);
             PolicyConfig.Holiday hol = time.holidayOn(iso);
             String leaveLbl = leaveMap.get(iso);

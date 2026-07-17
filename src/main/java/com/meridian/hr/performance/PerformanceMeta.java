@@ -45,6 +45,29 @@ public final class PerformanceMeta {
         return new java.util.ArrayList<>(LIB.values());
     }
 
+    /**
+     * The workspace competency catalog HR edits in Settings, lazily seeded from the static
+     * library. Performance reads resolve through this (not {@link #library()}) so Settings
+     * renames/additions flow straight into the cycle designer and review pages; the static
+     * library stays the seed + fallback for ids that predate the catalog.
+     */
+    public static List<com.meridian.hr.domain.PolicyConfig.Competency> catalog(
+            com.meridian.hr.domain.PolicyConfig policy) {
+        List<com.meridian.hr.domain.PolicyConfig.Competency> list = policy.competencies;
+        if (list.isEmpty()) {
+            for (Competency c : LIB.values()) {
+                list.add(new com.meridian.hr.domain.PolicyConfig.Competency(c.id(), c.name(), c.blurb()));
+            }
+        }
+        return list;
+    }
+
+    /** Catalog entry for {@code id}, falling back to the static library so old ids render. */
+    public static Competency catalogEntry(com.meridian.hr.domain.PolicyConfig policy, String id) {
+        com.meridian.hr.domain.PolicyConfig.Competency c = policy.competency(id);
+        return c != null ? new Competency(c.id, c.name, c.blurb) : competency(id);
+    }
+
     private static final Map<String, String> CYCLE_TYPES = new LinkedHashMap<>();
 
     static {
@@ -56,6 +79,11 @@ public final class PerformanceMeta {
 
     public static String cycleTypeLabel(String id) {
         return CYCLE_TYPES.getOrDefault(id, id);
+    }
+
+    /** id → label for every cycle type, in designer display order. */
+    public static Map<String, String> cycleTypes() {
+        return java.util.Collections.unmodifiableMap(CYCLE_TYPES);
     }
 
     /** Review status styling; step drives the 4-segment stage bar. */

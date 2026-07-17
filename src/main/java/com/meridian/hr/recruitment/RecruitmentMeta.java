@@ -1,5 +1,6 @@
 package com.meridian.hr.recruitment;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -67,6 +68,20 @@ public final class RecruitmentMeta {
 
     public static String attrName(String id) {
         return LIB.getOrDefault(id, id);
+    }
+
+    /** The full attribute catalog (fixture's SCORECARD_LIBRARY) — a requisition picks a subset. */
+    public static List<Attr> library() {
+        List<Attr> out = new ArrayList<>();
+        for (Map.Entry<String, String> e : LIB.entrySet()) {
+            out.add(new Attr(e.getKey(), e.getValue()));
+        }
+        return out;
+    }
+
+    /** True if {@code id} names an attribute in the library. */
+    public static boolean isLibraryAttr(String id) {
+        return id != null && LIB.containsKey(id);
     }
 
     public record Rec(String id, String label, int val, String color, String bg) {

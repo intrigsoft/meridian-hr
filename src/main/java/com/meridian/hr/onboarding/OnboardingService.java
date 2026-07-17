@@ -36,13 +36,19 @@ public class OnboardingService {
 
     // ---------------- reads ----------------
 
+    /** Live (non-archived) templates — what the Templates tab and role pickers see. */
     public List<OnboardingTemplate> templates() {
-        return ws().onboardingTemplates;
+        List<OnboardingTemplate> out = new ArrayList<>();
+        for (OnboardingTemplate t : ws().onboardingTemplates) {
+            if (!t.archived) out.add(t);
+        }
+        return out;
     }
 
+    /** Resolve by id across live AND archived templates, so old case boards keep rendering. */
     public OnboardingTemplate template(String id) {
         if (id == null) return null;
-        for (OnboardingTemplate t : templates()) {
+        for (OnboardingTemplate t : ws().onboardingTemplates) {
             if (t.id.equals(id)) return t;
         }
         return null;
@@ -209,6 +215,222 @@ public class OnboardingService {
                 System.currentTimeMillis());
         cases().add(0, c); // newest first
         return c;
+    }
+
+    // ---------------- template editing (HR admin) ----------------
+    //
+    // Template edits affect FUTURE cases only. Cases resolve their plan LIVE from the
+    // template (see resolvePlan), so before the FIRST mutation of a template that any
+    // existing case still points at, those cases are repointed to a frozen archived
+    // snapshot copy (copy-on-write). Subsequent edits find no cases on the live template
+    // and mutate it in place; cases started after an edit reference the live template
+    // again and get snapshotted by the next edit. Seeded templates/cases need no special
+    // handling — the same lazy snapshot covers them.
+
+    /** New template with the design's starter step; returned so the caller can open its editor. */
+    public OnboardingTemplate createTemplate(String name, String role) {
+        OnboardingMeta.RoleFamily rf = OnboardingMeta.role(role);
+        OnboardingTemplate t = new OnboardingTemplate(newId("tpl-"),
+                blank(name) ? "New template" : name.trim(), rf.id(), rf.dept(), "");
+        t.step(new OnboardingTemplate.Step(1, "identity", "Create identity & directory account",
+                "azure_ad", "IT").auto().due(-2));
+        t.updatedAt = System.currentTimeMillis();
+        ws().onboardingTemplates.add(t);
+        return t;
+    }
+
+    /**
+     * Delete a live template. Returns the number of ACTIVE (non-complete) cases still
+     * using it — {@code > 0} means the delete was blocked and nothing changed. If only
+     * completed cases reference it, it is archived instead of removed so their boards
+     * keep rendering; unreferenced templates are removed outright.
+     */
+    public int deleteTemplate(String id) {
+        OnboardingTemplate t = editable(id);
+        if (t == null) return 0;
+        boolean referenced = false;
+        int active = 0;
+        for (OnboardingCase c : cases()) {
+            // Match the whole template FAMILY: cases repointed to an archived
+            // "<id>-v<ts>" snapshot by copy-on-write still count as using this
+            // template — otherwise one edit quietly disarms the delete guard.
+            if (t.id.equals(c.templateId) || (c.templateId != null && c.templateId.startsWith(t.id + "-v"))) {
+                referenced = true;
+                if (!"complete".equals(caseSummary(c).health())) active++;
+            }
+        }
+        if (active > 0) return active;
+        if (referenced) {
+            t.archived = true;
+        } else {
+            ws().onboardingTemplates.remove(t);
+        }
+        return 0;
+    }
+
+    /** Edit name / role / description; dept follows the role family. */
+    public void updateTemplateMeta(String id, String name, String role, String description) {
+        OnboardingTemplate t = editable(id);
+        if (t == null) return;
+        snapshotForExistingCases(t);
+        if (!blank(name)) t.name = name.trim();
+        if (!blank(role)) {
+            OnboardingMeta.RoleFamily rf = OnboardingMeta.role(role);
+            t.role = rf.id();
+            t.dept = rf.dept();
+        }
+        t.description = description == null ? "" : description.trim();
+        touch(t);
+    }
+
+    /** Append the design's {@code newStepDef} defaults; returns the new step (null if no template). */
+    public OnboardingTemplate.Step addStep(String tplId) {
+        OnboardingTemplate t = editable(tplId);
+        if (t == null) return null;
+        snapshotForExistingCases(t);
+        OnboardingTemplate.Step s = new OnboardingTemplate.Step(t.steps.size() + 1,
+                newStepId(t), "New step", "manual", "People Ops");
+        t.steps.add(s);
+        renumber(t);
+        touch(t);
+        return s;
+    }
+
+    /** Save one step's fields. Null {@code dueOffset} keeps the current value; doc name only applies while the doc toggle is on. */
+    public void updateStep(String tplId, String stepId, String title, String system, String owner,
+                           Integer dueOffset, String dependsOn, String docName) {
+        OnboardingTemplate t = editable(tplId);
+        OnboardingTemplate.Step s = stepOf(t, stepId);
+        if (s == null) return;
+        snapshotForExistingCases(t);
+        if (!blank(title)) s.title = title.trim();
+        if (!blank(system) && OnboardingMeta.system(system).id().equals(system)) s.system = system;
+        if (!blank(owner) && OnboardingMeta.OWNERS.contains(owner)) s.owner = owner;
+        if (dueOffset != null) s.dueOffset = dueOffset;
+        s.dependsOn = blank(dependsOn) || dependsOn.equals(stepId) || stepOf(t, dependsOn) == null
+                ? null : dependsOn;
+        if (s.requiresDoc != null && !blank(docName)) s.requiresDoc = docName.trim();
+        touch(t);
+    }
+
+    /** Flip "Dioschub executes automatically" for one step. */
+    public void toggleAuto(String tplId, String stepId) {
+        OnboardingTemplate t = editable(tplId);
+        OnboardingTemplate.Step s = stepOf(t, stepId);
+        if (s == null) return;
+        snapshotForExistingCases(t);
+        s.autoAssign = !s.autoAssign;
+        touch(t);
+    }
+
+    /** Flip "requires document" for one step (on = the design's default doc name). */
+    public void toggleDoc(String tplId, String stepId) {
+        OnboardingTemplate t = editable(tplId);
+        OnboardingTemplate.Step s = stepOf(t, stepId);
+        if (s == null) return;
+        snapshotForExistingCases(t);
+        s.requiresDoc = s.requiresDoc == null ? "Signed document" : null;
+        touch(t);
+    }
+
+    /** Swap a step with its neighbour ({@code dir} = -1 up / +1 down) and renumber. */
+    public void moveStep(String tplId, String stepId, int dir) {
+        OnboardingTemplate t = editable(tplId);
+        if (t == null) return;
+        ordered(t);
+        int i = indexOf(t, stepId);
+        int j = i + dir;
+        if (i < 0 || j < 0 || j >= t.steps.size()) return;
+        snapshotForExistingCases(t);
+        // Swap the ORDER VALUES, not the list slots — renumber() re-sorts by order
+        // first, so a positional swap alone gets silently sorted straight back.
+        OnboardingTemplate.Step a = t.steps.get(i);
+        OnboardingTemplate.Step b = t.steps.get(j);
+        int tmp = a.order;
+        a.order = b.order;
+        b.order = tmp;
+        renumber(t);
+        touch(t);
+    }
+
+    /** Remove a step; anything that depended on it now runs immediately (design behaviour). */
+    public void deleteStep(String tplId, String stepId) {
+        OnboardingTemplate t = editable(tplId);
+        OnboardingTemplate.Step s = stepOf(t, stepId);
+        if (s == null) return;
+        snapshotForExistingCases(t);
+        t.steps.remove(s);
+        for (OnboardingTemplate.Step other : t.steps) {
+            if (stepId.equals(other.dependsOn)) other.dependsOn = null;
+        }
+        renumber(t);
+        touch(t);
+    }
+
+    /** The live template behind {@code id} — archived snapshots are never editable. */
+    private OnboardingTemplate editable(String id) {
+        OnboardingTemplate t = template(id);
+        return t == null || t.archived ? null : t;
+    }
+
+    /** Copy-on-write: repoint every case still on {@code t} to a frozen archived snapshot. */
+    private void snapshotForExistingCases(OnboardingTemplate t) {
+        List<OnboardingCase> using = new ArrayList<>();
+        for (OnboardingCase c : cases()) {
+            if (t.id.equals(c.templateId)) using.add(c);
+        }
+        if (using.isEmpty()) return;
+        OnboardingTemplate snap = t.copy(newId(t.id + "-v"));
+        snap.archived = true;
+        ws().onboardingTemplates.add(snap);
+        for (OnboardingCase c : using) {
+            c.templateId = snap.id;
+        }
+    }
+
+    private OnboardingTemplate.Step stepOf(OnboardingTemplate t, String stepId) {
+        if (t == null || stepId == null) return null;
+        for (OnboardingTemplate.Step s : t.steps) {
+            if (s.id.equals(stepId)) return s;
+        }
+        return null;
+    }
+
+    private int indexOf(OnboardingTemplate t, String stepId) {
+        for (int i = 0; i < t.steps.size(); i++) {
+            if (t.steps.get(i).id.equals(stepId)) return i;
+        }
+        return -1;
+    }
+
+    /** Keep the list sorted by order, then rewrite order = position (1-based). */
+    private void renumber(OnboardingTemplate t) {
+        ordered(t);
+        for (int i = 0; i < t.steps.size(); i++) {
+            t.steps.get(i).order = i + 1;
+        }
+    }
+
+    private void ordered(OnboardingTemplate t) {
+        t.steps.sort(Comparator.comparingInt(s -> s.order));
+    }
+
+    private void touch(OnboardingTemplate t) {
+        t.updatedAt = System.currentTimeMillis();
+    }
+
+    private String newId(String prefix) {
+        String id = prefix + Long.toString(System.currentTimeMillis(), 36)
+                + Long.toString((long) (Math.random() * 1296), 36);
+        return template(id) == null ? id : newId(prefix);
+    }
+
+    private String newStepId(OnboardingTemplate t) {
+        String id;
+        do {
+            id = "st" + Long.toString((long) (Math.random() * 60466176L), 36);
+        } while (stepOf(t, id) != null);
+        return id;
     }
 
     // ---------------- convert to directory ----------------

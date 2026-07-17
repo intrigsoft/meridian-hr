@@ -127,7 +127,7 @@ public class JobChangeController {
         JobChangeMeta.ChangeType ct = JobChangeMeta.type(type);
         Map<String, String> changes = new LinkedHashMap<>();
         Map<String, String> from = new LinkedHashMap<>();
-        for (String field : ct.fields()) {
+        for (String field : session.workspace().policy.changeTypeFields(ct.id(), ct.fields())) {
             String raw = all.get("f_" + field);
             if (raw == null || raw.isBlank()) continue;
             String cur = jobChanges.currentRaw(target, field);
@@ -205,7 +205,7 @@ public class JobChangeController {
     private List<EditField> editFields(Employee target, String type, Map<String, String> all) {
         JobChangeMeta.ChangeType ct = JobChangeMeta.type(type);
         List<EditField> out = new ArrayList<>();
-        for (String field : ct.fields()) {
+        for (String field : session.workspace().policy.changeTypeFields(ct.id(), ct.fields())) {
             boolean isSelect = JobChangeMeta.isSelect(field);
             String pending = all.get("f_" + field);
             String value = pending != null ? pending : (isSelect ? jobChanges.currentRaw(target, field) : "");

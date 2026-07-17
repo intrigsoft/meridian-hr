@@ -10,80 +10,230 @@
 
     <div style="margin-bottom:18px;">
         <div style="font-size:12.5px; color:#8894a3; font-weight:500; margin-bottom:2px;">Admin / Settings</div>
-        <h1 style="margin:0; font-size:24px; font-weight:700; letter-spacing:-0.02em; color:#1a2331;">Policy settings</h1>
+        <h1 style="margin:0; font-size:24px; font-weight:700; letter-spacing:-0.02em; color:#1a2331;">Policies &amp; configuration</h1>
     </div>
 
     <div th:unless="${isHr}" style="background:#f7f9fb; border:1px dashed #d9e0e8; border-radius:13px; padding:56px 20px; text-align:center;">
-        <div style="font-size:15px; font-weight:600; color:#5a6472;">HR access required</div>
-        <div style="font-size:12.5px; color:#9aa3ad; margin-top:4px;">Only People Ops can view policy settings.</div>
+        <div style="font-size:15px; font-weight:600; color:#5a6472;">Configuration is HR-only</div>
+        <div style="font-size:12.5px; color:#9aa3ad; margin-top:4px;">These constraints govern the whole organization. Ask your HR business partner to change them.</div>
     </div>
 
     <th:block th:if="${isHr}">
-        <div style="background:#fbfcfd; border:1px dashed #d9e0e8; border-radius:10px; padding:12px 15px; margin-bottom:18px; font-size:12px; color:#6b7480; line-height:1.5;">
-            Read-only view of the live policy configuration the leave, time, performance, and job-change
-            engines enforce. Inline editing is deferred.
+        <div style="display:flex; align-items:center; gap:9px; margin-bottom:16px; padding:11px 14px; background:#eef4fb; border:1px solid #dbe6f3; border-radius:10px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3a5aa8" stroke-width="1.9" style="flex-shrink:0;"><path d="M12 16v-4M12 8h.01"/><circle cx="12" cy="12" r="9"/></svg>
+            <div style="font-size:12px; color:#3a5aa8; line-height:1.45;">Changes here take effect immediately — holidays and hour targets flow into <strong>My Time</strong>, and allowances, notice, ceiling &amp; blackouts drive the <strong>leave request</strong> policy checks.</div>
         </div>
 
-        <!-- Work week + thresholds -->
-        <div style="background:#fff; border:1px solid #e4e8ed; border-radius:12px; padding:18px 20px; margin-bottom:16px;">
-            <div style="font-size:14px; font-weight:700; color:#1a2331; margin-bottom:14px;">Work week &amp; leave thresholds</div>
-            <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:16px;">
-                <div><div style="font-size:11px; font-weight:600; color:#9aa3ad; text-transform:uppercase;">Target hours/wk</div><div style="font-size:15px; font-weight:700; color:#28323f; margin-top:3px;" th:text="${policy.targetHours}">40</div></div>
-                <div><div style="font-size:11px; font-weight:600; color:#9aa3ad; text-transform:uppercase;">Working days</div><div style="font-size:15px; font-weight:700; color:#28323f; margin-top:3px; text-transform:capitalize;" th:text="${workingDays}">mon, tue…</div></div>
-                <div><div style="font-size:11px; font-weight:600; color:#9aa3ad; text-transform:uppercase;">Notice (days)</div><div style="font-size:15px; font-weight:700; color:#28323f; margin-top:3px;" th:text="${policy.noticeDays}">7</div></div>
-                <div><div style="font-size:11px; font-weight:600; color:#9aa3ad; text-transform:uppercase;">Manager ceiling</div><div style="font-size:15px; font-weight:700; color:#28323f; margin-top:3px;" th:text="${policy.ceilingDays} + ' days'">10 days</div></div>
-                <div><div style="font-size:11px; font-weight:600; color:#9aa3ad; text-transform:uppercase;">Sick cert after</div><div style="font-size:15px; font-weight:700; color:#28323f; margin-top:3px;" th:text="${policy.sickCertDays} + ' days'">2 days</div></div>
+        <!-- ===== Work week ===== -->
+        <div style="background:#fff; border:1px solid #e4e8ed; border-radius:13px; padding:22px; margin-bottom:16px;">
+            <div style="font-size:15px; font-weight:700; color:#1a2331; margin-bottom:3px;">Work week</div>
+            <div style="font-size:12px; color:#9aa3ad; margin-bottom:18px;">Standard hours and working days used for timesheet targets.</div>
+            <form th:action="@{/settings/workweek}" method="post" style="margin:0 0 18px; display:flex; align-items:center; gap:14px;">
+                <div style="font-size:13px; font-weight:600; color:#3a4453; width:150px;">Weekly target hours</div>
+                <input name="targetHours" th:value="${policy.targetHours}" inputmode="numeric"
+                       style="width:90px; height:36px; border:1px solid #dde2e8; border-radius:8px; background:#f8fafc; padding:0 12px; font-size:14px; font-weight:600; color:#28323f; text-align:center; outline:none;"/>
+                <span style="font-size:12.5px; color:#9aa3ad;">hours / week (0–80)</span>
+                <button type="submit" style="height:34px; padding:0 14px; border:none; border-radius:8px; background:#17457f; color:#fff; font-family:inherit; font-size:12.5px; font-weight:600; cursor:pointer;">Save</button>
+            </form>
+            <div style="display:flex; align-items:center; gap:14px;">
+                <div style="font-size:13px; font-weight:600; color:#3a4453; width:150px;">Working days</div>
+                <div style="display:flex; gap:6px;">
+                    <form th:each="chip : ${dayChips}" th:action="@{/settings/workweek/day}" method="post" style="margin:0;">
+                        <input type="hidden" name="day" th:value="${chip.id()}"/>
+                        <button type="submit" th:title="|Toggle ${chip.id()}|"
+                                style="width:40px; height:36px; border:1px solid #dde2e8; border-radius:8px; background:#fff; color:#9aa3ad; font-family:inherit; font-size:12px; font-weight:600; cursor:pointer;"
+                                th:styleappend="'; ' + (${chip.on()} ? 'border-color:#17457f; background:#eef4fb; color:#17457f;' : '')"
+                                th:text="${chip.label()}">M</button>
+                    </form>
+                </div>
             </div>
         </div>
 
-        <!-- Leave allowances -->
-        <div style="background:#fff; border:1px solid #e4e8ed; border-radius:12px; padding:18px 20px; margin-bottom:16px;">
-            <div style="font-size:14px; font-weight:700; color:#1a2331; margin-bottom:12px;">Leave allowances</div>
-            <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px;">
-                <div th:each="ltype : ${leaveTypes}" style="display:flex; align-items:center; gap:9px; border:1px solid #eef1f4; border-radius:9px; padding:10px 12px;">
-                    <span style="width:10px; height:10px; border-radius:3px; flex-shrink:0;" th:styleappend="'; ' + ('background:' + ${ltype.color})"></span>
+        <!-- ===== Leave allowances ===== -->
+        <div style="background:#fff; border:1px solid #e4e8ed; border-radius:13px; padding:22px; margin-bottom:16px;">
+            <div style="font-size:15px; font-weight:700; color:#1a2331; margin-bottom:3px;">Leave types &amp; annual allowance</div>
+            <div style="font-size:12px; color:#9aa3ad; margin-bottom:14px;">Days granted per year for each leave type.</div>
+            <form th:action="@{/settings/allowances}" method="post" style="margin:0;">
+                <div style="display:flex; flex-direction:column;">
+                    <div th:each="ltype : ${leaveTypes}" style="display:flex; align-items:center; gap:12px; padding:11px 0; border-bottom:1px solid #f4f6f8;">
+                        <span style="width:10px; height:10px; border-radius:3px; flex-shrink:0;" th:styleappend="'; ' + ('background:' + ${ltype.color})"></span>
+                        <span style="flex:1; font-size:13px; font-weight:600; color:#28323f;" th:text="${ltype.label}">Annual leave</span>
+                        <input th:name="|allow_${ltype.id}|" th:value="${ltype.allowance}" inputmode="numeric"
+                               style="width:80px; height:34px; border:1px solid #dde2e8; border-radius:8px; background:#f8fafc; padding:0 11px; font-size:13.5px; font-weight:600; color:#28323f; text-align:center; outline:none;"/>
+                        <span style="width:54px; font-size:12px; color:#9aa3ad;">days/yr</span>
+                    </div>
+                </div>
+                <div style="display:flex; justify-content:flex-end; padding-top:14px;">
+                    <button type="submit" style="height:34px; padding:0 15px; border:none; border-radius:8px; background:#17457f; color:#fff; font-family:inherit; font-size:12.5px; font-weight:600; cursor:pointer;">Save allowances</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- ===== Approval rules ===== -->
+        <div style="background:#fff; border:1px solid #e4e8ed; border-radius:13px; padding:22px; margin-bottom:16px;">
+            <div style="font-size:15px; font-weight:700; color:#1a2331; margin-bottom:3px;">Approval rules</div>
+            <div style="font-size:12px; color:#9aa3ad; margin-bottom:18px;">Thresholds that route requests and gate submission.</div>
+            <form th:action="@{/settings/rules}" method="post" style="margin:0; display:flex; flex-direction:column; gap:14px;">
+                <div style="display:flex; align-items:center; gap:14px;">
+                    <div style="flex:1;">
+                        <div style="font-size:13px; font-weight:600; color:#3a4453;">Annual leave notice period</div>
+                        <div style="font-size:11.5px; color:#9aa3ad; margin-top:1px;">Minimum notice, in days, before annual leave starts</div>
+                    </div>
+                    <input name="noticeDays" th:value="${policy.noticeDays}" inputmode="numeric"
+                           style="width:80px; height:36px; border:1px solid #dde2e8; border-radius:8px; background:#f8fafc; padding:0 11px; font-size:14px; font-weight:600; color:#28323f; text-align:center; outline:none;"/>
+                    <span style="width:46px; font-size:12px; color:#9aa3ad;">days</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:14px;">
+                    <div style="flex:1;">
+                        <div style="font-size:13px; font-weight:600; color:#3a4453;">Manager authority ceiling</div>
+                        <div style="font-size:11.5px; color:#9aa3ad; margin-top:1px;">Requests longer than this escalate to HR</div>
+                    </div>
+                    <input name="ceilingDays" th:value="${policy.ceilingDays}" inputmode="numeric"
+                           style="width:80px; height:36px; border:1px solid #dde2e8; border-radius:8px; background:#f8fafc; padding:0 11px; font-size:14px; font-weight:600; color:#28323f; text-align:center; outline:none;"/>
+                    <span style="width:46px; font-size:12px; color:#9aa3ad;">days</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:14px;">
+                    <div style="flex:1;">
+                        <div style="font-size:13px; font-weight:600; color:#3a4453;">Medical certificate threshold</div>
+                        <div style="font-size:11.5px; color:#9aa3ad; margin-top:1px;">Sick leave beyond this needs a certificate</div>
+                    </div>
+                    <input name="sickCertDays" th:value="${policy.sickCertDays}" inputmode="numeric"
+                           style="width:80px; height:36px; border:1px solid #dde2e8; border-radius:8px; background:#f8fafc; padding:0 11px; font-size:14px; font-weight:600; color:#28323f; text-align:center; outline:none;"/>
+                    <span style="width:46px; font-size:12px; color:#9aa3ad;">days</span>
+                </div>
+                <div style="display:flex; justify-content:flex-end;">
+                    <button type="submit" style="height:34px; padding:0 15px; border:none; border-radius:8px; background:#17457f; color:#fff; font-family:inherit; font-size:12.5px; font-weight:600; cursor:pointer;">Save rules</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- ===== Performance competencies ===== -->
+        <div style="background:#fff; border:1px solid #e4e8ed; border-radius:13px; padding:22px; margin-bottom:16px;">
+            <div style="display:flex; align-items:baseline; justify-content:space-between; margin-bottom:3px;">
+                <div style="font-size:15px; font-weight:700; color:#1a2331;">Performance competencies</div>
+                <span style="font-size:11.5px; color:#9aa3ad;" th:text="|${compCount} in library|">10 in library</span>
+            </div>
+            <div style="font-size:12px; color:#9aa3ad; margin-bottom:16px;">The catalog HR picks from when designing a review cycle. Edit names and descriptions inline, then save the row.</div>
+            <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:14px;">
+                <div th:each="comp : ${compRows}" style="display:flex; align-items:center; gap:10px; padding:10px 12px; background:#f8fafc; border:1px solid #eef1f4; border-radius:9px;">
+                    <form th:action="@{/settings/competencies/update}" method="post" style="margin:0; flex:1; min-width:0; display:flex; align-items:center; gap:10px;">
+                        <input type="hidden" name="id" th:value="${comp.id()}"/>
+                        <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:5px;">
+                            <input name="name" th:value="${comp.name()}"
+                                   style="height:32px; border:1px solid #e4e8ed; border-radius:7px; padding:0 10px; font-size:13px; font-weight:600; color:#28323f; background:#fff; outline:none;"/>
+                            <input name="blurb" th:value="${comp.blurb()}" placeholder="Short description…"
+                                   style="height:30px; border:1px solid #eef1f4; border-radius:7px; padding:0 10px; font-size:12px; color:#6b7480; background:#fff; outline:none;"/>
+                        </div>
+                        <button type="submit" title="Save name &amp; description"
+                                style="width:32px; height:32px; border:1px solid #cfe3d8; border-radius:8px; background:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; color:#2f6f4f; flex-shrink:0;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+                        </button>
+                    </form>
+                    <form th:action="@{/settings/competencies/remove}" method="post" style="margin:0;">
+                        <input type="hidden" name="id" th:value="${comp.id()}"/>
+                        <button type="submit" th:disabled="${comp.removeBlocked()}" th:title="${comp.removeTitle()}"
+                                style="width:32px; height:32px; border:1px solid #f0cfc9; border-radius:8px; background:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; color:#b23b2e; flex-shrink:0;"
+                                th:styleappend="'; ' + (${comp.removeBlocked()} ? 'border-color:#eef1f4; color:#cdd4dc; cursor:not-allowed;' : '')">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+                        </button>
+                    </form>
+                </div>
+            </div>
+            <form th:action="@{/settings/competencies/add}" method="post" style="margin:0; display:flex; gap:9px; align-items:center; padding-top:14px; border-top:1px solid #f4f6f8;">
+                <input name="name" placeholder="New competency name"
+                       style="flex:1; height:36px; border:1px solid #dde2e8; border-radius:8px; background:#fff; padding:0 12px; font-size:13px; color:#28323f; outline:none;"/>
+                <button type="submit" style="height:36px; padding:0 15px; border:none; border-radius:8px; background:#17457f; color:#fff; font-family:inherit; font-size:13px; font-weight:600; cursor:pointer;">Add</button>
+            </form>
+        </div>
+
+        <!-- ===== Job-change types ===== -->
+        <div style="background:#fff; border:1px solid #e4e8ed; border-radius:13px; padding:22px; margin-bottom:16px;">
+            <div style="font-size:15px; font-weight:700; color:#1a2331; margin-bottom:3px;">Job-change types</div>
+            <div style="font-size:12px; color:#9aa3ad; margin-bottom:18px;">Which employee fields each change type is allowed to edit. Toggle a field to include it in that request form.</div>
+            <div style="display:flex; flex-direction:column; gap:14px;">
+                <div th:each="ctype : ${changeTypes}" style="border:1px solid #eef1f4; border-radius:11px; padding:14px 15px;">
+                    <div style="display:flex; align-items:center; gap:9px; margin-bottom:11px;">
+                        <span style="font-size:12px; font-weight:700; padding:3px 11px; border-radius:20px;"
+                              th:styleappend="'; ' + ('background:' + ${ctype.bg()} + '; color:' + ${ctype.color()})"
+                              th:text="${ctype.label()}">Promotion</span>
+                        <span style="font-size:11.5px; color:#9aa3ad;" th:text="|${ctype.fieldCount()} fields|">4 fields</span>
+                    </div>
+                    <div style="display:flex; flex-wrap:wrap; gap:7px;">
+                        <form th:each="fieldChip : ${ctype.chips()}" th:action="@{/settings/change-types/toggle}" method="post" style="margin:0;">
+                            <input type="hidden" name="type" th:value="${ctype.id()}"/>
+                            <input type="hidden" name="field" th:value="${fieldChip.field()}"/>
+                            <button type="submit"
+                                    style="height:30px; padding:0 12px; border:1px solid #e4e8ed; border-radius:20px; background:#fff; color:#9aa3ad; font-family:inherit; font-size:12px; font-weight:600; cursor:pointer;"
+                                    th:styleappend="'; ' + (${fieldChip.on()} ? 'border-color:#bcd0ea; background:#eef4fb; color:#17457f;' : '')"
+                                    th:text="${fieldChip.label()}">Job title</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== Blackout periods ===== -->
+        <div style="background:#fff; border:1px solid #e4e8ed; border-radius:13px; padding:22px; margin-bottom:16px;">
+            <div style="font-size:15px; font-weight:700; color:#1a2331; margin-bottom:3px;">Blackout periods</div>
+            <div style="font-size:12px; color:#9aa3ad; margin-bottom:16px;">Windows when leave is restricted org-wide.</div>
+            <div style="display:flex; flex-direction:column; gap:9px; margin-bottom:14px;">
+                <div th:each="bo : ${blackoutRows}" style="display:flex; align-items:center; gap:12px; padding:11px 13px; background:#f8fafc; border:1px solid #eef1f4; border-radius:9px;">
+                    <div style="width:34px; height:34px; border-radius:8px; background:#fbe9e7; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b23b2e" stroke-width="1.9"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/></svg>
+                    </div>
                     <div style="flex:1; min-width:0;">
-                        <div style="font-size:12.5px; font-weight:600; color:#28323f;" th:text="${ltype.label}">Annual leave</div>
-                        <div style="font-size:11px; color:#9aa3ad;" th:text="${ltype.allowance} + ' days/year'">25 days/year</div>
+                        <div style="font-size:12.5px; font-weight:600; color:#28323f;" th:text="${bo.label()}">Year-end freeze</div>
+                        <div style="font-size:11px; color:#9aa3ad;" th:text="|${bo.range()} · ${bo.scope()}|">Dec 20 – Dec 31, 2026 · All teams</div>
                     </div>
+                    <form th:action="@{/settings/blackouts/remove}" method="post" style="margin:0;">
+                        <input type="hidden" name="id" th:value="${bo.id()}"/>
+                        <button type="submit" title="Remove blackout" style="width:30px; height:30px; border:1px solid #f0dcd9; border-radius:8px; background:#fff; color:#b23b2e; font-size:16px; line-height:1; cursor:pointer;">&times;</button>
+                    </form>
                 </div>
+                <div th:if="${noBlackouts}" style="padding:14px; text-align:center; font-size:12px; color:#9aa3ad;">No blackout periods configured.</div>
             </div>
+            <form th:action="@{/settings/blackouts/add}" method="post" style="margin:0; display:flex; gap:9px; align-items:center; padding-top:14px; border-top:1px solid #f4f6f8;">
+                <input name="label" placeholder="Label (e.g. Year-end freeze)"
+                       style="flex:1; height:36px; border:1px solid #dde2e8; border-radius:8px; background:#fff; padding:0 12px; font-size:13px; color:#28323f; outline:none;"/>
+                <input type="date" name="start" style="height:36px; border:1px solid #dde2e8; border-radius:8px; background:#fff; padding:0 10px; font-size:13px; color:#28323f; outline:none;"/>
+                <input type="date" name="end" style="height:36px; border:1px solid #dde2e8; border-radius:8px; background:#fff; padding:0 10px; font-size:13px; color:#28323f; outline:none;"/>
+                <button type="submit" style="height:36px; padding:0 15px; border:none; border-radius:8px; background:#17457f; color:#fff; font-family:inherit; font-size:13px; font-weight:600; cursor:pointer;">Add</button>
+            </form>
         </div>
 
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
-            <div style="background:#fff; border:1px solid #e4e8ed; border-radius:12px; padding:18px 20px;">
-                <div style="font-size:14px; font-weight:700; color:#1a2331; margin-bottom:12px;">Blackout periods</div>
-                <div th:each="b : ${blackouts}" style="padding:8px 0; border-bottom:1px solid #f4f6f8;">
-                    <div style="font-size:12.5px; font-weight:600; color:#28323f;" th:text="${b.label}">Year-end freeze</div>
-                    <div style="font-size:11.5px; color:#8894a3;" th:text="${b.start} + ' → ' + ${b.end} + ' · ' + ${b.scope}">2026-12-20 → 2026-12-31</div>
-                </div>
+        <!-- ===== Public holidays ===== -->
+        <div style="background:#fff; border:1px solid #e4e8ed; border-radius:13px; padding:22px; margin-bottom:16px;">
+            <div style="display:flex; align-items:baseline; justify-content:space-between; margin-bottom:3px;">
+                <div style="font-size:15px; font-weight:700; color:#1a2331;">Public holidays</div>
+                <span style="font-size:11.5px; color:#9aa3ad;" th:text="|${holidayCount} days|">9 days</span>
             </div>
-            <div style="background:#fff; border:1px solid #e4e8ed; border-radius:12px; padding:18px 20px;">
-                <div style="font-size:14px; font-weight:700; color:#1a2331; margin-bottom:12px;">Public holidays</div>
-                <div style="max-height:180px; overflow-y:auto;">
-                    <div th:each="h : ${holidays}" style="display:flex; justify-content:space-between; font-size:12px; color:#5a6472; padding:5px 0; border-bottom:1px solid #f4f6f8;">
-                        <span th:text="${h.name}">New Year's Day</span><strong style="color:#28323f;" th:text="${h.date}">2026-01-01</strong>
+            <div style="font-size:12px; color:#9aa3ad; margin-bottom:16px;">Paid company holidays — auto-filled on timesheets and excluded from leave day counts.</div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:14px;">
+                <div th:each="hol : ${holidayRows}" style="min-width:0; display:flex; align-items:center; gap:11px; padding:9px 11px; background:#f8fafc; border:1px solid #eef1f4; border-radius:9px;">
+                    <div style="width:40px; flex-shrink:0; text-align:center; background:#eef4fb; border:1px solid #dbe6f3; border-radius:8px; padding:3px 0;">
+                        <div style="font-size:9px; font-weight:700; color:#3a5aa8; text-transform:uppercase;" th:text="${hol.mon()}">Jan</div>
+                        <div style="font-size:14px; font-weight:700; color:#17457f; line-height:1;" th:text="${hol.day()}">1</div>
                     </div>
+                    <div style="flex:1; min-width:0;">
+                        <div style="font-size:12px; font-weight:600; color:#28323f; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" th:text="${hol.name()}">New Year</div>
+                        <div style="font-size:10.5px; color:#9aa3ad;" th:text="${hol.weekday()}">Thursday, 2026</div>
+                    </div>
+                    <form th:action="@{/settings/holidays/remove}" method="post" style="margin:0; flex-shrink:0;">
+                        <input type="hidden" name="id" th:value="${hol.id()}"/>
+                        <button type="submit" title="Remove holiday" style="width:26px; height:26px; border:1px solid #e4e8ed; border-radius:7px; background:#fff; color:#9aa3ad; font-size:15px; line-height:1; cursor:pointer;">&times;</button>
+                    </form>
                 </div>
             </div>
-        </div>
-
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
-            <div style="background:#fff; border:1px solid #e4e8ed; border-radius:12px; padding:18px 20px;">
-                <div style="font-size:14px; font-weight:700; color:#1a2331; margin-bottom:12px;">Performance competencies</div>
-                <div style="display:flex; flex-wrap:wrap; gap:7px;">
-                    <span th:each="c : ${competencies}" style="font-size:11.5px; font-weight:600; color:#4a5563; background:#f2f5f8; border:1px solid #e4e8ed; padding:4px 10px; border-radius:20px;" th:text="${c.name()}">Technical execution</span>
-                </div>
-            </div>
-            <div style="background:#fff; border:1px solid #e4e8ed; border-radius:12px; padding:18px 20px;">
-                <div style="font-size:14px; font-weight:700; color:#1a2331; margin-bottom:12px;">Job-change types</div>
-                <div th:each="ct : ${changeTypes}" style="display:flex; align-items:center; gap:9px; padding:6px 0;">
-                    <span style="font-size:11px; font-weight:600; padding:3px 10px; border-radius:20px;" th:styleappend="'; ' + ('background:' + ${ct.bg()} + '; color:' + ${ct.color()})" th:text="${ct.label()}">Promotion</span>
-                    <span style="font-size:11.5px; color:#8894a3;" th:text="'touches ' + ${ct.fields().size()} + ' fields'">touches 4 fields</span>
-                </div>
-            </div>
+            <form th:action="@{/settings/holidays/add}" method="post" style="margin:0; display:flex; gap:9px; align-items:center; padding-top:14px; border-top:1px solid #f4f6f8;">
+                <input type="date" name="date" style="height:36px; border:1px solid #dde2e8; border-radius:8px; background:#fff; padding:0 10px; font-size:13px; color:#28323f; outline:none;"/>
+                <input name="name" placeholder="Holiday name"
+                       style="flex:1; height:36px; border:1px solid #dde2e8; border-radius:8px; background:#fff; padding:0 12px; font-size:13px; color:#28323f; outline:none;"/>
+                <button type="submit" style="height:36px; padding:0 15px; border:none; border-radius:8px; background:#17457f; color:#fff; font-family:inherit; font-size:13px; font-weight:600; cursor:pointer;">Add</button>
+            </form>
         </div>
     </th:block>
+
+    <th:block th:replace="~{fragments/request-drawer :: toast}"></th:block>
 </div>
 </body>
 </html>
