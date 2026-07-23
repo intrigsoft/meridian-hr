@@ -1,6 +1,5 @@
 package com.meridian.hr.web;
 
-import com.meridian.hr.diosc.DioscProperties;
 import com.meridian.hr.domain.Employee;
 import com.meridian.hr.leave.LeaveService;
 import com.meridian.hr.security.AccessPolicy;
@@ -18,8 +17,7 @@ import java.util.Set;
 
 /**
  * Feeds every authenticated page the AppShell context: the signed-in user, role
- * flags, the role-gated left nav (with per-item built flags), and the Dioschub
- * assistant config for the reserved right-rail mount. Runs for all @Controller
+ * flags, the role-gated left nav (with per-item built flags). Runs for all @Controller
  * views; safely no-ops on the (layout-less) login page.
  */
 @ControllerAdvice
@@ -34,13 +32,11 @@ public class LayoutAdvice {
             "analytics", "settings", "org", "roles", "audit");
 
     private final SessionContext session;
-    private final DioscProperties diosc;
     private final LeaveService leave;
     private final AccessPolicy policy;
 
-    public LayoutAdvice(SessionContext session, DioscProperties diosc, LeaveService leave, AccessPolicy policy) {
+    public LayoutAdvice(SessionContext session, LeaveService leave, AccessPolicy policy) {
         this.session = session;
-        this.diosc = diosc;
         this.leave = leave;
         this.policy = policy;
     }
@@ -48,7 +44,6 @@ public class LayoutAdvice {
     @ModelAttribute
     public void shell(Model model) {
         Employee user = session.currentUser();
-        model.addAttribute("diosc", diosc);
         if (user == null) {
             return; // login page — no shell
         }

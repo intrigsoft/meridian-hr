@@ -11,8 +11,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap"
           rel="stylesheet">
     <link rel="stylesheet" th:href="@{/css/app.css}">
-    <!-- Restore the assistant-rail collapse state before first paint (avoids a flash on MVC navigations). -->
-    <script>(function () { try { if (localStorage.getItem('meridian.rail') === 'collapsed') document.documentElement.classList.add('rail-collapsed'); } catch (e) { /* private mode */ } })();</script>
     <th:block layout:fragment="head"></th:block>
 </head>
 <body>
@@ -98,8 +96,6 @@
             </div>
         </main>
 
-        <!-- ===== Assistant rail (reserved kit mount) ===== -->
-        <th:block th:replace="~{fragments/assistant-rail :: rail}"></th:block>
     </div>
 </div>
 

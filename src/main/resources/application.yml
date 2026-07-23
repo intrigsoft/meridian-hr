@@ -20,17 +20,6 @@ meridian:
     idle-ttl: ${MERIDIAN_WORKSPACE_IDLE_TTL:PT2H}   # evict a workspace after 2h idle
     max-devices: ${MERIDIAN_WORKSPACE_MAX_DEVICES:2000}
     sweep-interval: ${MERIDIAN_WORKSPACE_SWEEP_INTERVAL:300000}  # scheduled sweep, ms (5 min)
-  # Embedded Dioschub assistant. Empty until the AI-integration phase (rail stays inert).
-  diosc:
-    hub-url: ${MERIDIAN_DIOSC_HUB_URL:}
-    embed-key: ${MERIDIAN_DIOSC_EMBED_KEY:}
-    assistant-id: ${MERIDIAN_DIOSC_ASSISTANT_ID:}
-    bind-endpoint: ${MERIDIAN_DIOSC_BIND_ENDPOINT:/api/diosc/bind}
-    # The MCP adapter (token broker) the bind endpoint hands sessions to, and the
-    # shared secret authenticating that call (must match the adapter's
-    # MCP_BIND_SECRET). The hub admin key now lives on the adapter, not here.
-    mcp-url: ${MERIDIAN_DIOSC_MCP_URL:}
-    bind-secret: ${MERIDIAN_DIOSC_BIND_SECRET:}
 
 logging:
   level:
