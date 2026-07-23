@@ -26,8 +26,11 @@ meridian:
     embed-key: ${MERIDIAN_DIOSC_EMBED_KEY:}
     assistant-id: ${MERIDIAN_DIOSC_ASSISTANT_ID:}
     bind-endpoint: ${MERIDIAN_DIOSC_BIND_ENDPOINT:/api/diosc/bind}
-    # Secret hub admin API key with scope auth:bind — server-to-server only.
-    bind-key: ${MERIDIAN_DIOSC_BIND_KEY:}
+    # The MCP adapter (token broker) the bind endpoint hands sessions to, and the
+    # shared secret authenticating that call (must match the adapter's
+    # MCP_BIND_SECRET). The hub admin key now lives on the adapter, not here.
+    mcp-url: ${MERIDIAN_DIOSC_MCP_URL:}
+    bind-secret: ${MERIDIAN_DIOSC_BIND_SECRET:}
 
 logging:
   level:

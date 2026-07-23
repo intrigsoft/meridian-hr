@@ -21,8 +21,10 @@ public class DioscProperties {
     private String assistantId = "";
     /** Host BYOA bind route the kit POSTs to. */
     private String bindEndpoint = "/api/diosc/bind";
-    /** Secret hub admin API key (scope auth:bind) used server-to-server. Never rendered. */
-    private String bindKey = "";
+    /** Base URL of the MCP adapter — the token broker the bind endpoint hands sessions to. */
+    private String mcpUrl = "";
+    /** Shared secret authenticating the app to the adapter's /auth/bind. Never rendered. */
+    private String bindSecret = "";
 
     /** True once the assistant is configured enough to mount the real kit. */
     public boolean isConfigured() {
@@ -61,11 +63,19 @@ public class DioscProperties {
         this.bindEndpoint = bindEndpoint;
     }
 
-    public String getBindKey() {
-        return bindKey;
+    public String getMcpUrl() {
+        return mcpUrl;
     }
 
-    public void setBindKey(String bindKey) {
-        this.bindKey = bindKey;
+    public void setMcpUrl(String mcpUrl) {
+        this.mcpUrl = mcpUrl;
+    }
+
+    public String getBindSecret() {
+        return bindSecret;
+    }
+
+    public void setBindSecret(String bindSecret) {
+        this.bindSecret = bindSecret;
     }
 }

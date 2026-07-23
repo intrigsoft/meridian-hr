@@ -8,14 +8,21 @@ its existing HTML interface from the outside, the same way a browser does.
 ## How it works
 
 ```
-Hub ──MCP over Streamable HTTP──►  this adapter  ──HTTP + HTML──►  Meridian
-   (Authorization: Bearer <artifact>)  (the front door)
+Meridian ──POST /auth/bind (identity + artifact)──►  this adapter  ──mints JWT──►  Hub
+Hub ──MCP over Streamable HTTP (Bearer JWT)──────►  this adapter  ──HTTP + HTML──►  Meridian
+   (the token broker)                                (the front door)
 ```
 
-The hub connects **per call** and injects the visitor's bound BYOA auth as that request's
-`Authorization` header (MCP spec 2025-11-25). Per tool call the adapter:
+**Token broker (MCP authorization spec 2025-11-25).** The adapter is an OAuth-style
+resource server that accepts only tokens issued *for itself* — and it is also the issuer.
+At bind time Meridian POSTs the visitor's identity + artifact (`session:<meridian_device>`)
+to the adapter's `/auth/bind`; the adapter **caches the artifact**, mints a short-lived
+audience-bound **HS256 JWT** referencing it, and registers that JWT with the hub. The hub
+holds only the JWT (never the cookie). On each tool call the hub presents the JWT; the HTTP
+layer validates it and **swaps in the cached artifact** before the transport runs — no token
+passthrough upstream. Per tool call the adapter then:
 
-1. **Session** — resolves the caller's identity from the per-call `Authorization` header,
+1. **Session** — resolves the caller's identity from the exchanged artifact,
    with no shared/singleton session, so two users never cross wires. Two artifact shapes:
    - `session:<meridian_device>` — **pass-through** (production): the forwarded value is the
      visitor's own signed-in device cookie; the adapter acts as them holding **no credentials
@@ -60,9 +67,12 @@ or the `MERIDIAN_PERSONA` shorthand (default `priya.nair`).
 
 ## Register in DioscHub
 
-Attach as an MCP instance: transport **http**, serverUrl **`http://<host>:5175/mcp`**. The hub
-forwards the visitor's bound session as `Authorization: Bearer session:<meridian_device>` on
-every call — no per-instance credentials, and Meridian's own RBAC gates each action.
+Attach as an MCP instance: transport **http**, serverUrl **`http://<host>:5175/mcp`**, no static
+auth. The hub forwards each session's bound artifact — the adapter's own JWT — as the
+`Authorization` header on every call; the adapter exchanges it for the cached session, and
+Meridian's own RBAC gates each action. The adapter performs the hub bind, so `DIOSC_HUB_URL` +
+an admin `auth:bind` key and the signing/bind secrets (`MCP_JWT_SECRET`, `MCP_BIND_SECRET`) live
+here (see `.env.example`).
 
 ## Tools
 

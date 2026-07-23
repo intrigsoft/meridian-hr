@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "HTML front-door MCP adapter for the Meridian HR sample — drives the server-rendered UI as a legacy app with no REST API (DioscHub integration demo).",
+  "description": "HTML front-door MCP adapter for the Meridian HR sample \u2014 drives the server-rendered UI as a legacy app with no REST API (DioscHub integration demo).",
   "license": "MIT",
   "bin": {
     "meridian-hr-mcp": "dist/server.js",
@@ -19,7 +19,8 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.0",
-    "cheerio": "^1.0.0"
+    "cheerio": "^1.0.0",
+    "jose": "^5.9.6"
   },
   "devDependencies": {
     "@types/node": "^20.16.0",

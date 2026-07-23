@@ -17,7 +17,6 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -27,17 +26,15 @@ import java.util.Map;
  * The embedded kit never holds credentials. When the hub asks a fresh WS
  * connection to authenticate, the kit POSTs {@code {wsId}} here (same-origin,
  * cookies included). We resolve the caller from the {@code meridian_device}
- * cookie — the exact same session Meridian's own pages trust — and push the
- * identity plus an opaque auth artifact server-to-server to the hub:
+ * cookie — the exact same session Meridian's own pages trust.
  *
- * <pre>
- *   Authorization: Bearer session:&lt;meridian_device&gt;
- * </pre>
- *
- * The hub stores that artifact keyed by the WS connection and forwards it,
- * verbatim, as the Authorization header on every MCP tool call — so the
- * MCP adapter acts as this user through Meridian's front door, and the LLM
- * never sees the cookie. Not signed in → anonymous bind (identity null).
+ * OAuth-style broker flow (MCP spec 2025-11-25): the app does NOT talk to the
+ * hub, and the device cookie never reaches it. We hand identity + the artifact
+ * ({@code session:<meridian_device>}) to the MCP adapter's {@code /auth/bind};
+ * the adapter caches the artifact, mints an audience-bound JWT referencing it,
+ * and registers that JWT with the hub. On each tool call the adapter validates
+ * the JWT and exchanges it for the cached artifact — credential-blind end to
+ * end. Requires a signed-in Meridian session.
  */
 @RestController
 @RequestMapping("/api/diosc")
@@ -68,47 +65,47 @@ public class DioscBindController {
         if (wsId == null) {
             return ResponseEntity.badRequest().body(Map.of("error", "wsId is required"));
         }
-        if (!props.isConfigured() || props.getBindKey().isBlank()) {
+        if (!props.isConfigured() || props.getMcpUrl().isBlank()) {
             return ResponseEntity.status(503).body(Map.of("error", "assistant not configured"));
         }
 
         Employee u = session.currentUser();
         String device = session.deviceId();
-
-        // Identity + artifact only when there is a signed-in Meridian session to speak for.
-        Map<String, Object> identity = null;
-        Map<String, String> headers = new HashMap<>();
-        if (u != null && device != null) {
-            identity = new LinkedHashMap<>();
-            identity.put("userId", u.id);
-            identity.put("username", (u.first + " " + u.last).trim());
-            identity.put("role", Map.of("id", u.accessRole.key, "name", u.accessRole.key));
-            headers.put("Authorization", "Bearer session:" + device);
+        if (u == null || device == null) {
+            return ResponseEntity.status(401).body(Map.of("error", "sign in before binding the assistant"));
         }
+
+        // The artifact names WHICH session to act as; the adapter turns it into a JWT.
+        Map<String, Object> identity = new LinkedHashMap<>();
+        identity.put("userId", u.id);
+        identity.put("username", (u.first + " " + u.last).trim());
+        identity.put("role", Map.of("id", u.accessRole.key, "name", u.accessRole.key));
+        String artifact = "session:" + device;
 
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("wsId", wsId);
         payload.put("identity", identity);
-        payload.put("authArtifacts", Map.of("headers", headers));
+        payload.put("artifact", artifact);
 
-        HttpRequest req = HttpRequest.newBuilder()
-                .uri(URI.create(props.getHubUrl() + "/api/auth/bind"))
+        HttpRequest.Builder builder = HttpRequest.newBuilder()
+                .uri(URI.create(props.getMcpUrl().replaceAll("/$", "") + "/auth/bind"))
                 .timeout(Duration.ofSeconds(10))
-                .header("content-type", "application/json")
-                .header("x-api-key", props.getBindKey())
+                .header("content-type", "application/json");
+        if (!props.getBindSecret().isBlank()) {
+            builder.header("x-bind-secret", props.getBindSecret());
+        }
+        HttpRequest req = builder
                 .POST(HttpRequest.BodyPublishers.ofString(mapper.writeValueAsString(payload)))
                 .build();
 
         HttpResponse<String> res = HTTP.send(req, HttpResponse.BodyHandlers.ofString());
         if (res.statusCode() < 200 || res.statusCode() >= 300) {
-            // Never log the payload — it carries the device cookie.
-            log.error("dioschub /auth/bind failed ({}) for ws={} user={}", res.statusCode(), wsId,
-                    u == null ? "anonymous" : u.id);
+            // Never log the payload — it carries the device artifact.
+            log.error("adapter /auth/bind failed ({}) for ws={} user={}", res.statusCode(), wsId, u.id);
             return ResponseEntity.status(502).body(Map.of("error", "bind failed"));
         }
 
-        log.info("bound ws={} as {} ({})", wsId, u == null ? "anonymous" : u.id,
-                u == null ? "-" : u.accessRole.key);
+        log.info("bound ws={} as {} ({})", wsId, u.id, u.accessRole.key);
         return ResponseEntity.ok(Map.of("ok", true));
     }
 
